@@ -3,12 +3,22 @@ name:          spinor
 version:       0.1.0.0
 build-type:    Simple
 
-executable spinor
-  main-is:          Main.hs
-  other-modules:    Syntax
+library
+  hs-source-dirs:   src
+  exposed-modules:  Spinor.Syntax
   build-depends:
     base       >= 4.14 && < 5,
     megaparsec >= 9.0  && < 10,
     text       >= 1.2  && < 3
+  default-language: Haskell2010
+  ghc-options:      -Wall
+
+executable spinor
+  hs-source-dirs:   app
+  main-is:          Main.hs
+  build-depends:
+    base   >= 4.14 && < 5,
+    text   >= 1.2  && < 3,
+    spinor
   default-language: Haskell2010
   ghc-options:      -Wall

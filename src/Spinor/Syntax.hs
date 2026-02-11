@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Syntax
+module Spinor.Syntax
   ( Expr(..)
   , readExpr
   ) where

@@ -5,7 +5,7 @@ module Main (main) where
 import qualified Data.Text    as T
 import qualified Data.Text.IO as TIO
 import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF)
-import Syntax (readExpr)
+import Spinor.Syntax (readExpr)
 
 main :: IO ()
 main = do
