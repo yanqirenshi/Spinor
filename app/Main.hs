@@ -6,14 +6,14 @@ import qualified Data.Text    as T
 import qualified Data.Text.IO as TIO
 import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF)
 import Spinor.Syntax    (readExpr)
-import Spinor.Eval      (Env, eval, runEval)
+import Spinor.Val       (Env)
+import Spinor.Eval      (eval, runEval)
 import Spinor.Primitive (primitiveBindings)
-import Spinor.Val       ()  -- Show インスタンス
 
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
-  putStrLn "Spinor REPL (step2)"
+  putStrLn "Spinor REPL (step3)"
   loop primitiveBindings
 
 loop :: Env -> IO ()

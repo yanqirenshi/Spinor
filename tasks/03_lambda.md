@@ -52,3 +52,28 @@
 * 日本語で簡潔に解説すること。
 
 # 実装結果
+
+## 変更ファイル
+
+| ファイル | 操作 | 概要 |
+|---|---|---|
+| `src/Spinor/Val.hs` | 修正 | `Env` 型を `Eval.hs` から移動。`VFunc [Text] Expr Env` コンストラクタを追加 |
+| `src/Spinor/Eval.hs` | 修正 | `Env` 定義を削除し `Val` からインポート。`fn` 特殊形式と `apply` 関数 (`VFunc` 対応) を追加 |
+| `src/Spinor/Primitive.hs` | 修正 | `Env` のインポート元を `Eval` → `Val` に変更 |
+| `app/Main.hs` | 修正 | `Env` のインポート元を変更、REPL 表記を step3 に更新 |
+
+## 設計メモ
+
+- 循環参照の解決: `Val` と `Env` を `Val.hs` に同居させることで `VFunc` が `Env` を保持可能に
+- クロージャの実装: `VFunc` は定義時の環境スナップショットを保持。適用時に `closureEnv + 引数束縛` で新環境を構築し、評価後に元の環境を復元する (レキシカルスコープ)
+- `apply` 関数を独立させ、`VPrim` / `VFunc` をパターンマッチで分岐
+
+## テスト結果
+
+```
+spinor> ((fn (x) (* x x)) 10)           => 100
+spinor> (define add (fn (a b) (+ a b)))  => <function>
+spinor> (add 10 20)                      => 30
+spinor> (define make-adder (fn (n) (fn (x) (+ x n))))  => <function>
+spinor> ((make-adder 5) 10)              => 15
+```

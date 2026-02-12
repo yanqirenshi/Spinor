@@ -7,8 +7,7 @@ module Spinor.Primitive
 import Data.Text (Text, pack)
 import qualified Data.Map.Strict as Map
 
-import Spinor.Val (Val(..))
-import Spinor.Eval (Env)
+import Spinor.Val (Val(..), Env)
 
 -- | 初期環境: プリミティブ関数を束縛した Env
 primitiveBindings :: Env
