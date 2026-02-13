@@ -8,11 +8,13 @@ module Spinor.Eval
   ) where
 
 import Data.Text (Text, pack)
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 import qualified Data.Map.Strict as Map
 import Control.Monad.State.Strict
 import Control.Monad.Except
 
-import Spinor.Syntax (Expr(..))
+import Spinor.Syntax (Expr(..), parseFile)
 import Spinor.Val    (Val(..), Env, showVal)
 
 -- | 評価モナド
@@ -35,6 +37,9 @@ eval (EInt n) = pure $ VInt n
 -- アトム: 真偽値 → VBool
 eval (EBool b) = pure $ VBool b
 
+-- アトム: 文字列 → VStr
+eval (EStr s) = pure $ VStr s
+
 -- アトム: シンボル → 環境から検索
 eval (ESym name) = do
   env <- get
@@ -48,10 +53,29 @@ eval (EList []) = pure VNil
 -- 特殊形式: (quote expr) — 式を評価せず値として返す
 eval (EList [ESym "quote", expr]) = pure (exprToVal expr)
 
--- 特殊形式: (define sym expr)
-eval (EList [ESym "define", ESym name, body]) = do
-  val <- eval body
-  modify (Map.insert name val)
+-- 特殊形式: (define sym expr) / (def sym expr)
+eval (EList [ESym "define", ESym name, body]) = evalDefine name body
+eval (EList [ESym "def",    ESym name, body]) = evalDefine name body
+
+-- 特殊形式: (load "filename") — ファイルを読み込み、全式を順次評価
+eval (EList [ESym "load", arg]) = do
+  val <- eval arg
+  case val of
+    VStr path -> do
+      content <- liftIO $ TIO.readFile (T.unpack path)
+      case parseFile content of
+        Left err   -> throwError $ "load パースエラー (" <> path <> "): " <> pack err
+        Right exprs -> do
+          mapM_ eval exprs
+          pure $ VBool True
+    _ -> throwError "load: ファイルパス (文字列) が必要です"
+
+-- 特殊形式: (print expr) — 値を表示して返す
+eval (EList [ESym "print", arg]) = do
+  val <- eval arg
+  case val of
+    VStr s -> liftIO $ TIO.putStrLn s
+    _      -> liftIO $ putStrLn (showVal val)
   pure val
 
 -- 特殊形式: (if cond then else)
@@ -80,6 +104,13 @@ eval (EList (x:xs)) = do
   func <- eval x
   args <- mapM eval xs
   apply func args
+
+-- | define / def の共通実装
+evalDefine :: Text -> Expr -> Eval Val
+evalDefine name body = do
+  val <- eval body
+  modify (Map.insert name val)
+  pure val
 
 -- | 関数適用
 apply :: Val -> [Val] -> Eval Val
@@ -116,4 +147,5 @@ exprToVal :: Expr -> Val
 exprToVal (EInt n)    = VInt n
 exprToVal (EBool b)   = VBool b
 exprToVal (ESym s)    = VSym s
+exprToVal (EStr s)    = VStr s
 exprToVal (EList xs)  = VList (map exprToVal xs)

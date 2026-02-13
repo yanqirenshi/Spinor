@@ -5,16 +5,44 @@ module Main (main) where
 import qualified Data.Text    as T
 import qualified Data.Text.IO as TIO
 import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF)
-import Spinor.Syntax    (readExpr)
+import System.Directory (doesFileExist)
+import Spinor.Syntax    (readExpr, parseFile)
 import Spinor.Val       (Env)
 import Spinor.Eval      (eval, runEval)
 import Spinor.Primitive (primitiveBindings)
 
+-- | ブートファイルのパス
+bootFile :: FilePath
+bootFile = "twister/boot.spin"
+
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
-  putStrLn "Spinor REPL (step3)"
-  loop primitiveBindings
+  putStrLn "Spinor REPL (step5)"
+  env <- loadBoot primitiveBindings
+  loop env
+
+-- | 起動時に boot.spin を読み込む (存在する場合)
+loadBoot :: Env -> IO Env
+loadBoot env = do
+  exists <- doesFileExist bootFile
+  if not exists
+    then do
+      putStrLn "(twister/boot.spin が見つかりません — スキップ)"
+      pure env
+    else do
+      content <- TIO.readFile bootFile
+      case parseFile content of
+        Left err -> do
+          putStrLn $ "boot.spin パースエラー: " ++ err
+          pure env
+        Right exprs -> do
+          result <- runEval env (mapM_ eval exprs)
+          case result of
+            Left err -> do
+              TIO.putStrLn $ "boot.spin 実行エラー: " <> err
+              pure env
+            Right (_, env') -> pure env'
 
 loop :: Env -> IO ()
 loop env = do

@@ -26,6 +26,7 @@ data Val
   | VList [Val]                                -- リスト
   | VNil                                       -- 空リスト / nil
   | VSym  Text                                 -- シンボル (quote 用)
+  | VStr  Text                                 -- 文字列
 
 instance Show Val where
   show = showVal
@@ -40,3 +41,4 @@ showVal (VFunc _ _ _)  = "<function>"
 showVal (VList vs)     = "(" ++ unwords (map showVal vs) ++ ")"
 showVal VNil           = "nil"
 showVal (VSym s)       = show s
+showVal (VStr s)       = show s
