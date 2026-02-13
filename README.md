@@ -65,3 +65,8 @@ Spinor/
 
 Gemini はプロジェクトの全体像と文脈を保持し続け、
 Claude に渡すべき「正確な指示書」を作成する役割を担います。
+
+## Links
+
+- [スピノール (Wikipedia)](https://ja.wikipedia.org/wiki/%E3%82%B9%E3%83%94%E3%83%8E%E3%83%BC%E3%83%AB)
+- [Arcからの挑戦](https://practical-scheme.net/wiliki/wiliki.cgi?Arc%E3%81%8B%E3%82%89%E3%81%AE%E6%8C%91%E6%88%A6)
