@@ -45,6 +45,9 @@ eval (ESym name) = do
 -- 空リスト → VNil
 eval (EList []) = pure VNil
 
+-- 特殊形式: (quote expr) — 式を評価せず値として返す
+eval (EList [ESym "quote", expr]) = pure (exprToVal expr)
+
 -- 特殊形式: (define sym expr)
 eval (EList [ESym "define", ESym name, body]) = do
   val <- eval body
@@ -99,7 +102,7 @@ apply (VFunc params body closureEnv) args
   | otherwise = do
       savedEnv <- get
       let bindings = Map.fromList (zip params args)
-          localEnv = Map.union bindings closureEnv
+          localEnv = Map.union bindings (Map.union closureEnv savedEnv)
       put localEnv
       result <- eval body
       put savedEnv
@@ -107,3 +110,10 @@ apply (VFunc params body closureEnv) args
 
 apply other _ =
   throwError $ "関数ではない値を適用しようとしました: " <> pack (showVal other)
+
+-- | Expr を評価せずに Val に変換する (quote 用)
+exprToVal :: Expr -> Val
+exprToVal (EInt n)    = VInt n
+exprToVal (EBool b)   = VBool b
+exprToVal (ESym s)    = VSym s
+exprToVal (EList xs)  = VList (map exprToVal xs)

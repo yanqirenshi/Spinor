@@ -55,6 +55,37 @@
       (* n (fact (- n 1))))))
 
 (fact 5) ; -> 120
+```
 
-# 実装結果
+# 実装内容
 
+## 変更ファイル
+
+| ファイル | 操作 | 概要 |
+|---|---|---|
+| `src/Spinor/Val.hs` | 修正 | `VSym Text` コンストラクタ追加。`showVal` に VSym の表示を追加 |
+| `src/Spinor/Primitive.hs` | 修正 | `numEq` を VBool 対応に拡張。`cons`/`car`/`cdr`/`list`/`null?` プリミティブを追加 |
+| `src/Spinor/Eval.hs` | 修正 | `quote` 特殊形式追加、`exprToVal` ヘルパー追加、`apply` の環境マージで再帰対応 |
+
+## 設計メモ
+
+- `quote` でシンボルを第一級値として返すため `VSym Text` を `Val` に追加（案A: 最も Lisp として自然）
+- `exprToVal :: Expr -> Val` で AST を評価せずに値に変換する
+- 再帰対応: `apply` 内の環境構築を `Map.union bindings closureEnv` → `Map.union bindings (Map.union closureEnv savedEnv)` に変更。グローバル環境をフォールバックとして参照可能にした
+- `=` 演算子を VInt のみ → VInt/VBool 両対応に拡張
+
+## テスト結果
+
+```
+spinor> (cons 1 (list 2 3))   => (1 2 3)
+spinor> (car (list 1 2 3))    => 1
+spinor> (cdr (list 1 2 3))    => (2 3)
+spinor> (null? (list))         => #t
+spinor> (null? (list 1))       => #f
+spinor> (quote (1 2 3))        => (1 2 3)
+spinor> (quote hello)          => "hello"
+spinor> (= #t #t)              => #t
+spinor> (= #t #f)              => #f
+spinor> (define fact (fn (n) (if (= n 0) 1 (* n (fact (- n 1))))))  => <function>
+spinor> (fact 5)               => 120
+```
