@@ -86,20 +86,28 @@ eval (EList [ESym "if", cond, thenE, elseE]) = do
     VNil        -> eval elseE
     _           -> eval thenE
 
--- 特殊形式: (fn (params...) body)
+-- 特殊形式: (fn (params...) body) — 固定長 / ドット記法可変長
 --   現在の環境をキャプチャしてクロージャを生成する。
---   Lisp の lambda → Haskell の VFunc (引数名リスト, 本体, 環境スナップショット)
 eval (EList [ESym "fn", EList params, body]) = do
   paramNames <- mapM extractSym params
   closureEnv <- get
   pure $ VFunc paramNames body closureEnv
 
--- 特殊形式: (mac (params...) body)
---   fn と同構造だが VMacro を生成する。マクロは適用時に引数を評価しない。
+-- 特殊形式: (fn name body) — 全引数を1つのシンボルにキャプチャ
+eval (EList [ESym "fn", ESym param, body]) = do
+  closureEnv <- get
+  pure $ VFunc [".", param] body closureEnv
+
+-- 特殊形式: (mac (params...) body) — 固定長 / ドット記法可変長
 eval (EList [ESym "mac", EList params, body]) = do
   paramNames <- mapM extractSym params
   closureEnv <- get
   pure $ VMacro paramNames body closureEnv
+
+-- 特殊形式: (mac name body) — 全引数を1つのシンボルにキャプチャ
+eval (EList [ESym "mac", ESym param, body]) = do
+  closureEnv <- get
+  pure $ VMacro [".", param] body closureEnv
 
 -- 関数適用 / マクロ展開: (f arg1 arg2 ...)
 eval (EList (x:xs)) = do
@@ -146,18 +154,37 @@ apply other _ =
 
 -- | VFunc / VMacro 共通のクロージャ適用ロジック
 applyClosureBody :: [Text] -> Expr -> Env -> [Val] -> Eval Val
-applyClosureBody params body closureEnv args
-  | length params /= length args =
-      throwError $ "引数の数が不正です (期待: " <> pack (show (length params))
-                <> ", 実際: " <> pack (show (length args)) <> ")"
-  | otherwise = do
+applyClosureBody params body closureEnv args = do
+  case bindArgs params args of
+    Left err -> throwError err
+    Right bindings -> do
       savedEnv <- get
-      let bindings = Map.fromList (zip params args)
-          localEnv = Map.union bindings (Map.union closureEnv savedEnv)
+      let localEnv = Map.union bindings (Map.union closureEnv savedEnv)
       put localEnv
       result <- eval body
       put savedEnv
       pure result
+
+-- | 仮引数と実引数の束縛 (固定長 / ドット記法可変長対応)
+--   ["a", "b"]          — 固定長: 引数の数が一致する必要がある
+--   ["a", ".", "rest"]  — 可変長: a に1つ束縛し、残りを rest にリストで束縛
+--   [".", "args"]       — 全キャプチャ: 全引数を args にリストで束縛
+bindArgs :: [Text] -> [Val] -> Either Text Env
+bindArgs params args = case break (== ".") params of
+  (fixed, []) ->
+    -- 固定長引数
+    if length fixed /= length args
+    then Left $ "引数の数が不正です (期待: " <> pack (show (length fixed))
+             <> ", 実際: " <> pack (show (length args)) <> ")"
+    else Right $ Map.fromList (zip fixed args)
+  (fixed, [".", rest]) ->
+    -- 可変長引数: 固定部分 + 残り
+    if length args < length fixed
+    then Left $ "引数の数が不正です (最低: " <> pack (show (length fixed))
+             <> ", 実際: " <> pack (show (length args)) <> ")"
+    else let (fixedArgs, restArgs) = splitAt (length fixed) args
+         in Right $ Map.fromList ((rest, VList restArgs) : zip fixed fixedArgs)
+  _ -> Left "不正な引数リスト: '.' の後にはパラメータが1つ必要です"
 
 -- | Expr を評価せずに Val に変換する (quote / マクロ引数用)
 exprToVal :: Expr -> Val
