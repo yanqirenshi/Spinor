@@ -52,3 +52,40 @@ Twister (標準ライブラリ) を拡張し、より高度なリスト操作と
 * 簡単な動作確認ログ。
 
 # 実装内容
+
+## 変更・新規ファイル
+
+| ファイル | 操作 | 概要 |
+|---|---|---|
+| `src/Spinor/Primitive.hs` | 修正 | 剰余演算 `%` (`mod`) プリミティブを追加 |
+| `src/Spinor/Syntax.hs` | 修正 | quote 略記 `'expr` → `(quote expr)` パーサー (`pQuote`) 追加、`isSymChar` から `'` `"` を除外 |
+| `twister/list.spin` | 修正 | `length`, `append`, `foldl`, `foldr`, `reverse` を追加。`map` の `(quote ())` を `'()` に簡略化 |
+| `twister/math.spin` | 新規 | `even?`, `odd?`, `fact`, `fib` 関数定義 |
+| `twister/boot.spin` | 修正 | `math.spin` のロードを追加 |
+
+## 設計メモ
+
+- **`%` プリミティブ**: 既存の `numBinOp` ヘルパーを再利用し `mod` をラップ。1行追加で実装完了
+- **quote 略記 `'`**: `pQuote` パーサーで `'expr` を `EList [ESym "quote", expr]` に変換。Lisp の基本的なリーダーマクロとして実装
+- **`isSymChar` の修正**: `'` と `"` をシンボル文字から除外。`'` は quote 略記、`"` は文字列リテラルの開始文字として予約
+- **`list.spin` の定義順序**: `foldl` → `foldr` → `reverse` の順で定義。`reverse` が `foldl` に依存するため
+
+## テスト結果
+
+```
+$ cabal run spinor
+Spinor REPL (step5)
+Loading Twister environment...
+Twister loaded.
+spinor> (reverse '(1 2 3))         => (3 2 1)
+spinor> (even? 4)                  => #t
+spinor> (fib 10)                   => 55
+spinor> (length '(a b c d e))      => 5
+spinor> (append '(1 2) '(3 4))     => (1 2 3 4)
+spinor> (foldl + 0 '(1 2 3 4 5))   => 15
+spinor> (foldr cons '() '(1 2 3))  => (1 2 3)
+spinor> (odd? 7)                   => #t
+spinor> (even? 7)                  => #f
+spinor> (fact 10)                  => 3628800
+spinor> (% 17 5)                   => 2
+```

@@ -57,7 +57,14 @@ pSym = lexeme $ do
   s <- some (satisfy isSymChar)
   pure $ ESym (T.pack s)
   where
-    isSymChar c = c `notElem` (" \t\n\r();#" :: String)
+    isSymChar c = c `notElem` (" \t\n\r();#'\"" :: String)
+
+-- Quote 略記: 'expr → (quote expr)
+pQuote :: Parser Expr
+pQuote = do
+  _ <- char '\''
+  expr <- parseExpr
+  pure $ EList [ESym "quote", expr]
 
 -- リスト: ( expr* )
 pList :: Parser Expr
@@ -65,7 +72,7 @@ pList = EList <$> between (lexeme (char '(')) (lexeme (char ')')) (many parseExp
 
 -- メインパーサー
 parseExpr :: Parser Expr
-parseExpr = sc *> (pList <|> pBool <|> pStr <|> try pInt <|> pSym)
+parseExpr = sc *> (pList <|> pQuote <|> pBool <|> pStr <|> try pInt <|> pSym)
 
 -- パース実行ヘルパー (単一式)
 readExpr :: Text -> Either String Expr

@@ -15,6 +15,7 @@ primitiveBindings = Map.fromList
   [ ("+",  VPrim "+"  $ numBinOp (+))
   , ("-",  VPrim "-"  $ numBinOp (-))
   , ("*",  VPrim "*"  $ numBinOp (*))
+  , ("%",  VPrim "%"  $ numBinOp mod)
   , ("=",  VPrim "="  numEq)
   , ("<",  VPrim "<"  $ numCmp (<))
   , (">",  VPrim ">"  $ numCmp (>))
