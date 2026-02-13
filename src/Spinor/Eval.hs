@@ -93,17 +93,27 @@ eval (EList [ESym "fn", EList params, body]) = do
   paramNames <- mapM extractSym params
   closureEnv <- get
   pure $ VFunc paramNames body closureEnv
-  where
-    extractSym :: Expr -> Eval Text
-    extractSym (ESym s) = pure s
-    extractSym other    = throwError $ "fn の引数にはシンボルが必要です: "
-                                    <> pack (show other)
 
--- 関数適用: (f arg1 arg2 ...)
+-- 特殊形式: (mac (params...) body)
+--   fn と同構造だが VMacro を生成する。マクロは適用時に引数を評価しない。
+eval (EList [ESym "mac", EList params, body]) = do
+  paramNames <- mapM extractSym params
+  closureEnv <- get
+  pure $ VMacro paramNames body closureEnv
+
+-- 関数適用 / マクロ展開: (f arg1 arg2 ...)
 eval (EList (x:xs)) = do
   func <- eval x
-  args <- mapM eval xs
-  apply func args
+  case func of
+    -- マクロ: 引数を評価せずに適用し、結果を Expr に逆変換して再評価
+    VMacro {} -> do
+      let argVals = map exprToVal xs
+      expanded <- apply func argVals
+      eval (valToExpr expanded)
+    -- 通常の関数: 引数を評価してから適用
+    _ -> do
+      args <- mapM eval xs
+      apply func args
 
 -- | define / def の共通実装
 evalDefine :: Text -> Expr -> Eval Val
@@ -126,7 +136,17 @@ apply (VPrim _ f) args = case f args of
 --   3. クロージャ環境 + 引数束縛で新しい環境を構築
 --   4. 本体を評価
 --   5. 元の環境を復元 (レキシカルスコープ)
-apply (VFunc params body closureEnv) args
+apply (VFunc params body closureEnv) args = applyClosureBody params body closureEnv args
+
+-- マクロ適用 (VFunc と同じクロージャ適用ロジック)
+apply (VMacro params body closureEnv) args = applyClosureBody params body closureEnv args
+
+apply other _ =
+  throwError $ "関数ではない値を適用しようとしました: " <> pack (showVal other)
+
+-- | VFunc / VMacro 共通のクロージャ適用ロジック
+applyClosureBody :: [Text] -> Expr -> Env -> [Val] -> Eval Val
+applyClosureBody params body closureEnv args
   | length params /= length args =
       throwError $ "引数の数が不正です (期待: " <> pack (show (length params))
                 <> ", 実際: " <> pack (show (length args)) <> ")"
@@ -139,13 +159,26 @@ apply (VFunc params body closureEnv) args
       put savedEnv
       pure result
 
-apply other _ =
-  throwError $ "関数ではない値を適用しようとしました: " <> pack (showVal other)
-
--- | Expr を評価せずに Val に変換する (quote 用)
+-- | Expr を評価せずに Val に変換する (quote / マクロ引数用)
 exprToVal :: Expr -> Val
 exprToVal (EInt n)    = VInt n
 exprToVal (EBool b)   = VBool b
 exprToVal (ESym s)    = VSym s
 exprToVal (EStr s)    = VStr s
 exprToVal (EList xs)  = VList (map exprToVal xs)
+
+-- | Val を Expr に逆変換する (マクロ展開結果の再評価用)
+valToExpr :: Val -> Expr
+valToExpr (VInt n)    = EInt n
+valToExpr (VBool b)   = EBool b
+valToExpr (VSym s)    = ESym s
+valToExpr (VStr s)    = EStr s
+valToExpr (VList vs)  = EList (map valToExpr vs)
+valToExpr VNil        = EList []
+valToExpr other       = ESym $ "<" <> pack (showVal other) <> ">"
+
+-- | パラメータリストからシンボル名を抽出する (fn / mac 共通)
+extractSym :: Expr -> Eval Text
+extractSym (ESym s) = pure s
+extractSym other    = throwError $ "引数にはシンボルが必要です: "
+                                <> pack (show other)

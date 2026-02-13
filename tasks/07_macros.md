@@ -48,3 +48,45 @@ Lisp の真髄である「マクロ」を実装し、制御構文 (`let`, `and`,
 * マクロ展開のロジック（評価せずに適用 -> 結果を再評価）が正しく実装されているか解説してください。
 
 # 実装内容
+
+## 変更ファイル
+
+| ファイル | 操作 | 概要 |
+|---|---|---|
+| `src/Spinor/Val.hs` | 修正 | `VMacro [Text] Expr Env` コンストラクタ追加、`showVal` に `<macro>` 表示追加 |
+| `src/Spinor/Eval.hs` | 修正 | `mac` 特殊形式、マクロ展開ロジック、`valToExpr` ヘルパー追加、`apply` を `applyClosureBody` で共通化、`extractSym` をトップレベルに移動 |
+| `twister/core.spin` | 修正 | `when` / `let` マクロを追加 |
+
+## 設計メモ
+
+### マクロ展開のフロー
+
+`(when #t 42)` を例に説明:
+
+1. **`eval (EList (x:xs))`** で `x` = `ESym "when"`, `xs` = `[EBool True, EInt 42]`
+2. `eval x` → 環境から `when` を検索 → `VMacro ["cond", "body"] (list 'if cond body #f) env`
+3. **VMacro と判定** → 引数を **評価せず** `exprToVal` で Val に変換: `[VBool True, VInt 42]`
+4. `apply` でマクロ本体を評価: `(list 'if cond body #f)` → `VList [VSym "if", VBool True, VInt 42, VBool False]`
+5. `valToExpr` で Expr に逆変換: `EList [ESym "if", EBool True, EInt 42, EBool False]`
+6. 逆変換結果を **再 eval**: `(if #t 42 #f)` → `42`
+
+### `valToExpr` の配置
+
+タスクでは `Syntax.hs` に配置する指示だが、`Syntax.hs` → `Val.hs` の循環依存を避けるため `Eval.hs` に配置（`exprToVal` と対になるヘルパーとして）。
+
+### `applyClosureBody` の共通化
+
+`VFunc` と `VMacro` の適用ロジック（引数束縛→本体評価→環境復元）は同一のため、`applyClosureBody` に抽出して共有。
+
+## テスト結果
+
+```
+$ cabal run spinor
+Spinor REPL (step5)
+Loading Twister environment...
+Twister loaded.
+spinor> (when #t 42)            => 42
+spinor> (when #f 42)            => #f
+spinor> (let x 10 (* x x))     => 100
+spinor> (let name 5 (+ name 3)) => 8
+```

@@ -22,7 +22,8 @@ data Val
   = VInt  Integer                              -- 整数値
   | VBool Bool                                 -- 真偽値
   | VPrim Text ([Val] -> Either Text Val)      -- プリミティブ関数 (名前, 実装)
-  | VFunc [Text] Expr Env                      -- ユーザー定義関数 (引数名, 本体, クロージャ環境)
+  | VFunc  [Text] Expr Env                     -- ユーザー定義関数 (引数名, 本体, クロージャ環境)
+  | VMacro [Text] Expr Env                     -- マクロ (引数名, 本体, クロージャ環境)
   | VList [Val]                                -- リスト
   | VNil                                       -- 空リスト / nil
   | VSym  Text                                 -- シンボル (quote 用)
@@ -38,6 +39,7 @@ showVal (VBool True)   = "#t"
 showVal (VBool False)  = "#f"
 showVal (VPrim name _) = "<primitive:" ++ show name ++ ">"
 showVal (VFunc _ _ _)  = "<function>"
+showVal (VMacro _ _ _) = "<macro>"
 showVal (VList vs)     = "(" ++ unwords (map showVal vs) ++ ")"
 showVal VNil           = "nil"
 showVal (VSym s)       = show s
