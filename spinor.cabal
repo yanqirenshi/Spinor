@@ -23,8 +23,9 @@ executable spinor
   hs-source-dirs:   app
   main-is:          Main.hs
   build-depends:
-    base   >= 4.14 && < 5,
-    text   >= 1.2  && < 3,
+    base      >= 4.14 && < 5,
+    text      >= 1.2  && < 3,
+    directory >= 1.3  && < 2,
     spinor
   default-language: Haskell2010
   ghc-options:      -Wall

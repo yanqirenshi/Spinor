@@ -48,3 +48,41 @@
 
 # 実装内容
 
+## 変更・新規ファイル
+
+| ファイル | 操作 | 概要 |
+|---|---|---|
+| `src/Spinor/Syntax.hs` | 修正 | `EStr Text` コンストラクタ追加、`pStr` 文字列パーサー追加、`parseFile` (複数式パース) 追加、`pList` の閉じ括弧に `lexeme` 適用 |
+| `src/Spinor/Val.hs` | 修正 | `VStr Text` コンストラクタ追加、`showVal` に VStr 表示追加 |
+| `src/Spinor/Primitive.hs` | 修正 | `empty?` を `null?` のエイリアスとして追加 |
+| `src/Spinor/Eval.hs` | 修正 | `EStr` eval 追加、`def` エイリアス追加、`load` 特殊形式 (ファイル読み込み+パース+逐次eval)、`print` 特殊形式、`exprToVal` に EStr 対応 |
+| `app/Main.hs` | 修正 | 起動時 `twister/boot.spin` 自動読み込み (`loadBoot`)、REPL バナーを step5 に更新 |
+| `spinor.cabal` | 修正 | executable に `directory` 依存追加 |
+| `twister/core.spin` | 新規 | `not`, `id` 関数定義 |
+| `twister/list.spin` | 新規 | `null?` (empty? ラッパー), `map` 関数定義 |
+| `twister/boot.spin` | 新規 | ブートローダー (core.spin, list.spin を load) |
+
+## 設計メモ
+
+- **文字列リテラル**: `EStr Text` / `VStr Text` を新設。`pStr` は `manyTill L.charLiteral` でエスケープシーケンス対応
+- **`load` / `print` は特殊形式**: IO とeval環境アクセスが必要なため、`VPrim` (純粋関数) ではなく `Eval.hs` 内の特殊形式として実装。引数は評価される (define のような非評価特殊形式とは異なる)
+- **`def` エイリアス**: `define` の短縮形。`evalDefine` ヘルパーで共通化
+- **`pList` の lexeme 修正**: 閉じ括弧 `)` の後に `lexeme` を適用し、後続の空白を消費。これにより `parseFile` での複数式パース時に `many parseExpr` が正しく終了する
+- **`loadBoot` の設計**: `Main.hs` で `doesFileExist` チェック → `parseFile` → `runEval` で全式を順次評価。エラー時はメッセージ表示してプリミティブ環境のままREPLへ
+
+## テスト結果
+
+```
+$ cabal run spinor
+Spinor REPL (step5)
+Loading Twister environment...
+Twister loaded.
+spinor> (not #t)        => #f
+spinor> (not #f)        => #t
+spinor> (id 42)         => 42
+spinor> (map (fn (x) (* x x)) (list 1 2 3 4 5))  => (1 4 9 16 25)
+spinor> (print "hello world")
+hello world
+                        => "hello world"
+spinor> (map (fn (x) (+ x 1)) (list 10 20 30))    => (11 21 31)
+```

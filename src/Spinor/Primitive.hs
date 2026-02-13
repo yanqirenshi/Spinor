@@ -22,7 +22,8 @@ primitiveBindings = Map.fromList
   , ("car",   VPrim "car"   primCar)
   , ("cdr",   VPrim "cdr"   primCdr)
   , ("list",  VPrim "list"  primList)
-  , ("null?", VPrim "null?" primNull)
+  , ("null?",  VPrim "null?"  primNull)
+  , ("empty?", VPrim "empty?" primNull)
   ]
 
 -- | 整数の二項演算をラップするヘルパー
