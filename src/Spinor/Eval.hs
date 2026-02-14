@@ -5,16 +5,18 @@ module Spinor.Eval
   ( Eval
   , eval
   , runEval
+  , applyClosureBody
+  , exprToVal
+  , valToExpr
   ) where
 
 import Data.Text (Text, pack)
-import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import qualified Data.Map.Strict as Map
 import Control.Monad.State.Strict
 import Control.Monad.Except
 
-import Spinor.Syntax (Expr(..), parseFile)
+import Spinor.Syntax (Expr(..))
 import Spinor.Val    (Val(..), Env, showVal)
 
 -- | 評価モナド
@@ -57,19 +59,6 @@ eval (EList [ESym "quote", expr]) = pure (exprToVal expr)
 eval (EList [ESym "define", ESym name, body]) = evalDefine name body
 eval (EList [ESym "def",    ESym name, body]) = evalDefine name body
 
--- 特殊形式: (load "filename") — ファイルを読み込み、全式を順次評価
-eval (EList [ESym "load", arg]) = do
-  val <- eval arg
-  case val of
-    VStr path -> do
-      content <- liftIO $ TIO.readFile (T.unpack path)
-      case parseFile content of
-        Left err   -> throwError $ "load パースエラー (" <> path <> "): " <> pack err
-        Right exprs -> do
-          mapM_ eval exprs
-          pure $ VBool True
-    _ -> throwError "load: ファイルパス (文字列) が必要です"
-
 -- 特殊形式: (print expr) — 値を表示して返す
 eval (EList [ESym "print", arg]) = do
   val <- eval arg
@@ -109,19 +98,12 @@ eval (EList [ESym "mac", ESym param, body]) = do
   closureEnv <- get
   pure $ VMacro [".", param] body closureEnv
 
--- 関数適用 / マクロ展開: (f arg1 arg2 ...)
+-- 関数適用: (f arg1 arg2 ...)
+--   マクロ展開は Expander.expand で処理済みの前提。
 eval (EList (x:xs)) = do
   func <- eval x
-  case func of
-    -- マクロ: 引数を評価せずに適用し、結果を Expr に逆変換して再評価
-    VMacro {} -> do
-      let argVals = map exprToVal xs
-      expanded <- apply func argVals
-      eval (valToExpr expanded)
-    -- 通常の関数: 引数を評価してから適用
-    _ -> do
-      args <- mapM eval xs
-      apply func args
+  args <- mapM eval xs
+  apply func args
 
 -- | define / def の共通実装
 evalDefine :: Text -> Expr -> Eval Val

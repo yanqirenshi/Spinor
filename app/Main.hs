@@ -8,7 +8,8 @@ import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF)
 import System.Directory (doesFileExist)
 import Spinor.Syntax    (readExpr, parseFile)
 import Spinor.Val       (Env)
-import Spinor.Eval      (eval, runEval)
+import Spinor.Eval      (runEval)
+import Spinor.Expander  (expandAndEval)
 import Spinor.Primitive (primitiveBindings)
 
 -- | ブートファイルのパス
@@ -18,7 +19,7 @@ bootFile = "twister/boot.spin"
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
-  putStrLn "Spinor REPL (step5)"
+  putStrLn "Spinor REPL (step9)"
   env <- loadBoot primitiveBindings
   loop env
 
@@ -37,7 +38,7 @@ loadBoot env = do
           putStrLn $ "boot.spin パースエラー: " ++ err
           pure env
         Right exprs -> do
-          result <- runEval env (mapM_ eval exprs)
+          result <- runEval env (mapM_ expandAndEval exprs)
           case result of
             Left err -> do
               TIO.putStrLn $ "boot.spin 実行エラー: " <> err
@@ -61,7 +62,7 @@ loop env = do
               putStrLn err
               loop env
             Right ast -> do
-              result <- runEval env (eval ast)
+              result <- runEval env (expandAndEval ast)
               case result of
                 Left err -> do
                   TIO.putStrLn $ "エラー: " <> err
