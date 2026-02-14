@@ -11,6 +11,8 @@ library
     Spinor.Eval
     Spinor.Expander
     Spinor.Primitive
+    Spinor.Type
+    Spinor.Infer
   build-depends:
     base       >= 4.14 && < 5,
     containers >= 0.6  && < 1,
