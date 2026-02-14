@@ -7,9 +7,11 @@ import qualified Data.Text.IO as TIO
 import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF)
 import System.Directory (doesFileExist)
 import Spinor.Syntax    (readExpr, parseFile)
+import Spinor.Type      (TypeEnv, showType)
 import Spinor.Val       (Env)
 import Spinor.Eval      (runEval)
-import Spinor.Expander  (expandAndEval)
+import Spinor.Expander  (expand, expandAndEval)
+import Spinor.Infer     (Types(..), runInfer, infer, baseTypeEnv)
 import Spinor.Primitive (primitiveBindings)
 
 -- | ブートファイルのパス
@@ -19,11 +21,12 @@ bootFile = "twister/boot.spin"
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
-  putStrLn "Spinor REPL (step9)"
+  putStrLn "Spinor REPL (step11)"
   env <- loadBoot primitiveBindings
-  loop env
+  loop env baseTypeEnv
 
 -- | 起動時に boot.spin を読み込む (存在する場合)
+--   boot.spin はマクロ定義等を含むため、型推論はスキップして評価のみ行う
 loadBoot :: Env -> IO Env
 loadBoot env = do
   exists <- doesFileExist bootFile
@@ -45,8 +48,8 @@ loadBoot env = do
               pure env
             Right (_, env') -> pure env'
 
-loop :: Env -> IO ()
-loop env = do
+loop :: Env -> TypeEnv -> IO ()
+loop env tyEnv = do
   putStr "spinor> "
   hFlush stdout
   eof <- hIsEOF stdin
@@ -55,18 +58,35 @@ loop env = do
     else do
       line <- TIO.getLine
       if T.null (T.strip line)
-        then loop env
+        then loop env tyEnv
         else do
           case readExpr line of
             Left err -> do
               putStrLn err
-              loop env
+              loop env tyEnv
             Right ast -> do
-              result <- runEval env (expandAndEval ast)
-              case result of
+              -- 1. マクロ展開
+              expandResult <- runEval env (expand ast)
+              case expandResult of
                 Left err -> do
-                  TIO.putStrLn $ "エラー: " <> err
-                  loop env
-                Right (val, env') -> do
-                  putStrLn (show val)
-                  loop env'
+                  TIO.putStrLn $ "展開エラー: " <> err
+                  loop env tyEnv
+                Right (expanded, _) -> do
+                  -- 2. 型推論
+                  case runInfer (infer tyEnv expanded) of
+                    Left tyErr -> do
+                      -- 型推論失敗: 型エラーを表示し、実行しない
+                      TIO.putStrLn $ "型エラー: " <> tyErr
+                      loop env tyEnv
+                    Right (subst, ty) -> do
+                      -- 型推論成功: 型を表示してから評価
+                      let finalType = apply subst ty
+                      TIO.putStrLn $ ":: " <> showType finalType
+                      result <- runEval env (expandAndEval ast)
+                      case result of
+                        Left err -> do
+                          TIO.putStrLn $ "エラー: " <> err
+                          loop env tyEnv
+                        Right (val, env') -> do
+                          putStrLn (show val)
+                          loop env' tyEnv

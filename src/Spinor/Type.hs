@@ -3,9 +3,12 @@
 module Spinor.Type
   ( Type(..)
   , Scheme(..)
+  , TypeEnv
+  , showType
   ) where
 
 import Data.Text (Text)
+import qualified Data.Map.Strict as Map
 
 -- | 型
 data Type
@@ -22,3 +25,15 @@ data Type
 --   Scheme ["a", "b"] (TArr (TVar "a") (TArr (TVar "b") (TVar "a")))
 data Scheme = Scheme [Text] Type
   deriving (Eq, Show)
+
+-- | 型環境: 変数名から型スキームへのマッピング
+type TypeEnv = Map.Map Text Scheme
+
+-- | 型の人間向け表示
+showType :: Type -> Text
+showType (TVar n)     = n
+showType TInt         = "Int"
+showType TBool        = "Bool"
+showType TStr         = "Str"
+showType (TArr t1 t2) = "(" <> showType t1 <> " -> " <> showType t2 <> ")"
+showType (TList t)    = "[" <> showType t <> "]"
