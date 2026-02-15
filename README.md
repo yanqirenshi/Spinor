@@ -1,105 +1,114 @@
-# Spinor
+# Spinor (スピノル)
 
-静的型付け Lisp — "Lisp の構文を持ち、Haskell の意味論を持つ言語"。
+> "Principles are simple, structures are complex."
+> (原理は単純に、構造は複雑に)
 
-## 必要環境
+Spinor は Haskell で実装された静的型付け Lisp 処理系です。
+ロジャー・ペンローズの **スピノル (Spinor)** と **ツイスター (Twistor)** の関係にインスパイアされ、「最小単位の単純な核」から「複雑で表現力豊かな世界」を構築することを目指したプロジェクトです。
 
-- GHC 9.6 以上
-- cabal-install 3.0 以上
+## Philosophy (哲学) & Architecture
 
-[GHCup](https://www.haskell.org/ghcup/) でまとめてインストールできます。
+### 1. Spinor (The Kernel)
 
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+* **役割:** 「物理法則」。
+* **実装:** Haskell。
+* **特徴:** 最小限の公理系。Hindley-Milner 型推論、Let多相、マクロ展開フェーズを備えた評価器。
+* **Motto:** "Keep the kernel small."
+
+### 2. Twister (The Userland / Bootstrap)
+* **役割:** 「化学反応」。
+* **実装:** Spinor 言語自身 (Self-hosted)。
+* **特徴:** Spinor の上に構築される標準ライブラリ群。リスト操作、論理演算、制御構造 (`cond` 等) を定義します。
+* **Goal:** 単純な原理から豊かな環境が立ち上がることを実証する。
+
+---
+
+## Features (実装済み機能)
+
+* **Static Typing:** Hindley-Milner 型推論 (Algorithm W) による完全な静的型付け。
+* **Let Polymorphism:** `let` 束縛における多相性のサポート。
+* **Macro System:** `mac` によるユーザー定義マクロと、評価前の展開フェーズ (Expansion Phase)。
+* **Twister Library:** `map`, `filter`, `foldl`, `cond` などを提供する標準ライブラリ。
+* **REPL:** 型情報を表示する対話環境。
+
+## Folder Structure (構成)
+
+```text
+Spinor/
+├── app/
+│   └── Main.hs           -- エントリーポイント (REPL, Bootloader)
+├── src/Spinor/
+│   ├── Syntax.hs         -- AST, Parser
+│   ├── Eval.hs           -- 評価器 (Evaluator)
+│   ├── Infer.hs          -- 型推論 (Type Inference / Unification)
+│   ├── Expander.hs       -- マクロ展開 (Macro Expander)
+│   ├── Type.hs           -- 型定義
+│   ├── Primitive.hs      -- プリミティブ関数
+│   └── Val.hs            -- 値の定義
+├── twister/              -- 標準ライブラリ (Userland)
+│   ├── boot.spin         -- ブートローダー
+│   ├── core.spin         -- 基本論理・マクロ
+│   ├── list.spin         -- リスト操作
+│   └── math.spin         -- 数学関数
+├── tasks/                -- 開発履歴 (AIへの指示書)
+├── spinor.cabal          -- ビルド定義
+└── README.md
 ```
 
-## ビルド
+## Usage (実行方法)
 
-```bash
-cabal build
-```
+### 必要環境
 
-## 実行
+* GHC 9.6 以上
+* cabal-install 3.0 以上
+
+### 実行
 
 ```bash
 cabal run spinor
 ```
 
-REPL が起動します。
+REPL が起動し、自動的に `twister/` 配下のライブラリがロードされます。
 
-```
-Spinor REPL (step1)
-spinor> 42
-EInt 42
-spinor> #t
-EBool True
-spinor> (+ 1 2)
-EList [ESym "+",EInt 1,EInt 2]
-spinor> (define x (+ 10 20))
-EList [ESym "define",ESym "x",EList [ESym "+",EInt 10,EInt 20]]
-```
+```lisp
+Spinor REPL (step14)
+Loading Twister environment...
+Twister loaded.
 
-Ctrl-D で終了します。
+spinor> (map (fn (x) (* x x)) (cons 1 (cons 2 (cons 3 nil))))
+:: [Int]
+(1 4 9)
 
-## フォルダ構成
+spinor> (let id (fn (x) x) (if (id #t) (id 1) 0))
+:: Int
+1
 
-```
-Spinor/
-├── app/                -- 実行エントリーポイント
-│   └── Main.hs
-├── src/                -- ライブラリ
-│   └── Spinor/
-│       └── Syntax.hs   -- パーサー・AST (Spinor.Syntax)
-├── tasks/              -- 実装指示ファイル
-│   └── step1.md
-├── test/               -- テスト (将来)
-├── spinor.cabal        -- ビルド定義
-├── .gitignore
-└── README.md
+spinor> (fact 5)
+:: Int
+120
 ```
 
-## プロジェクトの進め方
+## Development History (開発の軌跡)
 
-設計や仕様の「頭脳部分」はこのチャット（Gemini）で、
-実際のコーディングや実装の「手足部分」は Claude CLI で、という使い分け。
+このプロジェクトは、Gemini (設計・文脈保持) と Claude CLI (実装) のペアプログラミングにより、以下の14ステップで構築されました。
 
-Gemini はプロジェクトの全体像と文脈を保持し続け、
-Claude に渡すべき「正確な指示書」を作成する役割を担います。
-
-## Philosophy (哲学)
-
-```
-Principles are simple, structures are complex.
-(原理は単純に、構造は複雑に)
-```
-Spinor は Haskell で実装された静的型付け Lisp 処理系です。
-このプロジェクトは、ロジャー・ペンローズの数理物理学における **スピノル (Spinor)** と **ツイスター (Twistor)** の関係にインスパイアされています。
-
-ツイスターがスピノルの対から構成されるように、この言語は「最小単位の単純な核 (Spinor)」から「複雑で表現力豊かな世界 (Twister)」を構築することを目指しています。
-
-### Architecture
-
-プロジェクトは明確な2つのレイヤーで構成されています。
-
-1.  **Spinor (Kernel)**
-    * **役割:** 「物理法則」。
-    * **実装:** Haskell。
-    * **概念:** 最小限の公理系。原子的で不変。評価器、型推論、そして最小限のプリミティブのみを提供します。
-    * **Motto:** "Keep the kernel small."
-
-2.  **Twister (Userland / Bootstrap)**
-    * **役割:** 「化学反応」。
-    * **実装:** Spinor 言語自身による記述。
-    * **概念:** Spinor の上に構築される標準ライブラリ群。単純な原理を組み合わせ、リスト操作、論理演算、制御構造などの複雑な構造を定義します。
-    * **Goal:** To demonstrate that a rich environment can emerge from simple principles.
+1. **AST & Parser:** S式の読み込み
+2. **Evaluator:** 状態を持つ計算機
+3. **Functions:** クロージャの実装
+4. **Primitives:** 再帰とリスト基本操作
+5. **Bootstrap:** `load` 機能と Twister の分離
+6. **Stdlib Expansion:** 数学・リスト関数の拡充
+7. **Macros:** ユーザー定義マクロ (`mac`)
+8. **Varargs:** 可変長引数と `cond`
+9. **Expansion Phase:** マクロ展開と評価の分離
+10. **Type System Base:** 型定義と単一化 (Unification)
+11. **Inference:** Algorithm W の実装
+12. **Generalization:** `define` の多相化
+13. **Let Polymorphism:** `let` のカーネル化と多相対応
+14. **Final Polish:** 型安全な Twister ライブラリの完成
 
 ## Influences
 
 * **Common Lisp & Arc:** 構文の柔軟性と表現力の追求。
 * **Haskell:** 意味論（セマンティクス）、型安全性、そして実装言語として。
 * **Twistor Theory:** 命名規則と構造的哲学の基盤。
-
-## Links
-
-- [スピノール (Wikipedia)](https://ja.wikipedia.org/wiki/%E3%82%B9%E3%83%94%E3%83%8E%E3%83%BC%E3%83%AB)
-- [Arcからの挑戦](https://practical-scheme.net/wiliki/wiliki.cgi?Arc%E3%81%8B%E3%82%89%E3%81%AE%E6%8C%91%E6%88%A6)
