@@ -22,6 +22,7 @@ data Expr
   | ESym  Text
   | EStr  Text
   | EList [Expr]
+  | ELet  Text Expr Expr  -- ^ (let name val body)
   deriving (Show, Eq)
 
 type Parser = Parsec Void Text
@@ -67,8 +68,13 @@ pQuote = do
   pure $ EList [ESym "quote", expr]
 
 -- リスト: ( expr* )
+--   (let name val body) は ELet に変換する
 pList :: Parser Expr
-pList = EList <$> between (lexeme (char '(')) (lexeme (char ')')) (many parseExpr)
+pList = do
+  xs <- between (lexeme (char '(')) (lexeme (char ')')) (many parseExpr)
+  case xs of
+    [ESym "let", ESym name, val, body] -> pure $ ELet name val body
+    _ -> pure $ EList xs
 
 -- メインパーサー
 parseExpr :: Parser Expr

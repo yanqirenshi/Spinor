@@ -59,6 +59,15 @@ eval (EList [ESym "quote", expr]) = pure (exprToVal expr)
 eval (EList [ESym "define", ESym name, body]) = evalDefine name body
 eval (EList [ESym "def",    ESym name, body]) = evalDefine name body
 
+-- 特殊形式: (let name val body) — ローカル変数束縛
+eval (ELet name valExpr body) = do
+  val <- eval valExpr
+  savedEnv <- get
+  modify (Map.insert name val)
+  result <- eval body
+  put savedEnv
+  pure result
+
 -- 特殊形式: (print expr) — 値を表示して返す
 eval (EList [ESym "print", arg]) = do
   val <- eval arg
@@ -175,6 +184,7 @@ exprToVal (EBool b)   = VBool b
 exprToVal (ESym s)    = VSym s
 exprToVal (EStr s)    = VStr s
 exprToVal (EList xs)  = VList (map exprToVal xs)
+exprToVal (ELet name val body) = VList [VSym "let", VSym name, exprToVal val, exprToVal body]
 
 -- | Val を Expr に逆変換する (マクロ展開結果の再評価用)
 valToExpr :: Val -> Expr

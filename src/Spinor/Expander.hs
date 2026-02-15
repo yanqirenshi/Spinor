@@ -48,6 +48,12 @@ expand (EList [s@(ESym "mac"), params, body]) = do
   body' <- expand body
   pure $ EList [s, params, body']
 
+-- let: val と body を再帰展開
+expand (ELet name val body) = do
+  val'  <- expand val
+  body' <- expand body
+  pure $ ELet name val' body'
+
 -- load: ファイルを読み込み、各式を展開+評価 (副作用あり)
 --   Eval.hs から移動。expand フェーズで処理する必要がある
 --   (ロードされたファイル内のマクロ定義を後続の展開に使うため)

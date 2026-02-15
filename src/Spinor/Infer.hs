@@ -195,6 +195,15 @@ infer env (EList [ESym "if", cond, thn, els]) = do
   let sFinal = composeSubst s4 s123
   pure (sFinal, apply sFinal tThn)
 
+-- let: Let多相 — val を推論 → generalize → body を推論
+infer env (ELet name val body) = do
+  (s1, t1) <- infer env val
+  let env'   = apply s1 env
+      scheme = generalize env' t1
+      env''  = Map.insert name scheme env'
+  (s2, t2) <- infer env'' body
+  pure (composeSubst s2 s1, t2)
+
 -- define / def: 本体を推論し、環境に追加
 infer env (EList [ESym "define", ESym name, body]) = inferDefine env name body
 infer env (EList [ESym "def",    ESym name, body]) = inferDefine env name body
@@ -261,6 +270,7 @@ inferQuote (EStr _)    = TStr
 inferQuote (EList [])  = TList (TVar "_q")
 inferQuote (EList (x:_)) = TList (inferQuote x)
 inferQuote (ESym _)    = TStr  -- quote されたシンボルは文字列的に扱う
+inferQuote (ELet _ _ body) = inferQuote body
 
 -- | define / def の型推論共通実装
 inferDefine :: TypeEnv -> Text -> Expr -> Infer (Subst, Type)

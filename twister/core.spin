@@ -6,8 +6,7 @@
 ; マクロ: (when cond body) → (if cond body #f)
 (def when (mac (cond body) (list 'if cond body #f)))
 
-; マクロ: (let var val body) → ((fn (var) body) val)
-(def let (mac (var val body) (list (list 'fn (list var) body) val)))
+; let はカーネルの特殊形式として実装済み (Let多相対応)
 
 ; マクロ: (cond (pred1 expr1) (pred2 expr2) ...)
 ;   → (if pred1 expr1 (if pred2 expr2 ...))
