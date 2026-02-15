@@ -11,6 +11,7 @@ module Spinor.Infer
   , unify
   , Infer
   , runInfer
+  , runInferFrom
   , infer
   , inferTop
   , generalize
@@ -120,9 +121,14 @@ varBind a t
 newtype Infer a = Infer (StateT Int (Either Text) a)
   deriving (Functor, Applicative, Monad, MonadState Int, MonadError Text)
 
--- | Infer モナドを実行する
+-- | Infer モナドを実行する (カウンタ 0 から開始)
 runInfer :: Infer a -> Either Text a
 runInfer (Infer m) = fmap fst (runStateT m 0)
+
+-- | Infer モナドを指定カウンタから実行する (boot 中の連続推論用)
+--   戻り値: (結果, 次のカウンタ)
+runInferFrom :: Int -> Infer a -> Either Text (a, Int)
+runInferFrom n (Infer m) = runStateT m n
 
 -- | 新しい型変数を生成する (t0, t1, t2, ...)
 fresh :: Infer Type

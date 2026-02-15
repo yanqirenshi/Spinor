@@ -6,47 +6,91 @@ import qualified Data.Text    as T
 import qualified Data.Text.IO as TIO
 import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF)
 import System.Directory (doesFileExist)
-import Spinor.Syntax    (readExpr, parseFile)
+import Spinor.Syntax    (Expr, readExpr, parseFile)
 import Spinor.Type      (TypeEnv, showType)
 import Spinor.Val       (Env)
-import Spinor.Eval      (runEval)
-import Spinor.Expander  (expand, expandAndEval)
+import Spinor.Eval      (Eval, eval, runEval)
+import Spinor.Expander  (expand)
 import Spinor.Infer     (Types(..), runInfer, inferTop, baseTypeEnv)
 import Spinor.Primitive (primitiveBindings)
 
--- | ブートファイルのパス
-bootFile :: FilePath
-bootFile = "twister/boot.spin"
+-- | Twister ファイル一覧 (ロード順)
+twisterFiles :: [FilePath]
+twisterFiles =
+  [ "twister/core.spin"
+  , "twister/list.spin"
+  , "twister/math.spin"
+  ]
 
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
-  putStrLn "Spinor REPL (step12)"
-  env <- loadBoot primitiveBindings
-  loop env baseTypeEnv
+  putStrLn "Spinor REPL (step14)"
+  (env, tyEnv) <- loadBoot primitiveBindings baseTypeEnv
+  loop env tyEnv
 
--- | 起動時に boot.spin を読み込む (存在する場合)
---   boot.spin はマクロ定義等を含むため、型推論はスキップして評価のみ行う
-loadBoot :: Env -> IO Env
-loadBoot env = do
-  exists <- doesFileExist bootFile
-  if not exists
+-- | 起動時に Twister ファイルをロードする
+--   各式を展開 → 型推論 (ベストエフォート) → 評価し、
+--   実行環境と型環境の両方を更新する
+loadBoot :: Env -> TypeEnv -> IO (Env, TypeEnv)
+loadBoot env tyEnv = do
+  allExist <- mapM doesFileExist twisterFiles
+  if not (and allExist)
     then do
-      putStrLn "(twister/boot.spin が見つかりません — スキップ)"
-      pure env
+      putStrLn "(Twister ファイルが見つかりません — スキップ)"
+      pure (env, tyEnv)
     else do
-      content <- TIO.readFile bootFile
-      case parseFile content of
-        Left err -> do
-          putStrLn $ "boot.spin パースエラー: " ++ err
-          pure env
-        Right exprs -> do
-          result <- runEval env (mapM_ expandAndEval exprs)
-          case result of
-            Left err -> do
-              TIO.putStrLn $ "boot.spin 実行エラー: " <> err
-              pure env
-            Right (_, env') -> pure env'
+      putStrLn "Loading Twister environment..."
+      (env', tyEnv') <- foldlM' loadSpinFile (env, tyEnv) twisterFiles
+      putStrLn "Twister loaded."
+      pure (env', tyEnv')
+
+-- | 単一の .spin ファイルをロードする
+loadSpinFile :: (Env, TypeEnv) -> FilePath -> IO (Env, TypeEnv)
+loadSpinFile (env, tyEnv) path = do
+  content <- TIO.readFile path
+  case parseFile content of
+    Left err -> do
+      putStrLn $ path ++ " パースエラー: " ++ err
+      pure (env, tyEnv)
+    Right exprs -> foldlM' processBootExpr (env, tyEnv) exprs
+
+-- | boot 中の単一式を処理する
+--   1. マクロ展開
+--   2. 型推論 (失敗しても続行)
+--   3. 評価
+processBootExpr :: (Env, TypeEnv) -> Expr -> IO (Env, TypeEnv)
+processBootExpr (env, tyEnv) expr = do
+  -- 1. マクロ展開
+  expandResult <- runEval env (expand expr)
+  case expandResult of
+    Left _ -> do
+      -- 展開失敗: 評価のみ試行
+      evalResult <- runEval env (evalExpr expr)
+      case evalResult of
+        Left _           -> pure (env, tyEnv)
+        Right (_, env')  -> pure (env', tyEnv)
+    Right (expanded, envAfterExpand) -> do
+      -- 2. 型推論 (ベストエフォート)
+      let tyEnv' = case runInfer (inferTop tyEnv expanded) of
+                     Right (te, _, _) -> te
+                     Left _           -> tyEnv
+      -- 3. 評価
+      evalResult <- runEval envAfterExpand (eval expanded)
+      case evalResult of
+        Left _           -> pure (envAfterExpand, tyEnv')
+        Right (_, env')  -> pure (env', tyEnv')
+
+-- | 式を展開してから評価する (Eval モナド内)
+evalExpr :: Expr -> Eval ()
+evalExpr expr = expand expr >>= eval >> pure ()
+
+-- | 厳密な左畳み込み (IO 版)
+foldlM' :: Monad m => (a -> b -> m a) -> a -> [b] -> m a
+foldlM' _ acc []     = pure acc
+foldlM' f acc (x:xs) = do
+  acc' <- f acc x
+  foldlM' f acc' xs
 
 loop :: Env -> TypeEnv -> IO ()
 loop env tyEnv = do
@@ -82,7 +126,7 @@ loop env tyEnv = do
                       -- 型推論成功: 型を表示してから評価
                       let finalType = apply subst ty
                       TIO.putStrLn $ ":: " <> showType finalType
-                      result <- runEval env (expandAndEval ast)
+                      result <- runEval env (expand ast >>= eval)
                       case result of
                         Left err -> do
                           TIO.putStrLn $ "エラー: " <> err
