@@ -12,6 +12,7 @@ module Spinor.Infer
   , Infer
   , runInfer
   , infer
+  , inferTop
   , generalize
   , baseTypeEnv
   ) where
@@ -219,6 +220,38 @@ infer env (EList [ESym "fn", ESym param, body]) = do
 -- 関数適用: (func arg1 arg2 ...)
 --   多引数はカリー化として扱う
 infer env (EList (func : args)) = inferApp env func args
+
+-- ============================================================
+-- トップレベル推論 (inferTop)
+-- ============================================================
+
+-- | トップレベル式を推論し、define の場合は型環境を更新する
+--   define: 右辺を推論 → generalize して型環境に登録 → 更新された型環境を返す
+--   それ以外: 通常の infer → 型環境は変更なし
+inferTop :: TypeEnv -> Expr -> Infer (TypeEnv, Subst, Type)
+inferTop env (EList [ESym "define", ESym name, body]) = inferTopDefine env name body
+inferTop env (EList [ESym "def",    ESym name, body]) = inferTopDefine env name body
+inferTop env expr = do
+  (s, t) <- infer env expr
+  pure (apply s env, s, t)
+
+-- | define / def のトップレベル推論
+--   1. 再帰対応: フレッシュ型変数を環境に仮登録
+--   2. 右辺を推論
+--   3. 仮型変数と推論結果を単一化
+--   4. generalize して多相型に昇格
+--   5. 更新された型環境を返す
+inferTopDefine :: TypeEnv -> Text -> Expr -> Infer (TypeEnv, Subst, Type)
+inferTopDefine env name body = do
+  tv <- fresh
+  let env' = Map.insert name (Scheme [] tv) env
+  (s1, tBody) <- infer env' body
+  s2 <- liftEither $ unify (apply s1 tv) tBody
+  let sFinal = composeSubst s2 s1
+      finalType = apply sFinal tBody
+      scheme = generalize (apply sFinal env) finalType
+      newEnv = Map.insert name scheme (apply sFinal env)
+  pure (newEnv, sFinal, finalType)
 
 -- | quote 内の型を静的に推論する (簡易版)
 inferQuote :: Expr -> Type

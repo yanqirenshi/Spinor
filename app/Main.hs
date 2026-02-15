@@ -11,7 +11,7 @@ import Spinor.Type      (TypeEnv, showType)
 import Spinor.Val       (Env)
 import Spinor.Eval      (runEval)
 import Spinor.Expander  (expand, expandAndEval)
-import Spinor.Infer     (Types(..), runInfer, infer, baseTypeEnv)
+import Spinor.Infer     (Types(..), runInfer, inferTop, baseTypeEnv)
 import Spinor.Primitive (primitiveBindings)
 
 -- | ブートファイルのパス
@@ -21,7 +21,7 @@ bootFile = "twister/boot.spin"
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
-  putStrLn "Spinor REPL (step11)"
+  putStrLn "Spinor REPL (step12)"
   env <- loadBoot primitiveBindings
   loop env baseTypeEnv
 
@@ -72,13 +72,13 @@ loop env tyEnv = do
                   TIO.putStrLn $ "展開エラー: " <> err
                   loop env tyEnv
                 Right (expanded, _) -> do
-                  -- 2. 型推論
-                  case runInfer (infer tyEnv expanded) of
+                  -- 2. 型推論 (inferTop で型環境も更新)
+                  case runInfer (inferTop tyEnv expanded) of
                     Left tyErr -> do
                       -- 型推論失敗: 型エラーを表示し、実行しない
                       TIO.putStrLn $ "型エラー: " <> tyErr
                       loop env tyEnv
-                    Right (subst, ty) -> do
+                    Right (tyEnv', subst, ty) -> do
                       -- 型推論成功: 型を表示してから評価
                       let finalType = apply subst ty
                       TIO.putStrLn $ ":: " <> showType finalType
@@ -86,7 +86,7 @@ loop env tyEnv = do
                       case result of
                         Left err -> do
                           TIO.putStrLn $ "エラー: " <> err
-                          loop env tyEnv
+                          loop env tyEnv'
                         Right (val, env') -> do
                           putStrLn (show val)
-                          loop env' tyEnv
+                          loop env' tyEnv'
