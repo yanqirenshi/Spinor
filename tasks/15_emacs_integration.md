@@ -48,3 +48,69 @@ SLY 相当とまではいかないが、`run-spinor` による REPL 起動と、
 
 * `editors/emacs/spinor-mode.el` の完全なコード。
 * ユーザー (Emacs設定ファイル) への設定手順の解説。
+
+# 実装内容
+
+## 新規ファイル
+
+| ファイル | 概要 |
+|---|---|
+| `editors/emacs/spinor-mode.el` | Spinor 用 Emacs メジャーモード + REPL 連携 |
+
+## 機能一覧
+
+### spinor-mode (メジャーモード)
+
+- `lisp-mode` を継承。基本的なインデント・括弧処理は自動対応。
+- `.spin` 拡張子に自動関連付け (`auto-mode-alist`)。
+- コメント文字: `;`
+- **シンタックスハイライト:**
+  - 定義系 (`define`, `def`, `mac`, `fn`, `let`) → `font-lock-keyword-face`
+  - 制御系 (`if`, `cond`, `when`, `load`, `quote`) → `font-lock-builtin-face`
+  - 定数 (`#t`, `#f`, `nil`) → `font-lock-constant-face`
+  - プリミティブ関数 (`cons`, `car`, `map`, `filter` 等) → `font-lock-function-name-face`
+  - 型アノテーション (`:: ...`) → `font-lock-type-face`
+
+### inferior-spinor-mode (REPL モード)
+
+- `comint-mode` を継承。
+- プロンプト正規表現: `^spinor> `
+- プロンプトは読み取り専用 (`comint-prompt-read-only`)。
+
+### コマンド
+
+| コマンド | キーバインド | 説明 |
+|---|---|---|
+| `run-spinor` | `M-x run-spinor` | REPL 起動 (`cabal -v0 run spinor`)。既存プロセスがあれば切り替え |
+| `spinor-eval-last-sexp` | `C-x C-e` | カーソル直前の S式を REPL に送信 |
+| `spinor-load-file` | `C-c C-k` | 現在のバッファファイルを `(load ...)` で REPL にロード |
+| `spinor-switch-to-repl` | `C-c C-z` | REPL バッファに切り替え (未起動なら起動) |
+
+### カスタマイズ変数
+
+| 変数 | デフォルト | 説明 |
+|---|---|---|
+| `spinor-program` | `"cabal"` | REPL 起動プログラム |
+| `spinor-program-args` | `'("-v0" "run" "spinor")` | プログラム引数 (`-v0` でビルドログ抑制) |
+| `spinor-repl-buffer-name` | `"*spinor*"` | REPL バッファ名 |
+
+## 設定手順
+
+Emacs の設定ファイル (`~/.emacs.d/init.el` 等) に以下を追加:
+
+```elisp
+;; Spinor モードのロードパスを追加
+(add-to-list 'load-path "/path/to/Spinor/editors/emacs")
+(require 'spinor-mode)
+
+;; (オプション) プロジェクトルートから実行する場合
+;; (setq spinor-program-args '("-v0" "run" "spinor"))
+```
+
+### 使い方
+
+1. `.spin` ファイルを開くと自動的に `spinor-mode` が有効になる
+2. `M-x run-spinor` で REPL を起動
+3. `.spin` バッファで `C-x C-e` でカーソル前の式を評価
+4. `C-c C-k` でファイル全体をロード
+5. `C-c C-z` で REPL バッファに切り替え
