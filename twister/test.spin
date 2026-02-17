@@ -74,3 +74,58 @@
 ; append: 連結後の長さ
 (assert-equal 5
   (length (append (cons 1 (cons 2 nil)) (cons 3 (cons 4 (cons 5 nil))))))
+
+; ============================================================
+; Step 21: Common Lisp互換機能 (基本) のテスト
+; ============================================================
+
+; --- let の複数・並列束縛 ---
+
+; 新形式: 単一束縛
+(assert-equal 10 (let ((x 10)) x))
+
+; 新形式: 複数束縛
+(assert-equal 3 (let ((x 1) (y 2)) (+ x y)))
+
+; 並列束縛: 外側のxを参照
+(assert-equal 15
+  (let ((x 10))
+    (let ((x 2) (y (+ x 5)))
+      y)))
+
+; --- setq (破壊的代入) ---
+
+; 基本的な setq
+(assert-equal 10
+  (let ((x 0))
+    (begin
+      (setq x 10)
+      x)))
+
+; カウンタのインクリメント
+(assert-equal 3
+  (let ((counter 0))
+    (begin
+      (setq counter (+ counter 1))
+      (setq counter (+ counter 1))
+      (setq counter (+ counter 1))
+      counter)))
+
+; --- eq と equal ---
+
+; eq: 数値は値で比較
+(assert-equal #t (eq 1 1))
+(assert-equal #f (eq 1 2))
+
+; eq: シンボルは値で比較
+(assert-equal #t (eq 'a 'a))
+(assert-equal #f (eq 'a 'b))
+
+; eq: リストは参照比較 (異なるリストは常にfalse)
+(assert-equal #f (eq (list 1 2) (list 1 2)))
+
+; equal: 構造比較
+(assert-equal #t (equal 1 1))
+(assert-equal #t (equal (list 1 2 3) (list 1 2 3)))
+(assert-equal #f (equal (list 1 2) (list 1 2 3)))
+(assert-equal #t (equal "hello" "hello"))

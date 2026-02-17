@@ -63,11 +63,13 @@ expand (EList [s@(ESym "mac"), params, body]) = do
   body' <- expand body
   pure $ EList [s, params, body']
 
--- let: val と body を再帰展開
-expand (ELet name val body) = do
-  val'  <- expand val
+-- let: 各束縛の val と body を再帰展開
+expand (ELet bindings body) = do
+  bindings' <- mapM (\(name, val) -> do
+    val' <- expand val
+    pure (name, val')) bindings
   body' <- expand body
-  pure $ ELet name val' body'
+  pure $ ELet bindings' body'
 
 -- load: ファイルを読み込み、各式を展開+評価 (副作用あり)
 --   Eval.hs から移動。expand フェーズで処理する必要がある

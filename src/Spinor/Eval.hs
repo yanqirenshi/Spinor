@@ -63,11 +63,16 @@ eval (EList [ESym "quote", expr]) = pure (exprToVal expr)
 eval (EList [ESym "define", ESym name, body]) = evalDefine name body
 eval (EList [ESym "def",    ESym name, body]) = evalDefine name body
 
--- 特殊形式: (let name val body) — ローカル変数束縛
-eval (ELet name valExpr body) = do
-  val <- eval valExpr
+-- 特殊形式: (let ((var1 val1) ...) body) — 並列ローカル変数束縛
+--   すべての init-expr を現在の環境で評価した後、一括して束縛を追加する
+eval (ELet bindings body) = do
   savedEnv <- get
-  modify (Map.insert name val)
+  -- 1. すべての値を現在の環境で評価 (並列束縛)
+  vals <- mapM (eval . snd) bindings
+  let names = map fst bindings
+      newBindings = Map.fromList (zip names vals)
+  -- 2. 新しい束縛を追加した環境で body を評価
+  modify (Map.union newBindings)
   result <- eval body
   put savedEnv
   pure result
@@ -120,6 +125,16 @@ eval (EList [ESym "if", cond, thenE, elseE]) = do
 -- 特殊形式: (begin expr1 expr2 ...) / (progn expr1 expr2 ...) — 順次評価
 eval (EList (ESym "begin" : exprs)) = evalSequence exprs
 eval (EList (ESym "progn" : exprs)) = evalSequence exprs
+
+-- 特殊形式: (setq var new-value-expr) — 破壊的代入
+eval (EList [ESym "setq", ESym name, valExpr]) = do
+  env <- get
+  case Map.lookup name env of
+    Nothing -> throwError $ "setq: 未束縛の変数です: " <> name
+    Just _  -> do
+      val <- eval valExpr
+      modify (Map.insert name val)
+      pure val
 
 -- 特殊形式: (spawn expr) — 新しいスレッドで式を評価
 eval (EList [ESym "spawn", expr]) = do
@@ -268,7 +283,9 @@ exprToVal (EBool b)   = VBool b
 exprToVal (ESym s)    = VSym s
 exprToVal (EStr s)    = VStr s
 exprToVal (EList xs)  = VList (map exprToVal xs)
-exprToVal (ELet name val body) = VList [VSym "let", VSym name, exprToVal val, exprToVal body]
+exprToVal (ELet bindings body) =
+  let bindingsVal = VList [VList [VSym name, exprToVal expr] | (name, expr) <- bindings]
+  in VList [VSym "let", bindingsVal, exprToVal body]
 exprToVal (EData name _) = VSym ("<data:" <> name <> ">")
 exprToVal (EMatch _ _) = VSym "<match>"
 exprToVal (EModule name _) = VSym ("<module:" <> name <> ">")

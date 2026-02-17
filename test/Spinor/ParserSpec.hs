@@ -54,9 +54,15 @@ spec = describe "Spinor.Syntax (Parser)" $ do
         Right (EList [ESym "quote", ESym "foo"])
 
   describe "let 式" $ do
-    it "(let x 1 x) → ELet" $
+    it "(let x 1 x) → ELet (旧形式)" $
       readExpr "(let x 1 x)" `shouldBe`
-        Right (ELet "x" (EInt 1) (ESym "x"))
+        Right (ELet [("x", EInt 1)] (ESym "x"))
+    it "(let ((x 1)) x) → ELet (新形式)" $
+      readExpr "(let ((x 1)) x)" `shouldBe`
+        Right (ELet [("x", EInt 1)] (ESym "x"))
+    it "(let ((x 1) (y 2)) (+ x y)) → ELet 複数束縛" $
+      readExpr "(let ((x 1) (y 2)) (+ x y))" `shouldBe`
+        Right (ELet [("x", EInt 1), ("y", EInt 2)] (EList [ESym "+", ESym "x", ESym "y"]))
 
   describe "define 式" $ do
     it "(define x 42)" $

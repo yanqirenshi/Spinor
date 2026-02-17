@@ -78,10 +78,46 @@ spec = describe "Spinor.Eval (Evaluator)" $ do
       "((fn (x y) (+ x y)) 3 4)" `shouldEvalTo` VInt 7
 
   describe "let 式" $ do
-    it "(let x 5 (+ x 3)) → 8" $
+    it "(let x 5 (+ x 3)) → 8 (旧形式)" $
       "(let x 5 (+ x 3))" `shouldEvalTo` VInt 8
-    it "ネストした let" $
+    it "ネストした let (旧形式)" $
       "(let x 1 (let y 2 (+ x y)))" `shouldEvalTo` VInt 3
+    it "新形式: (let ((x 10)) x) → 10" $
+      "(let ((x 10)) x)" `shouldEvalTo` VInt 10
+    it "新形式: 複数束縛 (let ((x 1) (y 2)) (+ x y)) → 3" $
+      "(let ((x 1) (y 2)) (+ x y))" `shouldEvalTo` VInt 3
+    it "並列束縛: 外側の x=10 を参照 (let ((x 2) (y (+ x 5))) (list x y)) → (2 15)" $ do
+      result <- evalMulti "(let ((x 10)) (let ((x 2) (y (+ x 5))) (list x y)))"
+      result `shouldBe` Right (VList [VInt 2, VInt 15])
+
+  describe "setq (破壊的代入)" $ do
+    it "(let ((x 0)) (begin (setq x 10) x)) -> 10" $
+      "(let ((x 0)) (begin (setq x 10) x))" `shouldEvalTo` VInt 10
+    it "(let ((counter 0)) (begin (setq counter (+ counter 1)) counter)) -> 1" $
+      "(let ((counter 0)) (begin (setq counter (+ counter 1)) counter))" `shouldEvalTo` VInt 1
+    it "未束縛変数への setq はエラー" $ do
+      result <- evalStr "(setq undefined-var 10)"
+      case result of
+        Left _ -> pure ()  -- エラーが発生すればOK
+        Right _ -> expectationFailure "未束縛変数への setq はエラーになるべき"
+
+  describe "eq と equal" $ do
+    it "(eq 1 1) → #t" $
+      "(eq 1 1)" `shouldEvalTo` VBool True
+    it "(eq 1 2) → #f" $
+      "(eq 1 2)" `shouldEvalTo` VBool False
+    it "(eq 'a 'a) → #t" $
+      "(eq 'a 'a)" `shouldEvalTo` VBool True
+    it "(equal 1 1) → #t" $
+      "(equal 1 1)" `shouldEvalTo` VBool True
+    it "(equal (list 1 2) (list 1 2)) → #t (構造的等価)" $
+      "(equal (list 1 2) (list 1 2))" `shouldEvalTo` VBool True
+    it "(eq (list 1 2) (list 1 2)) → #f (参照等価)" $
+      "(eq (list 1 2) (list 1 2))" `shouldEvalTo` VBool False
+    it "(equal \"hello\" \"hello\") → #t" $
+      "(equal \"hello\" \"hello\")" `shouldEvalTo` VBool True
+    it "(eq \"hello\" \"hello\") → #t (文字列は eq でも #t)" $
+      "(eq \"hello\" \"hello\")" `shouldEvalTo` VBool True
 
   describe "リスト操作" $ do
     it "cons でリスト構築" $

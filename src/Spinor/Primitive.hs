@@ -25,6 +25,8 @@ primitiveBindings = Map.fromList
   , ("list",  VPrim "list"  primList)
   , ("null?",  VPrim "null?"  primNull)
   , ("empty?", VPrim "empty?" primNull)
+  , ("eq",     VPrim "eq"     primEq)
+  , ("equal",  VPrim "equal"  primEqual)
   ]
 
 -- | 整数の二項演算をラップするヘルパー
@@ -86,6 +88,26 @@ primNull [VNil]     = Right $ VBool True
 primNull [_]        = Right $ VBool False
 primNull args       = Left $ "null?: 引数の数が不正です (期待: 1, 実際: "
                            <> tshow (length args) <> ")"
+
+-- | eq: 実装レベルでの同一性比較
+--   アトム (VInt, VBool, VStr, VSym, VNil) は値で比較
+--   その他 (VList, VData, VFunc, VMacro, VMVar 等) は常に False
+primEq :: [Val] -> Either Text Val
+primEq [a, b] = Right $ VBool (eqVal a b)
+  where
+    eqVal (VInt  x) (VInt  y) = x == y
+    eqVal (VBool x) (VBool y) = x == y
+    eqVal (VStr  x) (VStr  y) = x == y
+    eqVal (VSym  x) (VSym  y) = x == y
+    eqVal VNil      VNil      = True
+    eqVal _         _         = False  -- リスト、データ、関数等は常に不等
+primEq args = Left $ "eq: 引数の数が不正です (期待: 2, 実際: " <> tshow (length args) <> ")"
+
+-- | equal: 構造的等価性比較
+--   Val の Eq インスタンス (==) を使用して再帰的に比較
+primEqual :: [Val] -> Either Text Val
+primEqual [a, b] = Right $ VBool (a == b)
+primEqual args = Left $ "equal: 引数の数が不正です (期待: 2, 実際: " <> tshow (length args) <> ")"
 
 tshow :: Show a => a -> Text
 tshow = pack . show

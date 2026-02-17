@@ -55,7 +55,7 @@ data Expr
   | ESym  Text
   | EStr  Text
   | EList [Expr]
-  | ELet  Text Expr Expr            -- ^ (let name val body)
+  | ELet  [(Text, Expr)] Expr       -- ^ (let ((var1 val1) ...) body)
   | EData Text [ConstructorDef]     -- ^ (data Name (Con1 a b) (Con2))
   | EMatch Expr [(Pattern, Expr)]   -- ^ (match target (pat1 body1) (pat2 body2) ...)
   | EModule Text [Text]             -- ^ (module name (export sym1 sym2 ...))
@@ -138,10 +138,24 @@ pList :: Parser Expr
 pList = do
   xs <- between (lexeme (char '(')) (lexeme (char ')')) (many parseExpr)
   case xs of
-    [ESym "let", ESym name, val, body] -> pure $ ELet name val body
+    -- 新形式: (let ((var1 val1) (var2 val2) ...) body)
+    [ESym "let", EList bindingsExprs, body] ->
+      case parseLetBindings bindingsExprs of
+        Just bindings -> pure $ ELet bindings body
+        Nothing       -> fail "let: 不正な束縛形式です。((var1 val1) (var2 val2) ...) の形式が必要です"
+    -- 旧形式: (let var val body) をサポート (後方互換)
+    [ESym "let", ESym name, val, body] -> pure $ ELet [(name, val)] body
     (ESym "module" : rest) -> parseModuleForm rest
     (ESym "import" : rest) -> parseImportForm rest
     _ -> pure $ EList xs
+
+-- | let 式の束縛リストをパースする
+--   ((var1 val1) (var2 val2) ...) → [(var1, val1), (var2, val2), ...]
+parseLetBindings :: [Expr] -> Maybe [(Text, Expr)]
+parseLetBindings = mapM parseBinding
+  where
+    parseBinding (EList [ESym var, valExpr]) = Just (var, valExpr)
+    parseBinding _                            = Nothing
 
 -- module 式パーサー: (module name (export sym1 sym2 ...))
 parseModuleForm :: [Expr] -> Parser Expr

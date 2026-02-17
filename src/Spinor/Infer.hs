@@ -214,14 +214,25 @@ infer env (EList [ESym "if", cond, thn, els]) = do
   let sFinal = composeSubst s4 s123
   pure (sFinal, apply sFinal tThn)
 
--- let: Let多相 — val を推論 → generalize → body を推論
-infer env (ELet name val body) = do
-  (s1, t1) <- infer env val
-  let env'   = apply s1 env
-      scheme = generalize env' t1
-      env''  = Map.insert name scheme env'
+-- let: Let多相 (並列束縛) — 各 val を現在の環境で推論 → generalize → body を推論
+infer env (ELet bindings body) = do
+  -- 1. すべての束縛を現在の環境で推論
+  (sFinal, bindingResults) <- foldM inferBinding (nullSubst, []) bindings
+  let env' = apply sFinal env
+  -- 2. 推論結果を generalize して環境に追加
+  let extendEnv e (name, t) =
+        let scheme = generalize (apply sFinal e) (apply sFinal t)
+        in Map.insert name scheme e
+      env'' = foldl extendEnv env' bindingResults
+  -- 3. body を推論
   (s2, t2) <- infer env'' body
-  pure (composeSubst s2 s1, t2)
+  pure (composeSubst s2 sFinal, t2)
+  where
+    inferBinding (sAcc, results) (name, val) = do
+      let envApplied = apply sAcc env
+      (s1, t1) <- infer envApplied val
+      let sNew = composeSubst s1 sAcc
+      pure (sNew, results ++ [(name, t1)])
 
 -- define / def: 本体を推論し、環境に追加
 infer env (EList [ESym "define", ESym name, body]) = inferDefine env name body
@@ -339,7 +350,7 @@ inferQuote (EStr _)    = TStr
 inferQuote (EList [])  = TList (TVar "_q")
 inferQuote (EList (x:_)) = TList (inferQuote x)
 inferQuote (ESym _)    = TStr  -- quote されたシンボルは文字列的に扱う
-inferQuote (ELet _ _ body) = inferQuote body
+inferQuote (ELet _ body) = inferQuote body
 inferQuote (EData _ _)     = TCon "Unit"
 inferQuote (EMatch _ _)    = TVar "_match"
 inferQuote (EModule _ _)   = TCon "Unit"
