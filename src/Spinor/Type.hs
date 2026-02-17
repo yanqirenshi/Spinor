@@ -18,6 +18,8 @@ data Type
   | TStr             -- ^ 文字列型
   | TArr  Type Type  -- ^ 関数型: t1 -> t2
   | TList Type       -- ^ リスト型: [t]
+  | TCon  Text       -- ^ 型コンストラクタ名 (例: "Maybe")
+  | TApp  Type Type  -- ^ 型適用 (例: TApp (TCon "Maybe") TInt)
   deriving (Eq, Ord, Show)
 
 -- | 型スキーム (多相型)
@@ -37,3 +39,5 @@ showType TBool        = "Bool"
 showType TStr         = "Str"
 showType (TArr t1 t2) = "(" <> showType t1 <> " -> " <> showType t2 <> ")"
 showType (TList t)    = "[" <> showType t <> "]"
+showType (TCon n)     = n
+showType (TApp t1 t2) = "(" <> showType t1 <> " " <> showType t2 <> ")"

@@ -26,6 +26,9 @@ expand e@(EBool _) = pure e
 expand e@(EStr _)  = pure e
 expand e@(ESym _)  = pure e
 
+-- data 式: 展開不要、そのまま返す
+expand e@(EData _ _) = pure e
+
 -- 空リスト
 expand e@(EList []) = pure e
 

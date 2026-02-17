@@ -3,7 +3,7 @@
 module Spinor.ParserSpec (spec) where
 
 import Test.Hspec
-import Spinor.Syntax (Expr(..), readExpr)
+import Spinor.Syntax (Expr(..), TypeExpr(..), ConstructorDef(..), readExpr)
 
 spec :: Spec
 spec = describe "Spinor.Syntax (Parser)" $ do
@@ -62,3 +62,17 @@ spec = describe "Spinor.Syntax (Parser)" $ do
     it "(define x 42)" $
       readExpr "(define x 42)" `shouldBe`
         Right (EList [ESym "define", ESym "x", EInt 42])
+
+  describe "data 式 (ADT)" $ do
+    it "(data Maybe (Just a) (Nothing))" $
+      readExpr "(data Maybe (Just a) (Nothing))" `shouldBe`
+        Right (EData "Maybe"
+          [ ConstructorDef "Just" [TEVar "a"]
+          , ConstructorDef "Nothing" []
+          ])
+    it "(data MyList (MyCons a (MyList a)) (MyNil))" $
+      readExpr "(data MyList (MyCons a (MyList a)) (MyNil))" `shouldBe`
+        Right (EData "MyList"
+          [ ConstructorDef "MyCons" [TEVar "a", TEApp "MyList" [TEVar "a"]]
+          , ConstructorDef "MyNil" []
+          ])

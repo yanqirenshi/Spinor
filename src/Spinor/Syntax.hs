@@ -2,6 +2,8 @@
 
 module Spinor.Syntax
   ( Expr(..)
+  , TypeExpr(..)
+  , ConstructorDef(..)
   , readExpr
   , parseFile
   ) where
@@ -13,6 +15,18 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
+-- | 型式 (コンストラクタ引数の型記述用)
+--   TEVar "a"          — 型変数
+--   TEApp "MyList" [TEVar "a"] — 型適用 (MyList a)
+data TypeExpr
+  = TEVar Text
+  | TEApp Text [TypeExpr]
+  deriving (Show, Eq)
+
+-- | コンストラクタ定義: コンストラクタ名と引数の型式リスト
+data ConstructorDef = ConstructorDef Text [TypeExpr]
+  deriving (Show, Eq)
+
 -- | Spinor の抽象構文木
 --   Lisp の S式 を Haskell の代数的データ型にマッピングする。
 --     シンボル → Text, リスト → [Expr]
@@ -22,7 +36,8 @@ data Expr
   | ESym  Text
   | EStr  Text
   | EList [Expr]
-  | ELet  Text Expr Expr  -- ^ (let name val body)
+  | ELet  Text Expr Expr            -- ^ (let name val body)
+  | EData Text [ConstructorDef]     -- ^ (data Name (Con1 a b) (Con2))
   deriving (Show, Eq)
 
 type Parser = Parsec Void Text
@@ -67,8 +82,35 @@ pQuote = do
   expr <- parseExpr
   pure $ EList [ESym "quote", expr]
 
+-- TypeExpr パーサー: コンストラクタ引数の型記述
+--   シンボル単体 → TEVar "a"
+--   (Name args...) → TEApp "Name" [TypeExpr...]
+pTypeExpr :: Parser TypeExpr
+pTypeExpr = pTypeApp <|> pTypeVar
+  where
+    pTypeVar = lexeme $ do
+      s <- some (satisfy isSymChar)
+      pure $ TEVar (T.pack s)
+    pTypeApp = between (lexeme (char '(')) (lexeme (char ')')) $ do
+      TEVar name <- pTypeVar
+      args <- many pTypeExpr
+      pure $ TEApp name args
+    isSymChar c = c `notElem` (" \t\n\r();#'\"" :: String)
+
+-- コンストラクタ定義パーサー: (ConName arg1 arg2 ...) または (ConName)
+pConstructorDef :: Parser ConstructorDef
+pConstructorDef = between (lexeme (char '(')) (lexeme (char ')')) $ do
+  name <- lexeme $ do
+    s <- some (satisfy isSymChar)
+    pure (T.pack s)
+  args <- many pTypeExpr
+  pure $ ConstructorDef name args
+  where
+    isSymChar c = c `notElem` (" \t\n\r();#'\"" :: String)
+
 -- リスト: ( expr* )
 --   (let name val body) は ELet に変換する
+--   (data Name (Con1 a b) (Con2)) は EData に変換する
 pList :: Parser Expr
 pList = do
   xs <- between (lexeme (char '(')) (lexeme (char ')')) (many parseExpr)
@@ -76,9 +118,21 @@ pList = do
     [ESym "let", ESym name, val, body] -> pure $ ELet name val body
     _ -> pure $ EList xs
 
+-- data 式パーサー: (data TypeName (Con1 args...) (Con2 args...) ...)
+pData :: Parser Expr
+pData = between (lexeme (char '(')) (lexeme (char ')')) $ do
+  _ <- lexeme (chunk "data")
+  typeName <- lexeme $ do
+    s <- some (satisfy isSymChar)
+    pure (T.pack s)
+  constrs <- many pConstructorDef
+  pure $ EData typeName constrs
+  where
+    isSymChar c = c `notElem` (" \t\n\r();#'\"" :: String)
+
 -- メインパーサー
 parseExpr :: Parser Expr
-parseExpr = sc *> (pList <|> pQuote <|> pBool <|> pStr <|> try pInt <|> pSym)
+parseExpr = sc *> (try pData <|> pList <|> pQuote <|> pBool <|> pStr <|> try pInt <|> pSym)
 
 -- パース実行ヘルパー (単一式)
 readExpr :: Text -> Either String Expr

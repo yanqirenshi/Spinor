@@ -26,7 +26,7 @@ import Control.Monad.State.Strict
 import Control.Monad.Except
 
 import Spinor.Type   (Type(..), Scheme(..), TypeEnv, showType)
-import Spinor.Syntax (Expr(..))
+import Spinor.Syntax (Expr(..), TypeExpr(..), ConstructorDef(..))
 
 -- ============================================================
 -- 置換 (Substitution)
@@ -60,6 +60,8 @@ instance Types Type where
   apply _ TStr         = TStr
   apply s (TArr t1 t2) = TArr (apply s t1) (apply s t2)
   apply s (TList t)    = TList (apply s t)
+  apply _ (TCon n)     = TCon n
+  apply s (TApp t1 t2) = TApp (apply s t1) (apply s t2)
 
   ftv (TVar n)     = Set.singleton n
   ftv TInt         = Set.empty
@@ -67,6 +69,8 @@ instance Types Type where
   ftv TStr         = Set.empty
   ftv (TArr t1 t2) = ftv t1 `Set.union` ftv t2
   ftv (TList t)    = ftv t
+  ftv (TCon _)     = Set.empty
+  ftv (TApp t1 t2) = ftv t1 `Set.union` ftv t2
 
 instance Types Scheme where
   apply s (Scheme vars t) = Scheme vars (apply s' t)
@@ -101,6 +105,15 @@ unify (TArr t1 t2) (TArr t3 t4) = do
   Right (composeSubst s2 s1)
 
 unify (TList t1) (TList t2) = unify t1 t2
+
+unify (TCon a) (TCon b)
+  | a == b    = Right nullSubst
+  | otherwise = Left $ "型が一致しません: " <> a <> " と " <> b
+
+unify (TApp t1 t2) (TApp t3 t4) = do
+  s1 <- unify t1 t3
+  s2 <- unify (apply s1 t2) (apply s1 t4)
+  Right (composeSubst s2 s1)
 
 unify t1 t2 = Left $ "型が一致しません: " <> showType t1 <> " と " <> showType t2
 
@@ -232,6 +245,9 @@ infer env (EList [ESym "fn", ESym param, body]) = do
   (s, tBody) <- infer env' body
   pure (s, TArr (apply s paramT) (apply s tBody))
 
+-- data 式 (式レベル): inferTop で処理するが、infer にもケースが必要
+infer _ (EData _ _) = pure (nullSubst, TCon "Unit")
+
 -- 関数適用: (func arg1 arg2 ...)
 --   多引数はカリー化として扱う
 infer env (EList (func : args)) = inferApp env func args
@@ -246,6 +262,28 @@ infer env (EList (func : args)) = inferApp env func args
 inferTop :: TypeEnv -> Expr -> Infer (TypeEnv, Subst, Type)
 inferTop env (EList [ESym "define", ESym name, body]) = inferTopDefine env name body
 inferTop env (EList [ESym "def",    ESym name, body]) = inferTopDefine env name body
+-- data 式: コンストラクタの型を環境に登録する
+inferTop env (EData typeName constrs) = do
+  let -- 全コンストラクタ引数から自由型変数を収集
+      allTypeVars = Set.toList $ foldMap conFtv constrs
+      -- 結果型: (TypeName a b ...) — 型パラメータを全て適用
+      resultType  = foldl TApp (TCon typeName) (map TVar allTypeVars)
+  -- 各コンストラクタの型スキームを生成して環境に登録
+  let newEnv = foldl (registerCon allTypeVars resultType) env constrs
+  pure (newEnv, nullSubst, resultType)
+  where
+    -- ConstructorDef から自由型変数を収集
+    conFtv (ConstructorDef _ fields) = foldMap typeExprFtv fields
+    typeExprFtv (TEVar v)      = Set.singleton v
+    typeExprFtv (TEApp _ args) = foldMap typeExprFtv args
+    -- コンストラクタを TypeEnv に登録
+    registerCon tvars resType envAcc (ConstructorDef cname fields) =
+      let fieldTypes = map typeExprToType fields
+          -- コンストラクタ型: field1 -> field2 -> ... -> ResultType
+          conType = foldr TArr resType fieldTypes
+          scheme  = Scheme tvars conType
+      in Map.insert cname scheme envAcc
+
 inferTop env expr = do
   (s, t) <- infer env expr
   pure (apply s env, s, t)
@@ -277,6 +315,7 @@ inferQuote (EList [])  = TList (TVar "_q")
 inferQuote (EList (x:_)) = TList (inferQuote x)
 inferQuote (ESym _)    = TStr  -- quote されたシンボルは文字列的に扱う
 inferQuote (ELet _ _ body) = inferQuote body
+inferQuote (EData _ _)     = TCon "Unit"
 
 -- | define / def の型推論共通実装
 inferDefine :: TypeEnv -> Text -> Expr -> Infer (Subst, Type)
@@ -307,6 +346,11 @@ inferApp env func args = do
       (s1, tArg) <- infer (apply sAcc env) argExpr
       let s' = composeSubst s1 sAcc
       pure (s', tArg : ts)
+
+-- | TypeExpr を Type に変換する
+typeExprToType :: TypeExpr -> Type
+typeExprToType (TEVar v)        = TVar v
+typeExprToType (TEApp name args) = foldl TApp (TCon name) (map typeExprToType args)
 
 -- | Expr からシンボル名を取り出す (パラメータリスト用)
 extractSymName :: Expr -> Infer Text

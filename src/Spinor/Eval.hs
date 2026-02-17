@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleContexts           #-}
 
 module Spinor.Eval
   ( Eval
@@ -16,7 +17,7 @@ import qualified Data.Map.Strict as Map
 import Control.Monad.State.Strict
 import Control.Monad.Except
 
-import Spinor.Syntax (Expr(..))
+import Spinor.Syntax (Expr(..), ConstructorDef(..))
 import Spinor.Val    (Val(..), Env, showVal)
 
 -- | 評価モナド
@@ -67,6 +68,22 @@ eval (ELet name valExpr body) = do
   result <- eval body
   put savedEnv
   pure result
+
+-- data 式: (data TypeName (Con1 a b) (Con2)) — ADT 定義
+--   各コンストラクタを環境に登録する
+eval (EData _typeName constrs) = do
+  mapM_ registerConstructor constrs
+  pure VNil
+  where
+    registerConstructor (ConstructorDef cname fields) =
+      case length fields of
+        0 -> modify (Map.insert cname (VData cname []))
+        n -> modify (Map.insert cname (VPrim cname (mkConstructor cname n)))
+    mkConstructor cname arity args
+      | length args == arity = Right $ VData cname args
+      | otherwise = Left $ cname <> ": 引数の数が不正です (期待: "
+                    <> pack (show arity) <> ", 実際: "
+                    <> pack (show (length args)) <> ")"
 
 -- 特殊形式: (print expr) — 値を表示して返す
 eval (EList [ESym "print", arg]) = do
@@ -185,6 +202,7 @@ exprToVal (ESym s)    = VSym s
 exprToVal (EStr s)    = VStr s
 exprToVal (EList xs)  = VList (map exprToVal xs)
 exprToVal (ELet name val body) = VList [VSym "let", VSym name, exprToVal val, exprToVal body]
+exprToVal (EData name _) = VSym ("<data:" <> name <> ">")
 
 -- | Val を Expr に逆変換する (マクロ展開結果の再評価用)
 valToExpr :: Val -> Expr
@@ -194,6 +212,7 @@ valToExpr (VSym s)    = ESym s
 valToExpr (VStr s)    = EStr s
 valToExpr (VList vs)  = EList (map valToExpr vs)
 valToExpr VNil        = EList []
+valToExpr (VData name vs) = EList (ESym name : map valToExpr vs)
 valToExpr other       = ESym $ "<" <> pack (showVal other) <> ">"
 
 -- | パラメータリストからシンボル名を抽出する (fn / mac 共通)

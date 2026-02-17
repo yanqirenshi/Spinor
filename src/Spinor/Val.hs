@@ -7,6 +7,7 @@ module Spinor.Val
   ) where
 
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 
 import Spinor.Syntax (Expr)
@@ -28,6 +29,7 @@ data Val
   | VNil                                       -- 空リスト / nil
   | VSym  Text                                 -- シンボル (quote 用)
   | VStr  Text                                 -- 文字列
+  | VData Text [Val]                           -- データコンストラクタ (名前, フィールド値)
 
 -- | テスト用の構造的等値比較
 --   VPrim, VFunc, VMacro は関数を含むため常に不等
@@ -37,6 +39,7 @@ instance Eq Val where
   VStr  a   == VStr  b   = a == b
   VSym  a   == VSym  b   = a == b
   VList as  == VList bs  = as == bs
+  VData n1 vs1 == VData n2 vs2 = n1 == n2 && vs1 == vs2
   VNil      == VNil      = True
   _         == _         = False
 
@@ -55,3 +58,5 @@ showVal (VList vs)     = "(" ++ unwords (map showVal vs) ++ ")"
 showVal VNil           = "nil"
 showVal (VSym s)       = show s
 showVal (VStr s)       = show s
+showVal (VData name []) = T.unpack name
+showVal (VData name vs) = "(" ++ T.unpack name ++ " " ++ unwords (map showVal vs) ++ ")"
