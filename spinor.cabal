@@ -32,3 +32,22 @@ executable spinor
     spinor
   default-language: Haskell2010
   ghc-options:      -Wall
+
+test-suite spinor-test
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   test
+  main-is:          Spec.hs
+  other-modules:
+    Spinor.ParserSpec
+    Spinor.EvalSpec
+  build-depends:
+    base           >= 4.14 && < 5,
+    hspec          >= 2.7  && < 3,
+    hspec-discover >= 2.7  && < 3,
+    text           >= 1.2  && < 3,
+    containers     >= 0.6  && < 1,
+    spinor
+  default-language: Haskell2010
+  ghc-options:      -Wall
+  build-tool-depends:
+    hspec-discover:hspec-discover >= 2.7 && < 3

@@ -6,6 +6,8 @@ import qualified Data.Text    as T
 import qualified Data.Text.IO as TIO
 import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF)
 import System.Directory (doesFileExist)
+import System.Environment (getArgs)
+import System.Exit (exitFailure)
 import Spinor.Syntax    (Expr, readExpr, parseFile)
 import Spinor.Type      (TypeEnv, showType)
 import Spinor.Val       (Env)
@@ -25,9 +27,51 @@ twisterFiles =
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
-  putStrLn "Spinor REPL (step14)"
+  args <- getArgs
+  case args of
+    []     -> replMode
+    [file] -> batchMode file
+    _      -> putStrLn "Usage: spinor [file]"
+
+-- | REPL モード (引数なし)
+replMode :: IO ()
+replMode = do
+  putStrLn "Spinor REPL (step16)"
   (env, tyEnv) <- loadBoot primitiveBindings baseTypeEnv
   loop env tyEnv
+
+-- | バッチ実行モード (引数でファイル指定)
+batchMode :: FilePath -> IO ()
+batchMode file = do
+  (env, _tyEnv) <- loadBoot primitiveBindings baseTypeEnv
+  content <- TIO.readFile file
+  case parseFile content of
+    Left err -> do
+      putStrLn $ "パースエラー: " ++ err
+      exitFailure
+    Right exprs -> do
+      result <- foldlM' evalBatchExpr (env, True) exprs
+      case result of
+        (_, True)  -> putStrLn "\nAll tests passed."
+        (_, False) -> do
+          putStrLn "\nSome tests FAILED."
+          exitFailure
+
+-- | バッチモードで式を1つ評価する
+evalBatchExpr :: (Env, Bool) -> Expr -> IO (Env, Bool)
+evalBatchExpr (env, ok) expr = do
+  expandResult <- runEval env (expand expr)
+  case expandResult of
+    Left err -> do
+      TIO.putStrLn $ "エラー: " <> err
+      pure (env, False)
+    Right (expanded, envAfterExpand) -> do
+      evalResult <- runEval envAfterExpand (eval expanded)
+      case evalResult of
+        Left err -> do
+          TIO.putStrLn $ "エラー: " <> err
+          pure (envAfterExpand, False)
+        Right (_, env') -> pure (env', ok)
 
 -- | 起動時に Twister ファイルをロードする
 --   各式を展開 → 型推論 (ベストエフォート) → 評価し、

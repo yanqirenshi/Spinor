@@ -29,6 +29,17 @@ data Val
   | VSym  Text                                 -- シンボル (quote 用)
   | VStr  Text                                 -- 文字列
 
+-- | テスト用の構造的等値比較
+--   VPrim, VFunc, VMacro は関数を含むため常に不等
+instance Eq Val where
+  VInt  a   == VInt  b   = a == b
+  VBool a   == VBool b   = a == b
+  VStr  a   == VStr  b   = a == b
+  VSym  a   == VSym  b   = a == b
+  VList as  == VList bs  = as == bs
+  VNil      == VNil      = True
+  _         == _         = False
+
 instance Show Val where
   show = showVal
 
