@@ -1,4 +1,5 @@
 ; core.spin — 基本論理関数とマクロ
+(module twister/core (export not id when cond))
 
 (def not (fn (x) (if x #f #t)))
 (def id  (fn (x) x))

@@ -1,4 +1,5 @@
 ; list.spin — リスト操作関数
+(module twister/list (export nil null? map length append foldl foldr reverse filter))
 
 ; 多相的な空リスト
 (def nil (quote ()))

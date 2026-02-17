@@ -29,6 +29,12 @@ expand e@(ESym _)  = pure e
 -- data 式: 展開不要、そのまま返す
 expand e@(EData _ _) = pure e
 
+-- module 宣言: 展開不要、そのまま返す
+expand e@(EModule _ _) = pure e
+
+-- import 宣言: 展開不要、そのまま返す
+expand e@(EImport _ _) = pure e
+
 -- match 式: target と各 body を展開 (パターン自体は展開不要)
 expand (EMatch target branches) = do
   target' <- expand target

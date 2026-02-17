@@ -149,3 +149,113 @@ Spinor にファイルベースのモジュールシステムを導入し、コ�
       ```
 3.  `spin main.spin` を実行し、標準出力に `100` と表示されることを確認します。
 4.  `prefix` や `only` などの `import` オプションが正しく機能することもテストしてください。
+
+---
+
+# 実装方針
+
+## 設計判断
+
+### 1. モジュールローダーの分離
+`Spinor.Loader` モジュールを新規作成し、モジュールのロード・依存解決・評価を `Eval.hs` から分離しました。これにより:
+- 単一責任の原則を維持
+- 循環参照の検出ロジックを明確に分離
+- `ModuleRegistry` の状態管理を `IORef` で実装
+
+### 2. 後方互換性の維持
+`loadBoot` (Twister ファイルのロード) は従来通り動作するようにしました:
+- `processBootExpr` で `EModule` と `EImport` をスキップ
+- これにより、既存の `twister/*.spin` ファイルにモジュール宣言を追加しても、REPLや従来のバッチモードで正常に動作
+
+### 3. インポートオプションの設計
+仕様書に基づき、4種類のインポートオプションを実装:
+- `Only [Text]`: 指定シンボルのみインポート
+- `Except [Text]`: 指定シンボルを除外
+- `Prefix Text`: 全シンボルにプレフィックス付加
+- `Alias Text`: `M:sym` 形式でアクセス
+
+### 4. パーサー実装方針
+`pList` 内で `module` と `import` を特殊形式として認識し、専用のパーサー関数 (`parseModuleForm`, `parseImportForm`) に分岐させました。これにより:
+- 既存の `parseExpr` の変更を最小化
+- Lisp らしい S式ベースの構文を維持
+
+---
+
+# 実装内容
+
+## 変更ファイル一覧
+
+### 1. `src/Spinor/Syntax.hs`
+- `ImportOption` データ型を追加 (`Only`, `Except`, `Prefix`, `Alias`)
+- `Expr` 型に `EModule Text [Text]` と `EImport Text [ImportOption]` を追加
+- `pList` を拡張して `module` と `import` を認識
+- `parseModuleForm`, `parseImportForm`, `parseImportOption` 関数を追加
+- `extractModuleName`, `extractSymName` ヘルパー関数を追加
+- エクスポートリストに `ImportOption(..)` を追加
+
+### 2. `src/Spinor/Eval.hs`
+- `EModule` と `EImport` の評価ルールを追加 (ローダーで処理されるべきエラーを投げる)
+- `exprToVal` に `EModule` と `EImport` のケースを追加
+- `ImportOption(..)` のインポートを追加
+
+### 3. `src/Spinor/Expander.hs`
+- `EModule` と `EImport` の展開ルールを追加 (そのまま返す)
+
+### 4. `src/Spinor/Loader.hs` (新規作成)
+- `ModuleRegistry` 型: `IORef (Map.Map Text Env)`
+- `LoaderConfig` 型: baseDir と primitiveEnv を保持
+- `newModuleRegistry`: 空のレジストリを作成
+- `loadModule`: 循環参照を検出しながらモジュールをロード
+- `loadDependencies`: 依存モジュールをロードしてインポート環境を構築
+- `applyImportOptions`: インポートオプションを適用
+- `extractExports`: エクスポートリストに基づいて公開シンボルを抽出
+- `evalFileWithModules`: バッチモード用のファイル評価
+
+### 5. `app/Main.hs`
+- `Spinor.Loader` のインポートを追加
+- `batchMode` を修正してモジュールローダーを使用
+- `processBootExpr` を修正して `EModule` と `EImport` をスキップ
+- 必要なインポート追加 (`getCurrentDirectory`, `takeDirectory`, `Expr(..)`)
+
+### 6. `spinor.cabal`
+- `exposed-modules` に `Spinor.Loader` を追加
+- `build-depends` に `filepath` と `directory` を追加
+
+### 7. `twister/core.spin`
+- モジュール宣言を追加: `(module twister/core (export not id when cond))`
+
+### 8. `twister/list.spin`
+- モジュール宣言を追加: `(module twister/list (export nil null? map length append foldl foldr reverse filter))`
+
+### 9. `twister/math.spin`
+- モジュール宣言を追加: `(module twister/math (export even? odd? fact fib))`
+
+### 10. `test/Spinor/ParserSpec.hs`
+- `ImportOption(..)` のインポートを追加
+- `module` 宣言のパーステストを追加 (3ケース)
+- `import` 宣言のパーステストを追加 (6ケース)
+
+### 11. `test-modules/lib.spin` (新規作成)
+- テスト用モジュール: `my-val` と `double` をエクスポート
+
+### 12. `test-modules/main.spin` (新規作成)
+- テスト用メインモジュール: `lib` をインポートして使用
+
+## 動作確認手順
+
+```bash
+# ビルド
+cabal build
+
+# パーサーテスト
+cabal test
+
+# モジュールシステムのテスト
+cabal run spinor -- test-modules/main.spin
+# 期待出力:
+# 100
+# 42
+
+# 既存のテスト (後方互換性確認)
+cabal run spinor -- twister/test.spin
+```

@@ -3,7 +3,7 @@
 module Spinor.ParserSpec (spec) where
 
 import Test.Hspec
-import Spinor.Syntax (Expr(..), Pattern(..), TypeExpr(..), ConstructorDef(..), readExpr)
+import Spinor.Syntax (Expr(..), Pattern(..), TypeExpr(..), ConstructorDef(..), ImportOption(..), readExpr)
 
 spec :: Spec
 spec = describe "Spinor.Syntax (Parser)" $ do
@@ -95,3 +95,34 @@ spec = describe "Spinor.Syntax (Parser)" $ do
           [ (PLit (EInt 0), EStr "zero")
           , (PWild, EStr "other")
           ])
+
+  describe "module 宣言" $ do
+    it "(module my-mod (export a b))" $
+      readExpr "(module my-mod (export a b))" `shouldBe`
+        Right (EModule "my-mod" ["a", "b"])
+    it "(module my-mod (export)) — 空エクスポート" $
+      readExpr "(module my-mod (export))" `shouldBe`
+        Right (EModule "my-mod" [])
+    it "(module my-mod) — エクスポート省略" $
+      readExpr "(module my-mod)" `shouldBe`
+        Right (EModule "my-mod" [])
+
+  describe "import 宣言" $ do
+    it "(import lib) — オプションなし" $
+      readExpr "(import lib)" `shouldBe`
+        Right (EImport "lib" [])
+    it "(import lib (only a b))" $
+      readExpr "(import lib (only a b))" `shouldBe`
+        Right (EImport "lib" [Only ["a", "b"]])
+    it "(import lib (except x))" $
+      readExpr "(import lib (except x))" `shouldBe`
+        Right (EImport "lib" [Except ["x"]])
+    it "(import lib (prefix m-))" $
+      readExpr "(import lib (prefix m-))" `shouldBe`
+        Right (EImport "lib" [Prefix "m-"])
+    it "(import lib (alias M))" $
+      readExpr "(import lib (alias M))" `shouldBe`
+        Right (EImport "lib" [Alias "M"])
+    it "(import 'twister/core) — quote 形式" $
+      readExpr "(import 'twister/core)" `shouldBe`
+        Right (EImport "twister/core" [])

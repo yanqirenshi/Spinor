@@ -267,6 +267,12 @@ infer env (EMatch targetExpr branches) = do
 -- data 式 (式レベル): inferTop で処理するが、infer にもケースが必要
 infer _ (EData _ _) = pure (nullSubst, TCon "Unit")
 
+-- module 宣言: Unit を返す
+infer _ (EModule _ _) = pure (nullSubst, TCon "Unit")
+
+-- import 宣言: Unit を返す
+infer _ (EImport _ _) = pure (nullSubst, TCon "Unit")
+
 -- 関数適用: (func arg1 arg2 ...)
 --   多引数はカリー化として扱う
 infer env (EList (func : args)) = inferApp env func args
@@ -336,6 +342,8 @@ inferQuote (ESym _)    = TStr  -- quote されたシンボルは文字列的に�
 inferQuote (ELet _ _ body) = inferQuote body
 inferQuote (EData _ _)     = TCon "Unit"
 inferQuote (EMatch _ _)    = TVar "_match"
+inferQuote (EModule _ _)   = TCon "Unit"
+inferQuote (EImport _ _)   = TCon "Unit"
 
 -- | パターンの型推論
 --   パターンの型と tTarget を unify し、パターン内変数の型環境を返す

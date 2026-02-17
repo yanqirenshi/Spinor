@@ -5,16 +5,18 @@ module Main (main) where
 import qualified Data.Text    as T
 import qualified Data.Text.IO as TIO
 import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF)
-import System.Directory (doesFileExist)
+import System.Directory (doesFileExist, getCurrentDirectory)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
-import Spinor.Syntax    (Expr, readExpr, parseFile)
+import System.FilePath (takeDirectory)
+import Spinor.Syntax    (Expr(..), readExpr, parseFile)
 import Spinor.Type      (TypeEnv, showType)
 import Spinor.Val       (Env)
 import Spinor.Eval      (Eval, eval, runEval)
 import Spinor.Expander  (expand)
 import Spinor.Infer     (Types(..), runInfer, inferTop, baseTypeEnv)
 import Spinor.Primitive (primitiveBindings)
+import Spinor.Loader    (LoaderConfig(..), newModuleRegistry, evalFileWithModules)
 
 -- | Twister ファイル一覧 (ロード順)
 twisterFiles :: [FilePath]
@@ -41,37 +43,33 @@ replMode = do
   loop env tyEnv
 
 -- | バッチ実行モード (引数でファイル指定)
+--   モジュールシステム対応: module 宣言の有無に関わらず動作
 batchMode :: FilePath -> IO ()
 batchMode file = do
+  -- Twister 環境をロード (従来通り)
   (env, _tyEnv) <- loadBoot primitiveBindings baseTypeEnv
-  content <- TIO.readFile file
-  case parseFile content of
-    Left err -> do
-      putStrLn $ "パースエラー: " ++ err
-      exitFailure
-    Right exprs -> do
-      result <- foldlM' evalBatchExpr (env, True) exprs
-      case result of
-        (_, True)  -> putStrLn "\nAll tests passed."
-        (_, False) -> do
-          putStrLn "\nSome tests FAILED."
-          exitFailure
 
--- | バッチモードで式を1つ評価する
-evalBatchExpr :: (Env, Bool) -> Expr -> IO (Env, Bool)
-evalBatchExpr (env, ok) expr = do
-  expandResult <- runEval env (expand expr)
-  case expandResult of
+  -- モジュールレジストリを作成
+  registry <- newModuleRegistry
+
+  -- ファイルの親ディレクトリをベースディレクトリとする
+  cwd <- getCurrentDirectory
+  let fileDir = takeDirectory file
+      config = LoaderConfig
+        { baseDir      = if null fileDir then cwd else fileDir
+        , primitiveEnv = env
+        }
+
+  -- モジュールシステム経由でファイルを評価
+  result <- evalFileWithModules config registry file
+  case result of
     Left err -> do
       TIO.putStrLn $ "エラー: " <> err
-      pure (env, False)
-    Right (expanded, envAfterExpand) -> do
-      evalResult <- runEval envAfterExpand (eval expanded)
-      case evalResult of
-        Left err -> do
-          TIO.putStrLn $ "エラー: " <> err
-          pure (envAfterExpand, False)
-        Right (_, env') -> pure (env', ok)
+      exitFailure
+    Right (_, True)  -> putStrLn "\nAll tests passed."
+    Right (_, False) -> do
+      putStrLn "\nSome tests FAILED."
+      exitFailure
 
 -- | 起動時に Twister ファイルをロードする
 --   各式を展開 → 型推論 (ベストエフォート) → 評価し、
@@ -100,30 +98,37 @@ loadSpinFile (env, tyEnv) path = do
     Right exprs -> foldlM' processBootExpr (env, tyEnv) exprs
 
 -- | boot 中の単一式を処理する
---   1. マクロ展開
---   2. 型推論 (失敗しても続行)
---   3. 評価
+--   1. module / import 宣言はスキップ (モジュールシステム用)
+--   2. マクロ展開
+--   3. 型推論 (失敗しても続行)
+--   4. 評価
 processBootExpr :: (Env, TypeEnv) -> Expr -> IO (Env, TypeEnv)
-processBootExpr (env, tyEnv) expr = do
-  -- 1. マクロ展開
-  expandResult <- runEval env (expand expr)
-  case expandResult of
-    Left _ -> do
-      -- 展開失敗: 評価のみ試行
-      evalResult <- runEval env (evalExpr expr)
-      case evalResult of
-        Left _           -> pure (env, tyEnv)
-        Right (_, env')  -> pure (env', tyEnv)
-    Right (expanded, envAfterExpand) -> do
-      -- 2. 型推論 (ベストエフォート)
-      let tyEnv' = case runInfer (inferTop tyEnv expanded) of
-                     Right (te, _, _) -> te
-                     Left _           -> tyEnv
-      -- 3. 評価
-      evalResult <- runEval envAfterExpand (eval expanded)
-      case evalResult of
-        Left _           -> pure (envAfterExpand, tyEnv')
-        Right (_, env')  -> pure (env', tyEnv')
+processBootExpr (env, tyEnv) expr = case expr of
+  -- module 宣言はスキップ
+  EModule _ _ -> pure (env, tyEnv)
+  -- import 宣言はスキップ (boot では全て同じ環境で実行されるため不要)
+  EImport _ _ -> pure (env, tyEnv)
+  -- 通常の式
+  _ -> do
+    -- 1. マクロ展開
+    expandResult <- runEval env (expand expr)
+    case expandResult of
+      Left _ -> do
+        -- 展開失敗: 評価のみ試行
+        evalResult <- runEval env (evalExpr expr)
+        case evalResult of
+          Left _           -> pure (env, tyEnv)
+          Right (_, env')  -> pure (env', tyEnv)
+      Right (expanded, envAfterExpand) -> do
+        -- 2. 型推論 (ベストエフォート)
+        let tyEnv' = case runInfer (inferTop tyEnv expanded) of
+                       Right (te, _, _) -> te
+                       Left _           -> tyEnv
+        -- 3. 評価
+        evalResult <- runEval envAfterExpand (eval expanded)
+        case evalResult of
+          Left _           -> pure (envAfterExpand, tyEnv')
+          Right (_, env')  -> pure (env', tyEnv')
 
 -- | 式を展開してから評価する (Eval モナド内)
 evalExpr :: Expr -> Eval ()

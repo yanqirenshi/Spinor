@@ -90,6 +90,14 @@ eval (EMatch targetExpr branches) = do
   targetVal <- eval targetExpr
   matchBranches targetVal branches
 
+-- module 宣言: ローダーで処理されるべき
+eval (EModule _ _) =
+  throwError "module: module宣言はファイルの先頭に配置し、モジュールローダーで処理される必要があります"
+
+-- import 宣言: ローダーで処理されるべき
+eval (EImport _ _) =
+  throwError "import: import宣言はトップレベルに配置し、モジュールローダーで処理される必要があります"
+
 -- 特殊形式: (print expr) — 値を表示して返す
 eval (EList [ESym "print", arg]) = do
   val <- eval arg
@@ -209,6 +217,8 @@ exprToVal (EList xs)  = VList (map exprToVal xs)
 exprToVal (ELet name val body) = VList [VSym "let", VSym name, exprToVal val, exprToVal body]
 exprToVal (EData name _) = VSym ("<data:" <> name <> ">")
 exprToVal (EMatch _ _) = VSym "<match>"
+exprToVal (EModule name _) = VSym ("<module:" <> name <> ">")
+exprToVal (EImport name _) = VSym ("<import:" <> name <> ">")
 
 -- | Val を Expr に逆変換する (マクロ展開結果の再評価用)
 valToExpr :: Val -> Expr
