@@ -87,6 +87,47 @@ Error: Type mismatch: Int vs Bool
 * `Main.hs` の `baseTypeEnv` 定義と REPL ループの変更点。
 * 日本語での解説。
 
+# 実装方針
+
+## 概要
+
+Algorithm W に基づく `infer` 関数を実装し、AST を走査して型を推論する。REPL のフローを `Read → Expand → Infer → Eval` に変更し、型を表示してから実行する。型エラー時は実行しない。
+
+## 設計判断
+
+### Infer モナド
+
+`newtype Infer a = Infer (StateT Int (Either Text) a)` — IO 不要の純粋な計算。
+- `StateT Int`: フレッシュ型変数のカウンタ (`t0`, `t1`, `t2`, ...)
+- `Either Text`: 型エラーの報告
+
+### infer 関数の設計
+
+`infer :: TypeEnv -> Expr -> Infer (Subst, Type)` — AST を走査して (置換, 型) のペアを返す。各 AST ノードごとにパターンマッチで処理。
+
+### 多引数の関数適用
+
+Spinor の `(f a b c)` は型推論上はカリー化: `f :: a → b → c → ret`。引数を左から順に推論し、`tFunc` と `tArg1 → tArg2 → ... → tRet` を unify。
+
+### instantiate / generalize
+
+- `instantiate`: `Scheme` の量子化変数をフレッシュ型変数に置き換え（多相関数の呼び出しごとに独立した型変数）
+- `generalize`: 環境に含まれない自由型変数を `forall` で量子化
+
+### baseTypeEnv
+
+プリミティブ関数の型を `TypeEnv` として定義。`+` は `Int → Int → Int`、`=` は `forall a. a → a → Bool`、`cons` は `forall a. a → [a] → [a]` 等。
+
+### TypeEnv の分離
+
+`TypeEnv` を `Type.hs` に定義し、循環参照を回避。
+
+## 変更の流れ
+
+1. `src/Spinor/Type.hs` (修正) — `TypeEnv` 型エイリアスと `showType` 追加
+2. `src/Spinor/Infer.hs` (大幅拡張) — `Infer` モナド、`infer`、`instantiate`、`generalize`、`baseTypeEnv`
+3. `app/Main.hs` (修正) — REPL フローを `Read → Expand → Infer → Eval` に変更
+
 # 実装内容
 
 ## 変更・新規ファイル

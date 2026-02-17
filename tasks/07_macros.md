@@ -47,6 +47,42 @@ Lisp の真髄である「マクロ」を実装し、制御構文 (`let`, `and`,
 * `twister/core.spin` の追加コード。
 * マクロ展開のロジック（評価せずに適用 -> 結果を再評価）が正しく実装されているか解説してください。
 
+# 実装方針
+
+## 概要
+
+Lisp の真髄であるマクロを実装する。`mac` (マクロ定義) 構文を追加し、引数を評価せずに受け取り、展開結果を再評価するマクロ展開メカニズムを構築する。
+
+## 設計判断
+
+### VMacro コンストラクタ
+
+`VMacro [Text] Expr Env` — `VFunc` とほぼ同じ構造だが、適用時の引数の扱いが異なる:
+- `VFunc`: 引数を**評価してから**適用
+- `VMacro`: 引数を**評価せずに** (`exprToVal` で Val に変換して) 適用
+
+### マクロ展開のフロー
+
+1. リスト先頭のシンボルが `VMacro` に束縛されている場合を検知
+2. 引数を未評価のまま `exprToVal` で `Val` に変換
+3. マクロ本体を適用（`applyClosureBody`）
+4. 結果を `valToExpr` で `Expr` に逆変換
+5. 逆変換結果を再度 `eval`
+
+### valToExpr の配置
+
+タスクでは `Syntax.hs` に配置する指示だが、`Syntax.hs` → `Val.hs` の循環依存を避けるため `Eval.hs` に配置。`exprToVal` と対になるヘルパーとして自然。
+
+### applyClosureBody の共通化
+
+`VFunc` と `VMacro` の適用ロジック（引数束縛→本体評価→環境復元）は同一のため、`applyClosureBody` に抽出して共有する。
+
+## 変更の流れ
+
+1. `src/Spinor/Val.hs` (修正) — `VMacro` コンストラクタ追加
+2. `src/Spinor/Eval.hs` (修正) — `mac` 特殊形式、マクロ展開ロジック、`valToExpr`、`applyClosureBody` 共通化
+3. `twister/core.spin` (修正) — `when`, `let` マクロ追加
+
 # 実装内容
 
 ## 変更ファイル

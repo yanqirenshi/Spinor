@@ -17,7 +17,7 @@ import qualified Data.Map.Strict as Map
 import Control.Monad.State.Strict
 import Control.Monad.Except
 
-import Spinor.Syntax (Expr(..), ConstructorDef(..))
+import Spinor.Syntax (Expr(..), Pattern(..), ConstructorDef(..))
 import Spinor.Val    (Val(..), Env, showVal)
 
 -- | 評価モナド
@@ -84,6 +84,11 @@ eval (EData _typeName constrs) = do
       | otherwise = Left $ cname <> ": 引数の数が不正です (期待: "
                     <> pack (show arity) <> ", 実際: "
                     <> pack (show (length args)) <> ")"
+
+-- match 式: (match target (pat1 body1) (pat2 body2) ...)
+eval (EMatch targetExpr branches) = do
+  targetVal <- eval targetExpr
+  matchBranches targetVal branches
 
 -- 特殊形式: (print expr) — 値を表示して返す
 eval (EList [ESym "print", arg]) = do
@@ -203,6 +208,7 @@ exprToVal (EStr s)    = VStr s
 exprToVal (EList xs)  = VList (map exprToVal xs)
 exprToVal (ELet name val body) = VList [VSym "let", VSym name, exprToVal val, exprToVal body]
 exprToVal (EData name _) = VSym ("<data:" <> name <> ">")
+exprToVal (EMatch _ _) = VSym "<match>"
 
 -- | Val を Expr に逆変換する (マクロ展開結果の再評価用)
 valToExpr :: Val -> Expr
@@ -213,7 +219,38 @@ valToExpr (VStr s)    = EStr s
 valToExpr (VList vs)  = EList (map valToExpr vs)
 valToExpr VNil        = EList []
 valToExpr (VData name vs) = EList (ESym name : map valToExpr vs)
+-- VMatch は存在しないが網羅性のため
 valToExpr other       = ESym $ "<" <> pack (showVal other) <> ">"
+
+-- | match 式の分岐を上から順に試行する
+matchBranches :: Val -> [(Pattern, Expr)] -> Eval Val
+matchBranches _ [] = throwError "match: どのパターンにもマッチしませんでした"
+matchBranches val ((pat, body) : rest) =
+  case matchPattern val pat of
+    Nothing       -> matchBranches val rest
+    Just bindings -> do
+      savedEnv <- get
+      modify (Map.union bindings)
+      result <- eval body
+      put savedEnv
+      pure result
+
+-- | パターンマッチを試行し、成功時は束縛を返す
+matchPattern :: Val -> Pattern -> Maybe Env
+matchPattern val (PVar name) = Just (Map.singleton name val)
+matchPattern _   PWild       = Just Map.empty
+matchPattern val (PLit expr) =
+  let litVal = exprToVal expr
+  in if val == litVal then Just Map.empty else Nothing
+matchPattern (VData conName vals) (PCon pName pats)
+  | conName == pName && length vals == length pats =
+      foldl (\acc (v, p) -> do
+        binds <- acc
+        bs <- matchPattern v p
+        Just (Map.union bs binds)
+      ) (Just Map.empty) (zip vals pats)
+  | otherwise = Nothing
+matchPattern _ (PCon _ _) = Nothing
 
 -- | パラメータリストからシンボル名を抽出する (fn / mac 共通)
 extractSym :: Expr -> Eval Text

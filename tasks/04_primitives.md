@@ -57,6 +57,36 @@
 (fact 5) ; -> 120
 ```
 
+# 実装方針
+
+## 概要
+
+比較演算子、リスト操作、`quote` を実装し、再帰呼び出しを可能にする。これにより「Lisp としてコードが書ける状態」にする。
+
+## 設計判断
+
+### VSym の追加
+
+`quote` でシンボルを第一級値として返すために `VSym Text` を `Val` に追加。Lisp として自然な設計であり、マクロ実装の基盤にもなる。
+
+### exprToVal ヘルパー
+
+`quote` の実装に必要な `exprToVal :: Expr -> Val` を追加。AST (`Expr`) を評価せずに値 (`Val`) に変換する。
+
+### 再帰対応
+
+`apply` 内の環境構築を `Map.union bindings closureEnv` から `Map.union bindings (Map.union closureEnv savedEnv)` に変更。グローバル環境をフォールバックとして参照可能にすることで、再帰呼び出し時に自分自身を環境から発見できるようにする。
+
+### リスト操作プリミティブ
+
+`cons`, `car`, `cdr`, `list`, `null?`/`empty?` を `VPrim` として実装。全て純粋関数であり `Eval` モナドに依存しない。
+
+## 変更の流れ
+
+1. `src/Spinor/Val.hs` (修正) — `VSym Text` 追加
+2. `src/Spinor/Primitive.hs` (修正) — 比較演算拡張、リスト操作プリミティブ追加
+3. `src/Spinor/Eval.hs` (修正) — `quote` 特殊形式、`exprToVal`、`apply` の環境マージ修正
+
 # 実装内容
 
 ## 変更ファイル

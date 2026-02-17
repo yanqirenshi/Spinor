@@ -75,6 +75,48 @@ VData "Nothing" []
 * 動作確認ログ。
 * （もしあれば）`test/Spinor/DataSpec.hs` などの新規テストコード。
 
+# 実装方針
+
+## 概要
+
+`(data Name (Con1 arg...) (Con2 ...))` 構文で代数的データ型 (ADT) を定義・生成できるようにする。Spinor パイプラインの全レイヤー（パーサー → 展開 → 型推論 → 評価）に対応を追加する。
+
+## 設計判断
+
+### ConstructorDef に TypeExpr を使う
+
+計画時の `[Text]` ではなく `[TypeExpr]` を採用。`(MyCons a (MyList a))` のような型適用（再帰的な型）を表現するため。`TypeExpr` は `TEVar Text` (型変数) と `TEApp Text [TypeExpr]` (型適用) の2コンストラクタ。
+
+### TCon / TApp の追加
+
+`Type` に `TCon Text` (型コンストラクタ名) と `TApp Type Type` (型適用) を追加。既存の `TInt`, `TBool`, `TStr` は共存させる（リファクタリングは将来のオプション）。
+
+### VData コンストラクタ
+
+`VData Text [Val]` — コンストラクタ名とフィールド値のリストを保持。0引数コンストラクタは `VData "Nothing" []` として直接環境に束縛。N引数コンストラクタは `VPrim` で引数数チェック付きの関数として束縛する。
+
+### 型推論での処理
+
+`inferTop` で `EData` を処理:
+1. 全コンストラクタ引数から自由型変数を収集
+2. 結果型を生成: `foldl TApp (TCon typeName) (map TVar allTypeVars)`
+3. 各コンストラクタの型スキームを生成: 引数型を `→` で連結して結果型へ
+4. `TypeEnv` に登録
+
+### typeExprToType ヘルパー
+
+`TypeExpr` → `Type` の変換関数。`TEVar v` → `TVar v`, `TEApp name args` → `foldl TApp (TCon name) (map typeExprToType args)`。
+
+## 変更の流れ
+
+1. `src/Spinor/Syntax.hs` (拡張) — `TypeExpr`, `ConstructorDef`, `EData`, パーサー追加
+2. `src/Spinor/Type.hs` (拡張) — `TCon`, `TApp` 追加
+3. `src/Spinor/Val.hs` (拡張) — `VData` 追加
+4. `src/Spinor/Eval.hs` (拡張) — `eval EData`、コンストラクタ登録
+5. `src/Spinor/Infer.hs` (拡張) — `inferTop EData`、型推論
+6. `src/Spinor/Expander.hs` (拡張) — `expand EData` パススルー
+7. テスト — ParserSpec, EvalSpec に ADT テスト追加
+
 # 実装内容
 
 ## 変更ファイル一覧 (7ファイル)

@@ -29,6 +29,12 @@ expand e@(ESym _)  = pure e
 -- data 式: 展開不要、そのまま返す
 expand e@(EData _ _) = pure e
 
+-- match 式: target と各 body を展開 (パターン自体は展開不要)
+expand (EMatch target branches) = do
+  target' <- expand target
+  branches' <- mapM (\(pat, body) -> do { body' <- expand body; pure (pat, body') }) branches
+  pure $ EMatch target' branches'
+
 -- 空リスト
 expand e@(EList []) = pure e
 

@@ -72,6 +72,49 @@ cabal run spinor -- twister/test.spin
 * `twister/test.spin` の内容。
 * テスト実行ログ。
 
+# 実装方針
+
+## 概要
+
+Haskell 側の単体テスト基盤 (`hspec`) と Spinor セルフテスト、バッチ実行モードを構築し、プロジェクトの信頼性を担保する。
+
+## 設計判断
+
+### hspec + hspec-discover
+
+テストフレームワークとして `hspec` を採用。`hspec-discover` で `test/` 配下の `*Spec.hs` を自動検知する。`spinor.cabal` に `test-suite` セクションを追加。
+
+### テストの構成
+
+- `test/Spinor/ParserSpec.hs`: パーサーの網羅テスト（`readExpr` を使用）
+- `test/Spinor/EvalSpec.hs`: 評価器の網羅テスト（`evalStr` ヘルパーで「パース→展開→評価」を一括実行）
+
+### Eq Val インスタンス
+
+テスト用に `Eq Val` インスタンスを追加。`VPrim`, `VFunc`, `VMacro` は関数を含むため常に不等。構造的等値比較により `shouldBe` で期待値検証が可能。
+
+### バッチ実行モード
+
+`app/Main.hs` に引数ありモードを追加:
+- 引数なし → REPL 起動
+- 引数あり (`cabal run spinor <file>`) → ファイル読み込み→評価→終了
+
+エラーがあれば `exitFailure` で非ゼロ終了。CI 対応。
+
+### Spinor セルフテスト
+
+`twister/test.spin` に `assert-equal` 関数と各種テストケースを記述。Spinor 自身で Twister ライブラリの動作を検証。
+
+## 変更の流れ
+
+1. `spinor.cabal` (修正) — `test-suite` セクション追加
+2. `src/Spinor/Val.hs` (修正) — `Eq Val` インスタンス追加
+3. `test/Spec.hs` (新規) — hspec-discover エントリポイント
+4. `test/Spinor/ParserSpec.hs` (新規) — パーサーテスト
+5. `test/Spinor/EvalSpec.hs` (新規) — 評価器テスト
+6. `app/Main.hs` (修正) — バッチ実行モード追加
+7. `twister/test.spin` (新規) — Spinor セルフテスト
+
 # 実装内容
 
 ## 1. `spinor.cabal` の変更

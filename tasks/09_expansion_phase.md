@@ -51,6 +51,40 @@
 * `Eval.hs` と `Main.hs` の変更点。
 * 日本語での解説（特に `expand` の再帰ロジックについて）。
 
+# 実装方針
+
+## 概要
+
+マクロ展開を `eval` から分離し、独立した `expand` フェーズとして実装する。REPL の処理フローを `Read → Expand → Eval` に変更。静的型付けへの準備として、展開済み AST に対して型チェックを行える状態を目指す。
+
+## 設計判断
+
+### expand の型
+
+`expand :: Expr -> Eval Expr` — `Eval` モナド内で動作する。環境からマクロ定義を探す必要があるため、純粋な関数にはできない。
+
+### expand の再帰ロジック
+
+- アトム: そのまま返す
+- `(quote expr)`: 内部を展開せず返す
+- `(def name body)` / `(fn params body)`: body のみ再帰展開
+- マクロ呼び出し: 未評価引数でマクロ適用 → 結果を Expr 逆変換 → **再帰展開**（マクロがマクロを生成する場合に対応）
+- その他のリスト: `mapM expand` で全要素を再帰展開
+
+### load の移動
+
+`load` は expand + eval の両方が必要なため、`Eval.hs` に残すと循環依存が発生する。`Expander.hs` に移すことで、依存方向を `Expander → Eval` の一方向に統一する。
+
+### expandAndEval ユーティリティ
+
+`expandAndEval :: Expr -> Eval Val` を提供し、展開→評価のパイプラインを1関数で実行可能にする。`Main.hs` の REPL ループや boot ロードで使用。
+
+## 変更の流れ
+
+1. `src/Spinor/Expander.hs` (新規) — `expand`, `expandAndEval`、`load` 特殊形式
+2. `src/Spinor/Eval.hs` (修正) — マクロ展開ロジック削除、`load` 削除、ヘルパー関数のエクスポート追加
+3. `app/Main.hs` (修正) — REPL と boot ロードで `expandAndEval` を使用
+
 # 実装内容
 
 ## 変更・新規ファイル

@@ -65,6 +65,39 @@
 * 上記デモコードの実行ログ（型情報付き）。
 * もし型エラーが出た場合の修正レポート。
 
+# 実装方針
+
+## 概要
+
+Twister ライブラリを静的型付け言語 Spinor に合わせて最適化する。boot ロードを式ごとの型推論対応に変更し、高階関数が多相型として正しく推論されることを実証する。
+
+## 設計判断
+
+### boot ロードの変更
+
+**変更前**: `boot.spin` の `(load ...)` で各ファイルを読み込み → 型推論なし
+**変更後**: `Main.hs` が各 `.spin` ファイルを直接読み込み → 式ごとに展開→型推論→評価
+
+型推論が失敗する式（マクロ定義 `mac` など）は TypeEnv 更新をスキップし、評価のみ続行する（ベストエフォート方式）。
+
+### nil の導入
+
+`(def nil (quote ()))` を `list.spin` に追加。`forall a. [a]` として推論される。`'()` を `nil` に統一することで、`if` の両枝の型が一致するようになる。
+
+### filter の追加
+
+`(def filter (fn (p xs) (if (null? xs) nil (if (p (car xs)) ...))))` を追加。デモコードの `sum-squares-even` に必要。
+
+### runInferFrom の追加
+
+boot 中に複数式を連続推論する際、フレッシュ型変数カウンタを引き継ぐための `runInferFrom :: Int -> Infer a -> Either Text (a, Int)` を追加。
+
+## 変更の流れ
+
+1. `src/Spinor/Infer.hs` (拡張) — `runInferFrom` 追加
+2. `app/Main.hs` (大幅修正) — boot ロードを式ごとの型推論対応に変更
+3. `twister/list.spin` (修正) — `nil` 追加、`filter` 追加、`'()` → `nil` 統一
+
 # 実装内容
 
 ## 変更ファイル

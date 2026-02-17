@@ -67,6 +67,47 @@ SPINOR> (let f (fn (x) x)
 * `twister/core.spin` の削除指示。
 * 日本語での解説。
 
+# 実装方針
+
+## 概要
+
+`let` をマクロからカーネルの特殊形式に昇格させ、ローカル変数でも多相性を有効にする (Let-polymorphism)。Algorithm W の核心部分の実装。
+
+## 設計判断
+
+### マクロから特殊形式への昇格理由
+
+マクロ版 `let` は `((fn (x) ...) val)` に展開されるため、ラムダ引数は単相 (`Scheme []`) で束縛される。これでは `(let f (fn (x) x) ...)` の `f` を `Int` と `Bool` の両方に使うと型エラーになる。
+
+カーネル版 `ELet` では、`val` の推論結果を `generalize` して多相型スキームに変換するため、`body` 内で異なる型に具体化できる。
+
+### ELet コンストラクタ
+
+`ELet Text Expr Expr` — 変数名、値の式、本体の式。パーサーで `(let name val body)` → `ELet` に変換。
+
+### 型推論ロジック
+
+```
+1. val を推論 → (s1, t1)
+2. apply s1 env → env'
+3. generalize env' t1 → scheme (多相化)
+4. Map.insert name scheme env' → env''
+5. body を env'' で推論 → (s2, t2)
+6. (composeSubst s2 s1, t2) を返す
+```
+
+### twister/core.spin の修正
+
+既存の `let` マクロ定義を削除。カーネル側の構文と競合するため。
+
+## 変更の流れ
+
+1. `src/Spinor/Syntax.hs` (修正) — `ELet` コンストラクタ追加、パーサー修正
+2. `src/Spinor/Infer.hs` (修正) — `infer` に `ELet` パターン追加
+3. `src/Spinor/Eval.hs` (修正) — `eval` に `ELet` パターン追加、`exprToVal` 対応
+4. `src/Spinor/Expander.hs` (修正) — `expand` に `ELet` パターン追加
+5. `twister/core.spin` (修正) — `let` マクロ定義削除
+
 # 実装内容
 
 ## 変更ファイル

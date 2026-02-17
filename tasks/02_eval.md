@@ -59,6 +59,42 @@
 * 日本語で、各ファイルのコード全体を提示してください。
 
 
+# 実装方針
+
+## 概要
+
+パーサーの上に評価器を構築し、「計算ができる Lisp」にする。値の型 (`Val`)、変数環境 (`Env`)、評価モナド (`Eval`)、プリミティブ関数を実装する。
+
+## 設計判断
+
+### Val と Expr の分離
+
+`Expr` (構文) と `Val` (値) を分離することで、評価前後の区別を型レベルで保証する。Lisp の多くの実装では構文と値を同一型にするが、Spinor は静的型付けを目指すため早い段階で分離する。
+
+### Eval モナドの設計
+
+`newtype Eval a = Eval (StateT Env (ExceptT Text IO) a)` とする:
+- `StateT Env` — 変数環境の読み書き（`define` で環境を更新）
+- `ExceptT Text` — エラーハンドリング（未定義シンボル参照など）
+- `IO` — 将来の拡張用（ファイル読み込み等）
+
+`GeneralizedNewtypeDeriving` で `MonadState`, `MonadError`, `MonadIO` を自動導出。
+
+### VPrim の型設計
+
+`VPrim Text ([Val] -> Either Text Val)` とし、純粋な関数として定義する。`Eval` モナドに依存しないことで、`Val.hs` と `Eval.hs` の循環参照を回避。
+
+### 特殊形式の判別
+
+`eval (EList (x:xs))` 内でパターンマッチにより `define`, `if` を判別。関数適用は先頭を eval して `VPrim` を得てから残りの引数を eval して適用する。
+
+## 変更の流れ
+
+1. `src/Spinor/Val.hs` (新規) — `Val` 型と `Env` 型エイリアスを定義
+2. `src/Spinor/Eval.hs` (新規) — `Eval` モナド、`eval` 関数、`define`/`if` 特殊形式
+3. `src/Spinor/Primitive.hs` (新規) — `+`, `-`, `*`, `=`, `<`, `>` プリミティブと `primitiveBindings`
+4. `app/Main.hs` (修正) — REPL を eval ベースに変更、環境を引き回す
+
 # 実装結果
 
 ## 追加・変更ファイル

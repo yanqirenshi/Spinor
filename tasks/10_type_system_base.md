@@ -47,6 +47,45 @@
 * `src/Spinor/Infer.hs`
 * `unify` のロジックについての日本語解説。
 
+# 実装方針
+
+## 概要
+
+Hindley-Milner 型推論エンジンの基礎部分（型データ構造、置換、Types クラス、単一化）を実装する。AST の走査はまだ行わず、型同士の計算ができる状態を目指す。
+
+## 設計判断
+
+### Type データ型
+
+`TInt`, `TBool`, `TStr` を独立したコンストラクタとして定義（`TCon "Int"` 等にリファクタリングするのは将来のオプション）。`TArr Type Type` で関数型、`TList Type` でリスト型を表現。
+
+### Scheme (型スキーム)
+
+`Scheme [Text] Type` で量子化された多相型を表現。`forall a b. a -> b -> a` を `Scheme ["a", "b"] (TArr (TVar "a") (TArr (TVar "b") (TVar "a")))` と表す。
+
+### Types クラス
+
+`apply` (置換の適用) と `ftv` (自由型変数の取得) を統一するクラス。`Type`, `Scheme`, `[a]` にインスタンスを定義。置換適用時に `Scheme` の量子化変数は除外する。
+
+### 置換の合成 (composeSubst)
+
+`composeSubst s1 s2 = Map.map (apply s1) s2 `Map.union` s1` — 「まず s2、次に s1 を適用する」置換を生成。
+
+### unify (単一化)
+
+再帰的な構造比較:
+- 同じ基本型 → 空の置換
+- 型変数 `TVar a` と型 `t` → occurs check 後に束縛
+- `TArr` 同士 → 引数型と戻り値型をそれぞれ単一化して合成
+- `TList` 同士 → 要素型を再帰的に単一化
+
+**Occurs Check**: 無限型を防ぐため、束縛先の型の自由型変数に自分自身が含まれていないかチェック。
+
+## 変更の流れ
+
+1. `src/Spinor/Type.hs` (新規) — `Type`, `Scheme` データ型
+2. `src/Spinor/Infer.hs` (新規) — `Subst`, `Types` クラス、`unify`, `composeSubst`
+
 # 実装内容
 
 ## 変更・新規ファイル

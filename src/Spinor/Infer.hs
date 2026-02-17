@@ -21,12 +21,12 @@ module Spinor.Infer
 import Data.Text (Text, pack)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import Control.Monad (foldM)
+import Control.Monad (foldM, when)
 import Control.Monad.State.Strict
 import Control.Monad.Except
 
 import Spinor.Type   (Type(..), Scheme(..), TypeEnv, showType)
-import Spinor.Syntax (Expr(..), TypeExpr(..), ConstructorDef(..))
+import Spinor.Syntax (Expr(..), Pattern(..), TypeExpr(..), ConstructorDef(..))
 
 -- ============================================================
 -- 置換 (Substitution)
@@ -245,6 +245,25 @@ infer env (EList [ESym "fn", ESym param, body]) = do
   (s, tBody) <- infer env' body
   pure (s, TArr (apply s paramT) (apply s tBody))
 
+-- match 式: target を推論 → 各分岐のパターンと body を推論
+infer env (EMatch targetExpr branches) = do
+  (s0, tTarget) <- infer env targetExpr
+  tResult <- fresh
+  (sFinal, tFinal) <- foldM (inferBranch tTarget tResult) (s0, tResult) branches
+  pure (sFinal, apply sFinal tFinal)
+  where
+    inferBranch tTarget tResult (sAcc, _) (pat, body) = do
+      let env' = apply sAcc env
+          tTgt = apply sAcc tTarget
+      (s1, envExt) <- inferPattern env' tTgt pat
+      let s1Acc = composeSubst s1 sAcc
+          env'' = Map.union envExt (apply s1Acc env)
+      (s2, tBody) <- infer env'' body
+      let s2Acc = composeSubst s2 s1Acc
+      s3 <- liftEither $ unify (apply s2Acc tResult) (apply s2Acc tBody)
+      let s3Acc = composeSubst s3 s2Acc
+      pure (s3Acc, apply s3Acc tResult)
+
 -- data 式 (式レベル): inferTop で処理するが、infer にもケースが必要
 infer _ (EData _ _) = pure (nullSubst, TCon "Unit")
 
@@ -316,6 +335,42 @@ inferQuote (EList (x:_)) = TList (inferQuote x)
 inferQuote (ESym _)    = TStr  -- quote されたシンボルは文字列的に扱う
 inferQuote (ELet _ _ body) = inferQuote body
 inferQuote (EData _ _)     = TCon "Unit"
+inferQuote (EMatch _ _)    = TVar "_match"
+
+-- | パターンの型推論
+--   パターンの型と tTarget を unify し、パターン内変数の型環境を返す
+inferPattern :: TypeEnv -> Type -> Pattern -> Infer (Subst, TypeEnv)
+inferPattern _ tTarget (PVar name) = do
+  tv <- fresh
+  s <- liftEither $ unify tTarget tv
+  pure (s, Map.singleton name (Scheme [] (apply s tv)))
+inferPattern _ _ PWild = pure (nullSubst, Map.empty)
+inferPattern env tTarget (PLit expr) = do
+  (s1, tLit) <- infer env expr
+  s2 <- liftEither $ unify (apply s1 tTarget) tLit
+  pure (composeSubst s2 s1, Map.empty)
+inferPattern env tTarget (PCon conName pats) =
+  case Map.lookup conName env of
+    Nothing -> throwError $ "未定義のコンストラクタ: " <> conName
+    Just scheme -> do
+      conType <- instantiate scheme
+      -- コンストラクタ型を分解: arg1 -> arg2 -> ... -> ResultType
+      let (argTypes, resType) = splitArrType conType
+      when (length argTypes /= length pats) $
+        throwError $ conName <> ": パターンの引数の数が不正です"
+      s1 <- liftEither $ unify tTarget resType
+      -- 各サブパターンを再帰推論
+      (sFinal, envExt) <- foldM (\(sAcc, envAcc) (argT, pat) -> do
+        let argT' = apply sAcc argT
+        (s', envP) <- inferPattern (apply sAcc env) argT' pat
+        pure (composeSubst s' sAcc, Map.union envP envAcc)
+        ) (s1, Map.empty) (zip argTypes pats)
+      pure (sFinal, envExt)
+
+-- | 関数型を引数リストと結果型に分解する
+splitArrType :: Type -> ([Type], Type)
+splitArrType (TArr t1 t2) = let (args, res) = splitArrType t2 in (t1 : args, res)
+splitArrType t             = ([], t)
 
 -- | define / def の型推論共通実装
 inferDefine :: TypeEnv -> Text -> Expr -> Infer (Subst, Type)

@@ -2,12 +2,14 @@
 
 module Spinor.Syntax
   ( Expr(..)
+  , Pattern(..)
   , TypeExpr(..)
   , ConstructorDef(..)
   , readExpr
   , parseFile
   ) where
 
+import Data.Char (isUpper)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
@@ -27,6 +29,14 @@ data TypeExpr
 data ConstructorDef = ConstructorDef Text [TypeExpr]
   deriving (Show, Eq)
 
+-- | パターン (match 式用)
+data Pattern
+  = PVar  Text             -- 変数パターン: x (任意の値にマッチし束縛)
+  | PCon  Text [Pattern]   -- コンストラクタパターン: (Just x), (Cons x xs)
+  | PLit  Expr             -- リテラルパターン: 1, #t, "hello"
+  | PWild                  -- ワイルドカード: _
+  deriving (Show, Eq)
+
 -- | Spinor の抽象構文木
 --   Lisp の S式 を Haskell の代数的データ型にマッピングする。
 --     シンボル → Text, リスト → [Expr]
@@ -38,6 +48,7 @@ data Expr
   | EList [Expr]
   | ELet  Text Expr Expr            -- ^ (let name val body)
   | EData Text [ConstructorDef]     -- ^ (data Name (Con1 a b) (Con2))
+  | EMatch Expr [(Pattern, Expr)]   -- ^ (match target (pat1 body1) (pat2 body2) ...)
   deriving (Show, Eq)
 
 type Parser = Parsec Void Text
@@ -130,9 +141,55 @@ pData = between (lexeme (char '(')) (lexeme (char ')')) $ do
   where
     isSymChar c = c `notElem` (" \t\n\r();#'\"" :: String)
 
+-- match 式パーサー: (match target (pat1 body1) (pat2 body2) ...)
+pMatch :: Parser Expr
+pMatch = between (lexeme (char '(')) (lexeme (char ')')) $ do
+  _ <- lexeme (chunk "match")
+  target <- parseExpr
+  branches <- many pBranch
+  pure $ EMatch target branches
+  where
+    pBranch = between (lexeme (char '(')) (lexeme (char ')')) $ do
+      pat  <- pPattern
+      body <- parseExpr
+      pure (pat, body)
+
+-- パターンパーサー
+pPattern :: Parser Pattern
+pPattern = sc *> (pPatWild <|> pPatCon <|> pPatBool <|> pPatStr <|> try pPatInt <|> pPatSym)
+  where
+    -- ワイルドカード: _
+    pPatWild = PWild <$ lexeme (chunk "_" <* notFollowedBy (satisfy isSymChar))
+    -- コンストラクタパターン: (ConName pat...)
+    pPatCon = between (lexeme (char '(')) (lexeme (char ')')) $ do
+      name <- lexeme $ do
+        s <- some (satisfy isSymChar)
+        pure (T.pack s)
+      pats <- many pPattern
+      pure $ PCon name pats
+    -- 真偽値リテラルパターン
+    pPatBool = lexeme $ do
+      _ <- char '#'
+      PLit . EBool <$> (True <$ char 't' <|> False <$ char 'f')
+    -- 文字列リテラルパターン
+    pPatStr = lexeme $ do
+      _ <- char '"'
+      s <- manyTill L.charLiteral (char '"')
+      pure $ PLit (EStr (T.pack s))
+    -- 整数リテラルパターン
+    pPatInt = PLit . EInt <$> lexeme (L.signed (pure ()) L.decimal)
+    -- シンボル: 大文字始まりなら0引数コンストラクタ、それ以外は変数パターン
+    pPatSym = lexeme $ do
+      s <- some (satisfy isSymChar)
+      let name = T.pack s
+      pure $ if not (T.null name) && isUpper (T.head name)
+             then PCon name []
+             else PVar name
+    isSymChar c = c `notElem` (" \t\n\r();#'\"" :: String)
+
 -- メインパーサー
 parseExpr :: Parser Expr
-parseExpr = sc *> (try pData <|> pList <|> pQuote <|> pBool <|> pStr <|> try pInt <|> pSym)
+parseExpr = sc *> (try pData <|> try pMatch <|> pList <|> pQuote <|> pBool <|> pStr <|> try pInt <|> pSym)
 
 -- パース実行ヘルパー (単一式)
 readExpr :: Text -> Either String Expr

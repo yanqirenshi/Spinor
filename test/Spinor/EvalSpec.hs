@@ -113,3 +113,18 @@ spec = describe "Spinor.Eval (Evaluator)" $ do
     it "ネストしたコンストラクタ: (MyCons 1 (MyCons 2 MyNil))" $ do
       result <- evalMulti "(data MyList (MyCons a (MyList a)) (MyNil))\n(MyCons 1 (MyCons 2 MyNil))"
       result `shouldBe` Right (VData "MyCons" [VInt 1, VData "MyCons" [VInt 2, VData "MyNil" []]])
+
+  describe "パターンマッチ (match)" $ do
+    it "Maybe のマッチ: (Just 42) → (+ v 1) → 43" $ do
+      result <- evalMulti "(data Maybe (Just a) (Nothing))\n(match (Just 42) ((Just v) (+ v 1)) (Nothing 0))"
+      result `shouldBe` Right (VInt 43)
+    it "0引数コンストラクタマッチ: Nothing → 0" $ do
+      result <- evalMulti "(data Maybe (Just a) (Nothing))\n(match Nothing ((Just v) (+ v 1)) (Nothing 0))"
+      result `shouldBe` Right (VInt 0)
+    it "ワイルドカードとリテラル: (match 10 (0 \"zero\") (_ \"non-zero\"))" $
+      "(match 10 (0 \"zero\") (_ \"non-zero\"))" `shouldEvalTo` VStr "non-zero"
+    it "リテラルマッチ: (match 0 (0 \"zero\") (_ \"non-zero\"))" $
+      "(match 0 (0 \"zero\") (_ \"non-zero\"))" `shouldEvalTo` VStr "zero"
+    it "ネストしたパターン: (MyCons x xs) マッチ" $ do
+      result <- evalMulti "(data MyList (MyCons a (MyList a)) (MyNil))\n(match (MyCons 1 (MyCons 2 MyNil)) ((MyCons x xs) x) (MyNil 0))"
+      result `shouldBe` Right (VInt 1)

@@ -74,6 +74,35 @@ SPINOR> (id #t)
 * `Main.hs` のループ処理部分。
 * 日本語での解説。
 
+# 実装方針
+
+## 概要
+
+`define` で定義した関数の型を `generalize` で多相型 (`Scheme`) に昇格させ、REPL ループ内で `TypeEnv` を保持・更新し続ける。これにより Twister ライブラリの関数が多相関数として正しくロードされる。
+
+## 設計判断
+
+### inferTop 関数
+
+`inferTop :: TypeEnv -> Expr -> Infer (TypeEnv, Subst, Type)` — `infer` との違いは戻り値に**更新された TypeEnv** を含むこと。`define` 時に右辺を推論 → `generalize` → 型環境に登録。
+
+### 再帰対応
+
+`define` の推論時に、まずフレッシュ型変数を環境に仮登録する。これにより再帰関数の本体内で自分自身を参照しても型推論が成功する。推論後に仮型変数と推論結果を unify。
+
+### generalize のタイミング
+
+`define` の右辺を推論した後に `generalize` を呼ぶ。環境に含まれない自由型変数を `forall` で量子化する。例: `t1 -> t1` → `forall t1. t1 -> t1`。
+
+### REPL の型環境保持
+
+REPL ループで `TypeEnv` を引き回す。`inferTop` が返す新しい `TypeEnv` を次のループに渡すことで、`define` された関数の型情報が永続する。
+
+## 変更の流れ
+
+1. `src/Spinor/Infer.hs` (拡張) — `inferTop` 関数追加
+2. `app/Main.hs` (修正) — REPL ループで `TypeEnv` を保持・更新
+
 # 実装内容
 
 ## 変更ファイル

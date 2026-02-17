@@ -3,7 +3,7 @@
 module Spinor.ParserSpec (spec) where
 
 import Test.Hspec
-import Spinor.Syntax (Expr(..), TypeExpr(..), ConstructorDef(..), readExpr)
+import Spinor.Syntax (Expr(..), Pattern(..), TypeExpr(..), ConstructorDef(..), readExpr)
 
 spec :: Spec
 spec = describe "Spinor.Syntax (Parser)" $ do
@@ -75,4 +75,23 @@ spec = describe "Spinor.Syntax (Parser)" $ do
         Right (EData "MyList"
           [ ConstructorDef "MyCons" [TEVar "a", TEApp "MyList" [TEVar "a"]]
           , ConstructorDef "MyNil" []
+          ])
+
+  describe "match 式 (パターンマッチ)" $ do
+    it "(match x ((Just v) (+ v 1)) (Nothing 0)) のパース" $
+      readExpr "(match x ((Just v) (+ v 1)) (Nothing 0))" `shouldBe`
+        Right (EMatch (ESym "x")
+          [ (PCon "Just" [PVar "v"], EList [ESym "+", ESym "v", EInt 1])
+          , (PCon "Nothing" [], EInt 0)
+          ])
+    it "ワイルドカードパターン _ のパース" $
+      readExpr "(match x (_ 0))" `shouldBe`
+        Right (EMatch (ESym "x")
+          [ (PWild, EInt 0)
+          ])
+    it "リテラルパターンのパース" $
+      readExpr "(match x (0 \"zero\") (_ \"other\"))" `shouldBe`
+        Right (EMatch (ESym "x")
+          [ (PLit (EInt 0), EStr "zero")
+          , (PWild, EStr "other")
           ])

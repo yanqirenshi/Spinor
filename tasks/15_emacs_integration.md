@@ -49,6 +49,44 @@ SLY 相当とまではいかないが、`run-spinor` による REPL 起動と、
 * `editors/emacs/spinor-mode.el` の完全なコード。
 * ユーザー (Emacs設定ファイル) への設定手順の解説。
 
+# 実装方針
+
+## 概要
+
+Emacs 用の Spinor 専用メジャーモード (`spinor-mode`) と REPL 連携 (`inferior-spinor-mode`) を実装する。`.spin` ファイル編集時のシンタックスハイライトと、バッファからの対話的なコード送信を可能にする。
+
+## 設計判断
+
+### lisp-mode の継承
+
+`spinor-mode` は `lisp-mode` を継承する。基本的なインデントや括弧処理は自動で対応される。Spinor は Lisp 系言語なので、既存の Lisp モードの資産を活用する。
+
+### comint-mode ベースの REPL
+
+`inferior-spinor-mode` は `comint-mode` を継承。プロンプト正規表現 `^spinor> ` でプロセス出力を処理する。`cabal -v0 run spinor` でビルドログを抑制。
+
+### シンタックスハイライトの分類
+
+- 定義系 (`define`, `def`, `mac`, `fn`, `let`) → `font-lock-keyword-face`
+- 制御系 (`if`, `cond`, `when`, `load`, `quote`) → `font-lock-builtin-face`
+- 定数 (`#t`, `#f`, `nil`) → `font-lock-constant-face`
+- プリミティブ関数 (`cons`, `car`, `map` 等) → `font-lock-function-name-face`
+- 型アノテーション (`:: ...`) → `font-lock-type-face`
+
+### キーバインド設計
+
+- `C-x C-e`: カーソル直前の S式を REPL に送信 (`spinor-eval-last-sexp`)
+- `C-c C-k`: バッファファイル全体をロード (`spinor-load-file`)
+- `C-c C-z`: REPL バッファに切り替え (`spinor-switch-to-repl`)
+
+### カスタマイズ変数
+
+`spinor-program`, `spinor-program-args`, `spinor-repl-buffer-name` をカスタマイズ可能にし、環境ごとの柔軟な設定を可能にする。
+
+## 変更の流れ
+
+1. `editors/emacs/spinor-mode.el` (新規) — メジャーモード、REPL モード、キーバインド、ハイライト定義
+
 # 実装内容
 
 ## 新規ファイル

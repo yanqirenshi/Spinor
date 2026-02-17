@@ -51,6 +51,38 @@ Twister (標準ライブラリ) を拡張し、より高度なリスト操作と
 * Haskell 側の変更点。
 * 簡単な動作確認ログ。
 
+# 実装方針
+
+## 概要
+
+Twister ライブラリを拡張し、高度なリスト操作 (`foldl`, `foldr`, `reverse`, `length`, `append`) と数学関数 (`even?`, `odd?`, `fact`, `fib`) を追加する。カーネル側には剰余演算 `%` と quote 略記 `'` を追加。
+
+## 設計判断
+
+### `%` プリミティブ
+
+既存の `numBinOp` ヘルパーを再利用し `mod` をラップ。最小限の変更で追加可能。
+
+### quote 略記 `'`
+
+`pQuote` パーサーで `'expr` を `EList [ESym "quote", expr]` に変換。Lisp の基本的なリーダーマクロとして実装。`isSymChar` から `'` と `"` をシンボル文字から除外する。
+
+### Twister 関数の定義順序
+
+依存関係を考慮: `foldl` → `foldr` → `reverse` の順で定義（`reverse` が `foldl` に依存するため）。
+
+### math.spin の分離
+
+数学関数は `list.spin` とは概念的に異なるため、別ファイル `math.spin` として分離。`boot.spin` に追加ロードを記述。
+
+## 変更の流れ
+
+1. `src/Spinor/Primitive.hs` (修正) — `%` プリミティブ追加
+2. `src/Spinor/Syntax.hs` (修正) — `pQuote` パーサー追加、`isSymChar` 修正
+3. `twister/list.spin` (修正) — `length`, `append`, `foldl`, `foldr`, `reverse` 追加
+4. `twister/math.spin` (新規) — `even?`, `odd?`, `fact`, `fib`
+5. `twister/boot.spin` (修正) — `math.spin` のロード追加
+
 # 実装内容
 
 ## 変更・新規ファイル

@@ -46,6 +46,42 @@
 * Haskell 側の変更点 (`Primitive.hs`, `Main.hs`, `Syntax.hs`)。
 * 実装後、REPL を起動すると "Twister loaded." と表示され、`map` や `not` がすぐに使える状態になることを目指してください。
 
+# 実装方針
+
+## 概要
+
+「カーネル (Spinor)」と「標準ライブラリ (Twister)」の分離を実現する。ファイル読み込み機構 (`load`)、文字列リテラル、複数式パースを実装し、起動時に `twister/boot.spin` を自動読み込みする。
+
+## 設計判断
+
+### 文字列リテラルの追加
+
+`load` のファイルパス指定に文字列が必要なため、`EStr Text` / `VStr Text` を新設。`pStr` は `manyTill L.charLiteral` でエスケープシーケンスにも対応する。
+
+### load / print は特殊形式として実装
+
+IO と eval 環境アクセスが必要なため、`VPrim` (純粋関数) ではなく `Eval.hs` 内の特殊形式として実装。引数は評価される（`define` のような非評価特殊形式とは異なる）。
+
+### parseFile の追加
+
+`Syntax.hs` に `parseFile :: Text -> Either String [Expr]` を追加。ファイル全体（複数の S式）をリストとしてパースする。`many parseExpr` で EOF まで読み込む。
+
+### def エイリアス
+
+`define` の短縮形として `def` を追加。`evalDefine` ヘルパーで共通化。
+
+### boot ロードの設計
+
+`Main.hs` で `doesFileExist` → `parseFile` → `runEval` で全式を順次評価。エラー時はメッセージ表示してプリミティブ環境のまま REPL へ。
+
+## 変更の流れ
+
+1. `src/Spinor/Syntax.hs` (修正) — `EStr`, `pStr`, `parseFile` 追加
+2. `src/Spinor/Val.hs` (修正) — `VStr` 追加
+3. `src/Spinor/Eval.hs` (修正) — `EStr` eval、`def`、`load`、`print` 特殊形式
+4. `app/Main.hs` (修正) — 起動時 boot ロード
+5. `twister/` (新規) — `core.spin`, `list.spin`, `boot.spin`
+
 # 実装内容
 
 ## 変更・新規ファイル
