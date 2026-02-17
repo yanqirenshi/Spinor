@@ -12,6 +12,8 @@ module Spinor.Loader
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
+import qualified Data.Text.Encoding as TE
+import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
 import Data.IORef
 import Control.Monad (foldM, when)
@@ -71,7 +73,7 @@ actuallyLoadModule config registry loading modName = do
   if not exists
     then pure $ Left $ "モジュールが見つかりません: " <> modName <> " (" <> T.pack path <> ")"
     else do
-      content <- TIO.readFile path
+      content <- readFileUtf8 path
       case parseFile content of
         Left err -> pure $ Left $ "パースエラー (" <> modName <> "): " <> T.pack err
         Right exprs -> processModule config registry (modName : loading) modName exprs
@@ -189,7 +191,7 @@ loadFile config registry path = do
   if not exists
     then pure $ Left $ "ファイルが見つかりません: " <> T.pack path
     else do
-      content <- TIO.readFile path
+      content <- readFileUtf8 path
       case parseFile content of
         Left err -> pure $ Left $ "パースエラー: " <> T.pack err
         Right exprs -> do
@@ -217,7 +219,7 @@ evalFileWithModules config registry path = do
   if not exists
     then pure $ Left $ "ファイルが見つかりません: " <> T.pack path
     else do
-      content <- TIO.readFile path
+      content <- readFileUtf8 path
       case parseFile content of
         Left err -> pure $ Left $ "パースエラー: " <> T.pack err
         Right exprs -> do
@@ -264,3 +266,7 @@ evalExprListWithStatus env exprs = go env True exprs
               TIO.putStrLn $ "エラー: " <> err
               go envAfterExpand False rest
             Right (_, env') -> go env' ok rest
+
+-- | UTF-8 でファイルを読み込む (Windows 対応)
+readFileUtf8 :: FilePath -> IO Text
+readFileUtf8 path = TE.decodeUtf8 <$> BS.readFile path

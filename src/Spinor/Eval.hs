@@ -16,6 +16,9 @@ import qualified Data.Text.IO as TIO
 import qualified Data.Map.Strict as Map
 import Control.Monad.State.Strict
 import Control.Monad.Except
+import Control.Concurrent (forkIO, threadDelay)
+import Control.Concurrent.MVar
+import Control.Monad (void)
 
 import Spinor.Syntax (Expr(..), Pattern(..), ConstructorDef(..))
 import Spinor.Val    (Val(..), Env, showVal)
@@ -113,6 +116,57 @@ eval (EList [ESym "if", cond, thenE, elseE]) = do
     VBool False -> eval elseE
     VNil        -> eval elseE
     _           -> eval thenE
+
+-- 特殊形式: (begin expr1 expr2 ...) / (progn expr1 expr2 ...) — 順次評価
+eval (EList (ESym "begin" : exprs)) = evalSequence exprs
+eval (EList (ESym "progn" : exprs)) = evalSequence exprs
+
+-- 特殊形式: (spawn expr) — 新しいスレッドで式を評価
+eval (EList [ESym "spawn", expr]) = do
+  env <- get  -- 現在の環境をキャプチャ (クロージャと同じ原理)
+  liftIO $ void $ forkIO $ do
+    -- 新しいスレッドで評価を実行。エラーは表示。
+    result <- runEval env (eval expr)
+    case result of
+      Left err -> TIO.putStrLn $ "[spawn error] " <> err
+      Right _  -> pure ()
+  pure $ VBool True
+
+-- 特殊形式: (sleep millis) — 指定ミリ秒だけスレッドを停止
+eval (EList [ESym "sleep", arg]) = do
+  val <- eval arg
+  case val of
+    VInt ms -> do
+      liftIO $ threadDelay (fromInteger ms * 1000)  -- ミリ秒→マイクロ秒
+      pure $ VBool True
+    _ -> throwError "sleep: 整数が必要です"
+
+-- 特殊形式: (new-mvar) / (new-mvar val) — MVar を作成
+eval (EList [ESym "new-mvar"]) = do
+  mvar <- liftIO newEmptyMVar
+  pure $ VMVar mvar
+
+eval (EList [ESym "new-mvar", arg]) = do
+  val <- eval arg
+  mvar <- liftIO $ newMVar val
+  pure $ VMVar mvar
+
+-- 特殊形式: (take-mvar mvar) — MVar から値を取り出す (ブロッキング)
+eval (EList [ESym "take-mvar", arg]) = do
+  val <- eval arg
+  case val of
+    VMVar mvar -> liftIO $ takeMVar mvar
+    _ -> throwError "take-mvar: MVar が必要です"
+
+-- 特殊形式: (put-mvar mvar val) — MVar に値を格納する (ブロッキング)
+eval (EList [ESym "put-mvar", mvarExpr, valExpr]) = do
+  mvarVal <- eval mvarExpr
+  val <- eval valExpr
+  case mvarVal of
+    VMVar mvar -> do
+      liftIO $ putMVar mvar val
+      pure $ VBool True
+    _ -> throwError "put-mvar: 第1引数には MVar が必要です"
 
 -- 特殊形式: (fn (params...) body) — 固定長 / ドット記法可変長
 --   現在の環境をキャプチャしてクロージャを生成する。
@@ -261,6 +315,12 @@ matchPattern (VData conName vals) (PCon pName pats)
       ) (Just Map.empty) (zip vals pats)
   | otherwise = Nothing
 matchPattern _ (PCon _ _) = Nothing
+
+-- | begin/progn の式リストを順次評価する
+evalSequence :: [Expr] -> Eval Val
+evalSequence []     = pure VNil
+evalSequence [e]    = eval e
+evalSequence (e:es) = eval e >> evalSequence es
 
 -- | パラメータリストからシンボル名を抽出する (fn / mac 共通)
 extractSym :: Expr -> Eval Text

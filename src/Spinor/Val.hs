@@ -9,6 +9,7 @@ module Spinor.Val
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
+import Control.Concurrent.MVar (MVar)
 
 import Spinor.Syntax (Expr)
 
@@ -30,9 +31,10 @@ data Val
   | VSym  Text                                 -- シンボル (quote 用)
   | VStr  Text                                 -- 文字列
   | VData Text [Val]                           -- データコンストラクタ (名前, フィールド値)
+  | VMVar (MVar Val)                           -- 同期変数 (MVar)
 
 -- | テスト用の構造的等値比較
---   VPrim, VFunc, VMacro は関数を含むため常に不等
+--   VPrim, VFunc, VMacro, VMVar は関数/参照を含むため常に不等
 instance Eq Val where
   VInt  a   == VInt  b   = a == b
   VBool a   == VBool b   = a == b
@@ -41,6 +43,7 @@ instance Eq Val where
   VList as  == VList bs  = as == bs
   VData n1 vs1 == VData n2 vs2 = n1 == n2 && vs1 == vs2
   VNil      == VNil      = True
+  VMVar _   == VMVar _   = False  -- MVar は参照のため常に不等
   _         == _         = False
 
 instance Show Val where
@@ -60,3 +63,4 @@ showVal (VSym s)       = show s
 showVal (VStr s)       = show s
 showVal (VData name []) = T.unpack name
 showVal (VData name vs) = "(" ++ T.unpack name ++ " " ++ unwords (map showVal vs) ++ ")"
+showVal (VMVar _)       = "<mvar>"

@@ -17,24 +17,25 @@
     - [x] **Kernel Test (Haskell):** Hspec を導入し、Parser, Eval 等の単体テストを作成。
     - [x] **Batch Execution:** スクリプトを一括評価して終了するバッチ実行モードの追加。
     - [x] **Library Test (Spinor):** セルフホストされたテストフレームワーク (`assert-equal`) と Twister ライブラリのテスト作成。
-- [ ] **Step 17: ユーザー定義データ型 (ADTs)**
-    - [ ] 構文: `(data Maybe (Just a) (Nothing))`
-    - [ ] カーネルでの型コンストラクタと型定義のサポート。
-- [ ] **パターンマッチ**
-    - [ ] 構文: `(match x ((Just v) v) (Nothing 0))`
-    - [ ] 分解ロジックと網羅性チェック。
-- [ ] **Concurrency & Parallelism (Haskell RTS Integration)**
+- [x] **Step 17: ユーザー定義データ型 (ADTs)**
+    - [x] 構文: `(data Maybe (Just a) (Nothing))`
+    - [x] カーネルでの型コンストラクタと型定義のサポート。
+- [x] **Step 18: パターンマッチ**
+    - [x] 構文: `(match x ((Just v) v) (Nothing 0))`
+    - [x] 分解ロジックと網羅性チェック。
+- [x] **Step 19: モジュールシステム**
+    - [x] 名前空間と `import` / `export` の仕組み。
+- [ ] **Step 20: 並行処理 (Concurrency) - Haskell RTS Integration**
     - [ ] **Green Threads:** `spawn` (forkIO), `sleep` (threadDelay) プリミティブの実装。
     - [ ] **Communication:** `MVar` (同期変数) のサポート (`new-mvar`, `take-mvar`, `put-mvar`)。
     - [ ] **STM (Software Transactional Memory):** `TVar` と `atomically` ブロックの実装 (ロックフリーな並行処理)。
-- [ ] **モジュールシステム**
-    - [ ] 名前空間と `import` / `export` の仕組み。
 
 ## 🤝 Common Lisp Alignment (CL互換レイヤー)
 Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/Library 並行作業）。
 
 ### Spinor Kernel (Haskell側)
 - [ ] **Control Flow Primitives**
+    - [ ] `let` の拡張: 複数変数の束縛 `(let ((x 1) (y 2)) ...)` への対応（破壊的変更）。
     - [ ] `progn`: 式を順番に評価し、最後の値を返す。
     - [ ] `setq` (または `set!`): 既存変数の破壊的代入。
     - [ ] `error`: エラー送出プリミティブ。
@@ -49,7 +50,7 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
 - [ ] **Definitions & Binding Macros**
     - [ ] `defun`: `(define name (fn args ...))` の構文糖衣。
     - [ ] `defvar` / `defparameter`: グローバル変数定義。
-    - [ ] `let*`: 順次束縛マクロ。
+    - [ ] `let*`: 順次束縛マクロ（`let` 拡張後に実装）。
 - [ ] **Control Flow Macros**
     - [ ] `when`, `unless`: `if` の片側版。
     - [ ] `and`, `or`: 短絡評価マクロ。

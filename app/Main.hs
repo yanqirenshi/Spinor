@@ -4,7 +4,9 @@ module Main (main) where
 
 import qualified Data.Text    as T
 import qualified Data.Text.IO as TIO
-import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF)
+import qualified Data.Text.Encoding as TE
+import qualified Data.ByteString as BS
+import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF, hSetEncoding, utf8)
 import System.Directory (doesFileExist, getCurrentDirectory)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
@@ -29,6 +31,8 @@ twisterFiles =
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
+  hSetEncoding stdout utf8
+  hSetEncoding stdin utf8
   args <- getArgs
   case args of
     []     -> replMode
@@ -87,10 +91,10 @@ loadBoot env tyEnv = do
       putStrLn "Twister loaded."
       pure (env', tyEnv')
 
--- | 単一の .spin ファイルをロードする
+-- | 単一の .spin ファイルをロードする (UTF-8)
 loadSpinFile :: (Env, TypeEnv) -> FilePath -> IO (Env, TypeEnv)
 loadSpinFile (env, tyEnv) path = do
-  content <- TIO.readFile path
+  content <- readFileUtf8 path
   case parseFile content of
     Left err -> do
       putStrLn $ path ++ " パースエラー: " ++ err
@@ -183,3 +187,9 @@ loop env tyEnv = do
                         Right (val, env') -> do
                           putStrLn (show val)
                           loop env' tyEnv'
+
+-- | UTF-8 でファイルを読み込む (Windows 対応)
+readFileUtf8 :: FilePath -> IO T.Text
+readFileUtf8 path = do
+  bs <- BS.readFile path
+  pure $ TE.decodeUtf8 bs
