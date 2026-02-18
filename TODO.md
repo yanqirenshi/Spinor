@@ -75,6 +75,10 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [x] **Message Framing:** Swank プロトコル仕様のパケット（長さヘッダ + ペイロード）の送受信実装。
     - [x] **RPC Dispatcher:** `(:emacs-rex ...)` 形式のリクエストを解析するディスパッチャの実装。
     - [x] **Handshake:** `M-x sly-connect` 接続時の初期化シーケンス (`connection-info`) への応答。
+- [ ] **Step 31: SLY Advanced (Interactive Evaluation)**
+    - [ ] **Interactive Eval:** `swank:interactive-eval` (`C-x C-e` 等) の実装と結果返却。
+    - [ ] **Compilation:** `swank:compile-string-for-emacs` (`C-c C-c`) の実装。
+    - [ ] **Output Redirection:** 標準出力 (`print` 等) を Emacs の REPL バッファに転送する仕組み。
 
 ## 📢 Promotion & Website (広報・Web)
 Spinor / Twister の魅力を伝えるための Web プレゼンス。
@@ -86,6 +90,10 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
 - [ ] **GitHub Pages Deployment**
     - [x] `docs/` フォルダへのデプロイ設定。
     - [ ] ユーザーマニュアルとの統合。
+- [ ] **Step 32: Browser REPL UI (WASM Integration)**
+    - [ ] **xterm.js Integration:** WASM 版 Spinor を xterm.js と接続し、ブラウザ上でターミナル動作を実現。
+    - [ ] **Repl Loop:** 入力を受け取り、WASM で評価し、結果を表示するループの構築。
+    - [ ] **Github Pages:** 動作する REPL をランディングページに埋め込みデプロイ。
 
 ## 🚀 Performance & Compilation (パフォーマンスと移植性)
 
