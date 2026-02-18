@@ -188,4 +188,51 @@
 (assert-equal "(or #f #f 'last)" (or #f #f 'last) 'last)
 (assert-equal "(or)" (or) #f)
 
+; ============================================================
+; Step 23: リスト操作ユーティリティのテスト
+; ============================================================
+
+; --- list ---
+(assert-equal "(list)" (list) nil)
+(assert-equal "(list 1 2 3)" (list 1 2 3) (cons 1 (cons 2 (cons 3 nil))))
+(assert-equal "(list (list 1) (list 2 3))"
+  (list (list 1) (list 2 3))
+  (cons (cons 1 nil) (cons (cons 2 (cons 3 nil)) nil)))
+
+; --- append2 (2引数版) ---
+(assert-equal "(append2 (list 1 2) (list 3 4))" (append2 (list 1 2) (list 3 4)) (list 1 2 3 4))
+(assert-equal "(append2 nil (list 1 2))" (append2 nil (list 1 2)) (list 1 2))
+(assert-equal "(append2 (list 1 2) nil)" (append2 (list 1 2) nil) (list 1 2))
+
+; --- append (多引数版) ---
+(assert-equal "(append)" (append) nil)
+(assert-equal "(append (list 1 2))" (append (list 1 2)) (list 1 2))
+(assert-equal "(append (list 1 2) (list 3 4))" (append (list 1 2) (list 3 4)) (list 1 2 3 4))
+(assert-equal "(append (list 1) (list 2) (list 3))" (append (list 1) (list 2) (list 3)) (list 1 2 3))
+(assert-equal "(append (list 1 2) nil (list 3))" (append (list 1 2) nil (list 3)) (list 1 2 3))
+
+; --- member ---
+(assert-equal "(member 3 (list 1 2 3 4 5))" (member 3 (list 1 2 3 4 5)) (list 3 4 5))
+(assert-equal "(member 6 (list 1 2 3))" (member 6 (list 1 2 3)) nil)
+(assert-equal "(member nil (list 1 nil 2))" (member nil (list 1 nil 2)) (list nil 2))
+(assert-equal "(member (list 2 3) (list 1 (list 2 3) 4))"
+  (member (list 2 3) (list 1 (list 2 3) 4))
+  (list (list 2 3) 4))
+
+; --- nth ---
+(assert-equal "(nth 0 (list 10 20 30))" (nth 0 (list 10 20 30)) 10)
+(assert-equal "(nth 2 (list 10 20 30))" (nth 2 (list 10 20 30)) 30)
+(assert-equal "(nth 3 (list 10 20 30))" (nth 3 (list 10 20 30)) nil)
+(assert-equal "(nth 0 nil)" (nth 0 nil) nil)
+
+; --- reverse (既存の確認) ---
+(assert-equal "(reverse (list 1 2 3))" (reverse (list 1 2 3)) (list 3 2 1))
+(assert-equal "(reverse nil)" (reverse nil) nil)
+(assert-equal "(reverse (list 1))" (reverse (list 1)) (list 1))
+
+; --- length (既存の確認) ---
+(assert-equal "(length (list 1 2 3))" (length (list 1 2 3)) 3)
+(assert-equal "(length nil)" (length nil) 0)
+(assert-equal "(length (list (list 1)))" (length (list (list 1))) 1)
+
 (print "\nAll tests passed.\n")
