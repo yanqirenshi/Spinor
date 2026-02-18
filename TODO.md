@@ -71,10 +71,10 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [x] **Dependency:** `package.yaml` に `network` パッケージを追加。
     - [x] **Socket Server:** 指定ポートで待ち受け、接続を受け入れる `spinor server` コマンドの実装。
     - [x] **Message Loop:** 受信した文字列を S式 としてパースし、評価結果を返す簡易ループの実装。
-- [ ] **Step 30: SLY Integration (Swank Protocol Basics)**
-    - [ ] **Message Framing:** Swank プロトコル仕様のパケット（長さヘッダ + ペイロード）の送受信実装。
-    - [ ] **RPC Dispatcher:** `(:emacs-rex ...)` 形式のリクエストを解析するディスパッチャの実装。
-    - [ ] **Handshake:** `M-x sly-connect` 接続時の初期化シーケンス (`connection-info`) への応答。
+- [x] **Step 30: SLY Integration (Swank Protocol Basics)**
+    - [x] **Message Framing:** Swank プロトコル仕様のパケット（長さヘッダ + ペイロード）の送受信実装。
+    - [x] **RPC Dispatcher:** `(:emacs-rex ...)` 形式のリクエストを解析するディスパッチャの実装。
+    - [x] **Handshake:** `M-x sly-connect` 接続時の初期化シーケンス (`connection-info`) への応答。
 
 ## 📢 Promotion & Website (広報・Web)
 Spinor / Twister の魅力を伝えるための Web プレゼンス。
@@ -100,9 +100,9 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [x] Hello World のバイナリ生成と実行確認。
 - [x] **Step 27: 最適化 (Optimization)**
     - [x] **TCO (Tail Call Optimization):** 末尾再帰を C の `goto` ループまたはトランポリンコードに展開。
-- [ ] **Step 28: WebAssembly (WASM) 対応**
-    - [ ] Emscripten を用いた C 出力からの WASM ビルドフローの確立。
-    - [ ] ブラウザ上での REPL 動作 (LPへの埋め込み)。
+- [x] **Step 28: WebAssembly (WASM) 対応**
+    - [x] Emscripten を用いた C 出力からの WASM ビルドフローの確立。
+    - [x] ブラウザ上での REPL 動作 (LPへの埋め込み)。
 
 ## 🔬 HPC & Science (科学技術計算と可視化)
 - [ ] **Matrix Operations (BLAS/LAPACK Integration)**
