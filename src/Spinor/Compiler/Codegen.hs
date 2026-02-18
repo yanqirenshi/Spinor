@@ -48,20 +48,73 @@ isDefun (EList (ESym "defun" : _)) = True
 isDefun _ = False
 
 -- | defun 式を C の関数定義に変換する
+--
+-- 末尾自己再帰が検出された場合は TCO (while(1) + continue) を適用する。
 compileFunDef :: Expr -> CCode
-compileFunDef (EList [ESym "defun", ESym name, EList args, body]) =
+compileFunDef (EList [ESym "defun", ESym name, EList argExprs, body]) =
     let cName = mangle name
-        cArgs = T.intercalate ", " (map toCArg args)
-        cBody = compileExpr body
-    in T.unlines
-        [ "SpObject* " <> cName <> "(" <> cArgs <> ") {"
-        , "    return " <> cBody <> ";"
-        , "}"
-        ]
+        cArgs = T.intercalate ", " (map toCArg argExprs)
+        paramNames = [n | ESym n <- argExprs]
+    in if hasTailSelfCall name body
+       then -- TCO 適用: while(1) ループで末尾再帰を最適化
+            T.unlines
+              [ "SpObject* " <> cName <> "(" <> cArgs <> ") {"
+              , "    while(1) {"
+              , compileTailBody name paramNames body
+              , "    }"
+              , "}"
+              ]
+       else -- TCO 非適用: 従来通り return
+            T.unlines
+              [ "SpObject* " <> cName <> "(" <> cArgs <> ") {"
+              , "    return " <> compileExpr body <> ";"
+              , "}"
+              ]
   where
     toCArg (ESym argName) = "SpObject* " <> mangle argName
     toCArg _ = "SpObject* _unknown"
 compileFunDef _ = "/* invalid defun */"
+
+-- | 関数本体の末尾位置に自己再帰呼び出しがあるかを判定する
+--
+-- if 式の場合は両分岐を検査する。
+hasTailSelfCall :: Text -> Expr -> Bool
+hasTailSelfCall fname (EList [ESym "if", _, thenE, elseE]) =
+    hasTailSelfCall fname thenE || hasTailSelfCall fname elseE
+hasTailSelfCall fname (EList (ESym f : _)) = f == fname
+hasTailSelfCall _ _ = False
+
+-- | 末尾位置の式を TCO 対応の C コード (文) に変換する
+--
+-- - if 式: C の if/else 文に変換し、各分岐を再帰的に処理
+-- - 自己再帰呼び出し: 一時変数で引数評価 → パラメータ更新 → continue
+-- - その他: return 文を生成
+compileTailBody :: Text -> [Text] -> Expr -> CCode
+-- if 式: 分岐を C の if/else 文に変換
+compileTailBody fname params (EList [ESym "if", cond, thenE, elseE]) =
+    T.unlines
+      [ "        if (" <> compileExpr cond <> "->value.boolean) {"
+      , compileTailBody fname params thenE
+      , "        } else {"
+      , compileTailBody fname params elseE
+      , "        }"
+      ]
+-- 末尾自己再帰呼び出し: 引数を一時変数に退避してから更新 + continue
+compileTailBody fname params (EList (ESym f : args))
+    | f == fname =
+        let compiledArgs = map compileExpr args
+            indexedArgs = zip [0::Int ..] compiledArgs
+            indexedParams = zip [0::Int ..] params
+            tmpDecls = T.unlines
+              [ "            SpObject* _tco_tmp_" <> T.pack (show i) <> " = " <> a <> ";"
+              | (i, a) <- indexedArgs ]
+            assigns = T.unlines
+              [ "            " <> mangle p <> " = _tco_tmp_" <> T.pack (show i) <> ";"
+              | (i, p) <- indexedParams ]
+        in tmpDecls <> assigns <> "            continue;"
+-- その他の式: return で値を返す
+compileTailBody _ _ expr =
+    "            return " <> compileExpr expr <> ";"
 
 -- | Spinor シンボルを安全な C 識別子に変換する (名前マングリング)
 --
