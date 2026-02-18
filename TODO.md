@@ -90,10 +90,10 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
 - [ ] **GitHub Pages Deployment**
     - [x] `docs/` フォルダへのデプロイ設定。
     - [ ] ユーザーマニュアルとの統合。
-- [ ] **Step 32: Browser REPL UI (WASM Integration)**
-    - [ ] **xterm.js Integration:** WASM 版 Spinor を xterm.js と接続し、ブラウザ上でターミナル動作を実現。
-    - [ ] **Repl Loop:** 入力を受け取り、WASM で評価し、結果を表示するループの構築。
-    - [ ] **Github Pages:** 動作する REPL をランディングページに埋め込みデプロイ。
+- [x] **Step 32: Browser REPL UI (WASM Integration)**
+    - [x] **xterm.js Integration:** WASM 版 Spinor を xterm.js と接続し、ブラウザ上でターミナル動作を実現。
+    - [x] **Repl Loop:** 入力を受け取り、WASM で評価し、結果を表示するループの構築。
+    - [x] **Github Pages:** 動作する REPL をランディングページに埋め込みデプロイ。
 
 ## 🚀 Performance & Compilation (パフォーマンスと移植性)
 
