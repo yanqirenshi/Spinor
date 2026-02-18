@@ -94,6 +94,12 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [x] **xterm.js Integration:** WASM 版 Spinor を xterm.js と接続し、ブラウザ上でターミナル動作を実現。
     - [x] **Repl Loop:** 入力を受け取り、WASM で評価し、結果を表示するループの構築。
     - [x] **Github Pages:** 動作する REPL をランディングページに埋め込みデプロイ。
+- [x] **Step 33: Documentation & Polish**
+    - [x] **README Refactoring:** 最新機能 (TCO, WASM, SLY) を反映し全面刷新。
+    - [x] **Reference:** `docs/reference.md` の作成。
+    - [x] **Emacs Guide:** `docs/emacs.md` の作成。
+    - [x] **CLI Polish:** `spinor --help`, `--version` の改善。
+    - [x] **Doc Viewer:** `docs/doc.html` による Markdown の動的レンダリング (GitHub Pages 対応)。
 
 ## 🚀 Performance & Compilation (パフォーマンスと移植性)
 
@@ -111,6 +117,10 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
 - [x] **Step 28: WebAssembly (WASM) 対応**
     - [x] Emscripten を用いた C 出力からの WASM ビルドフローの確立。
     - [x] ブラウザ上での REPL 動作 (LPへの埋め込み)。
+- [ ] **Step 36: LLVM Backend Investigation (GCC依存からの脱却)**
+    - [ ] **Research:** `llvm-hs` ライブラリを用いた LLVM IR 生成の調査。
+    - [ ] **Prototype:** 小さな計算式 (`+`, `*`) を LLVM JIT でメモリ内コンパイル・実行するプロトタイプの作成。
+    - [ ] **Comparison:** 現行の C言語トランスパイル方式とのパフォーマンス・ビルド時間の比較。
 
 ## 🔬 HPC & Science (科学技術計算と可視化)
 - [ ] **Matrix Operations (BLAS/LAPACK Integration)**
@@ -125,3 +135,9 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
 - [ ] **文字列と IO** (ネイティブString, ファイルIO)
 - [ ] **テストフレームワーク**
 - [ ] **JSON Support**
+
+## 📦 Distribution & CI (配布・自動化)
+- [ ] **Step 34: Binary Distribution (GitHub Actions)**
+    - [ ] **CI Pipeline:** Push 時に Linux / Windows / macOS でビルドとテストを実行するワークフローの作成。
+    - [ ] **Release Automation:** タグ (`v0.1.0` 等) を打った際に、自動で `spinor-windows.exe`, `spinor-linux` 等をビルドし、GitHub Releases にアップロードする設定。
+
