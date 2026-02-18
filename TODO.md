@@ -75,9 +75,9 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [x] **Message Framing:** Swank プロトコル仕様のパケット（長さヘッダ + ペイロード）の送受信実装。
     - [x] **RPC Dispatcher:** `(:emacs-rex ...)` 形式のリクエストを解析するディスパッチャの実装。
     - [x] **Handshake:** `M-x sly-connect` 接続時の初期化シーケンス (`connection-info`) への応答。
-- [ ] **Step 31: SLY Advanced (Interactive Evaluation)**
-    - [ ] **Interactive Eval:** `swank:interactive-eval` (`C-x C-e` 等) の実装と結果返却。
-    - [ ] **Compilation:** `swank:compile-string-for-emacs` (`C-c C-c`) の実装。
+- [x] **Step 31: SLY Advanced (Interactive Evaluation)**
+    - [x] **Interactive Eval:** `swank:interactive-eval` (`C-x C-e` 等) の実装と結果返却。
+    - [x] **Compilation:** `swank:compile-string-for-emacs` (`C-c C-c`) の実装。
     - [ ] **Output Redirection:** 標準出力 (`print` 等) を Emacs の REPL バッファに転送する仕組み。
 
 ## 📢 Promotion & Website (広報・Web)
