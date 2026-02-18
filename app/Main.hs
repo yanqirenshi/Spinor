@@ -7,10 +7,11 @@ import qualified Data.Text.IO as TIO
 import qualified Data.Text.Encoding as TE
 import qualified Data.ByteString as BS
 import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF, hSetEncoding, utf8)
-import System.Directory (doesFileExist, getCurrentDirectory)
+import System.Directory (doesFileExist, getCurrentDirectory, removeFile)
 import System.Environment (getArgs)
-import System.Exit (exitFailure)
-import System.FilePath (takeDirectory)
+import System.Exit (exitFailure, exitSuccess, ExitCode(..))
+import System.FilePath (takeDirectory, takeBaseName, replaceExtension)
+import System.Process (readProcessWithExitCode)
 import Spinor.Syntax    (Expr(..), readExpr, parseFile)
 import Spinor.Type      (TypeEnv, showType)
 import Spinor.Val       (Env)
@@ -36,10 +37,11 @@ main = do
   hSetEncoding stdin utf8
   args <- getArgs
   case args of
-    []               -> replMode
+    []                -> replMode
     ["compile", file] -> compileMode file
-    [file]           -> batchMode file
-    _                -> putStrLn "Usage: spinor [file] | spinor compile <file>"
+    ["build", file]   -> buildMode file
+    [file]            -> batchMode file
+    _                 -> putStrLn "Usage: spinor [file] | spinor compile <file> | spinor build <file>"
 
 -- | REPL モード (引数なし)
 replMode :: IO ()
@@ -89,6 +91,58 @@ compileMode file = do
       let cCode = compileProgram exprs
       TIO.writeFile "output.c" cCode
       putStrLn "Compiled to output.c"
+
+-- | ビルドモード: .spin ファイルからネイティブバイナリを生成
+buildMode :: FilePath -> IO ()
+buildMode file = do
+  -- 1. パス設定
+  let baseName = takeBaseName file
+      cFile = replaceExtension file ".c"
+      outFile = baseName
+      runtimeSrc = "runtime/spinor.c"
+
+  -- 2. Cコード生成
+  putStrLn $ "Compiling " <> file <> " to " <> cFile <> "..."
+  content <- readFileUtf8 file
+  case parseFile content of
+    Left err -> do
+      putStrLn $ "Parse error: " ++ err
+      exitFailure
+    Right exprs -> do
+      let cCode = compileProgram exprs
+      TIO.writeFile cFile cCode
+
+      -- 3. Cコンパイラ呼び出し
+      gccPath <- findGcc
+      putStrLn $ "Building " <> outFile <> " with " <> gccPath <> "..."
+      (exitCode, out, err) <- readProcessWithExitCode gccPath ["-Iruntime", "-o", outFile, cFile, runtimeSrc] ""
+      case exitCode of
+        ExitSuccess -> do
+          -- 4. クリーンアップと完了メッセージ
+          doesFileExist cFile >>= \exists ->
+            if exists then removeFile cFile else pure ()
+          putStrLn $ "Build successful. Executable created: " <> outFile
+          exitSuccess
+        _ -> do
+          putStrLn "Build failed. C compiler output:"
+          putStrLn out
+          putStrLn err
+          exitFailure
+
+-- | gcc を探す (MSYS2 UCRT/MINGW64 対応)
+findGcc :: IO FilePath
+findGcc = do
+    let candidates =
+          [ "gcc"  -- PATH にあればこれを使う
+          , "C:\\msys64\\ucrt64\\bin\\gcc.exe"
+          , "C:\\msys64\\mingw64\\bin\\gcc.exe"
+          ]
+    findFirst candidates
+  where
+    findFirst [] = pure "gcc"  -- フォールバック
+    findFirst (c:cs) = do
+      exists <- doesFileExist c
+      if exists then pure c else findFirst cs
 
 -- | 起動時に Twister ファイルをロードする
 --   各式を展開 → 型推論 (ベストエフォート) → 評価し、
