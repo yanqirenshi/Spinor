@@ -67,9 +67,10 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [ ] 初学者に優しい型エラーメッセージ。
 - [ ] **LSP Server (Language Server Protocol)**
     - [ ] `spinor-lsp` の実装 (ホバー、定義ジャンプ)。
-- [ ] **SLY / SLIME Support (Emacsユーザーの最終目標)**
-    - [ ] カーネルへの TCP ソケット通信の実装。
-    - [ ] Swank Protocol (Slynk) のサブセット実装。
+- [ ] **Step 29: SLY / SLIME Support (TCP Socket Integration)**
+    - [ ] **Dependency:** `package.yaml` に `network` パッケージを追加。
+    - [ ] **Socket Server:** 指定ポートで待ち受け、接続を受け入れる `spinor server` コマンドの実装。
+    - [ ] **Message Loop:** 受信した文字列を S式 としてパースし、評価結果を返す簡易ループの実装。
 
 ## 📢 Promotion & Website (広報・Web)
 Spinor / Twister の魅力を伝えるための Web プレゼンス。
