@@ -98,7 +98,7 @@ Step 29 の行ベースのプロトコルを、Swank のヘッダ付きプロト
 
 **実装完了後、この Markdown ファイルを直接編集し、以下の2つのセクションを追記して実装内容を報告してください。**
 
-#### Implementation Policy (実装方針)
+#### 実装方針
 
 1. **Handle ベースの実装を採用**: タスク指示書では `Network.Socket.ByteString` を推奨していたが、Windows 環境での `network` パッケージの再ビルド問題を回避するため、`System.IO` の `Handle` を使用して ByteString を読み書きする方式を採用した。`BS.hGet` と `BS.hPut` を使用することで、同等の機能を実現。
 
@@ -108,7 +108,7 @@ Step 29 の行ベースのプロトコルを、Swank のヘッダ付きプロト
 
 4. **SLY 互換性のための追加コマンド対応**: `swank:connection-info` と `swank:listener-eval` に加え、SLY が送信する `swank:swank-require`, `swank:create-repl`, `swank:autodoc`, `swank:operator-arglist` にも最低限の応答を実装。
 
-#### Implementation Details (実装内容)
+#### 実装内容
 
 **変更ファイル:** `src/Spinor/Server.hs`
 
