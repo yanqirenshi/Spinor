@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation - Spinor</title>
+  <meta name="description" content="Spinor Documentation">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header id="header">
+    <nav>
+      <a href="index.html" class="logo">Spinor</a>
+      <ul class="nav-links">
+        <li><a href="doc.html?src=reference.md">Reference</a></li>
+        <li><a href="doc.html?src=emacs.md">Emacs</a></li>
+        <li><a href="https://github.com/yanqirenshi/Spinor">GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Documentation Content -->
+    <section id="doc-content">
+      <article id="content" class="markdown-body">
+        <p>Loading...</p>
+      </article>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer id="footer">
+    <div class="footer-content">
+      <p>&copy; 2026 Spinor Project</p>
+      <ul class="footer-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="https://github.com/yanqirenshi/Spinor">GitHub</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <!-- marked.js for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    (function() {
+      'use strict';
+
+      // Get the 'src' parameter from URL
+      const params = new URLSearchParams(window.location.search);
+      const src = params.get('src');
+
+      // Security: Only allow specific file patterns (no directory traversal)
+      function isValidSource(s) {
+        if (!s) return false;
+        // Only allow alphanumeric, hyphen, underscore, and .md extension
+        return /^[a-zA-Z0-9_-]+\.md$/.test(s);
+      }
+
+      // Render error message
+      function showError(message) {
+        const content = document.getElementById('content');
+        content.innerHTML = '<div class="doc-error"><h2>Error</h2><p>' + message + '</p><p><a href="index.html">Back to Home</a></p></div>';
+      }
+
+      // Fetch and render Markdown
+      async function loadDocument() {
+        if (!isValidSource(src)) {
+          showError('Invalid document source. Please specify a valid Markdown file.');
+          return;
+        }
+
+        try {
+          const response = await fetch(src);
+          if (!response.ok) {
+            throw new Error('Document not found: ' + src);
+          }
+
+          const markdown = await response.text();
+          const html = marked.parse(markdown);
+
+          const content = document.getElementById('content');
+          content.innerHTML = html;
+
+          // Extract title from first h1 and set document title
+          const firstH1 = content.querySelector('h1');
+          if (firstH1) {
+            document.title = firstH1.textContent + ' - Spinor';
+          }
+
+        } catch (error) {
+          showError(error.message);
+        }
+      }
+
+      // Load document when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadDocument);
+      } else {
+        loadDocument();
+      }
+    })();
+  </script>
+</body>
+</html>

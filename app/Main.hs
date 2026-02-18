@@ -31,6 +31,35 @@ twisterFiles =
   , "twister/math.spin"
   ]
 
+-- | バージョン情報
+version :: String
+version = "0.1.0.0"
+
+-- | ヘルプメッセージ
+helpMessage :: String
+helpMessage = unlines
+  [ "Spinor - Static Lisp with Haskell Semantics"
+  , ""
+  , "Usage: spinor [COMMAND] [OPTIONS]"
+  , ""
+  , "Commands:"
+  , "  (default)              Start the interactive REPL"
+  , "  <file>                 Execute a Spinor file"
+  , "  build <file>           Compile to native binary (via C + GCC)"
+  , "  compile <file>         Transpile to C source code only"
+  , "  server [--port <n>]    Start Swank server for SLY/SLIME (default: 4005)"
+  , ""
+  , "Options:"
+  , "  --help, -h             Show this help message"
+  , "  --version, -v          Show version information"
+  , ""
+  , "Examples:"
+  , "  spinor                 Start REPL"
+  , "  spinor hello.spin      Run hello.spin"
+  , "  spinor build main.spin Compile main.spin to executable"
+  , "  spinor server          Start Swank server on port 4005"
+  ]
+
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
@@ -38,12 +67,16 @@ main = do
   hSetEncoding stdin utf8
   args <- getArgs
   case args of
-    []                -> replMode
-    ["compile", file] -> compileMode file
-    ["build", file]   -> buildMode file
-    ("server" : rest) -> serverMode rest
-    [file]            -> batchMode file
-    _                 -> putStrLn "Usage: spinor [file] | spinor compile <file> | spinor build <file> | spinor server [--port <port>]"
+    []                  -> replMode
+    ["--help"]          -> putStr helpMessage
+    ["-h"]              -> putStr helpMessage
+    ["--version"]       -> putStrLn $ "spinor " ++ version
+    ["-v"]              -> putStrLn $ "spinor " ++ version
+    ["compile", file]   -> compileMode file
+    ["build", file]     -> buildMode file
+    ("server" : rest)   -> serverMode rest
+    [file]              -> batchMode file
+    _                   -> putStr helpMessage
 
 -- | サーバーモード: TCP ソケットで REPL サービスを提供
 serverMode :: [String] -> IO ()
