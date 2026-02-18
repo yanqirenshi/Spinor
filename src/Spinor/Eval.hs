@@ -206,6 +206,38 @@ eval (EList [ESym "mac", ESym param, body]) = do
   closureEnv <- get
   pure $ VMacro [".", param] body closureEnv
 
+-- 特殊形式: (dotimes (var count-expr) body...) — カウンタループ
+--   setq の副作用がクロージャ境界を超えないため、特殊形式として実装
+eval (EList (ESym "dotimes" : EList [ESym var, countExpr] : body)) = do
+  countVal <- eval countExpr
+  case countVal of
+    VInt count -> dotimesLoop var count body 0
+    _ -> throwError "dotimes: 整数が必要です"
+
+-- 特殊形式: (dolist (var list-expr) body...) — リスト反復
+eval (EList (ESym "dolist" : EList [ESym var, listExpr] : body)) = do
+  listVal <- eval listExpr
+  case listVal of
+    VList xs -> dolistLoop var xs body
+    VNil     -> pure VNil
+    _        -> throwError "dolist: リストが必要です"
+
+-- 特殊形式: (error message) — ランタイムエラーを発生させる
+eval (EList [ESym "error", msgExpr]) = do
+  val <- eval msgExpr
+  case val of
+    VStr msg -> throwError msg
+    _        -> throwError $ "error: 文字列が必要です"
+
+-- 特殊形式: (bound? symbol) — シンボルが環境に定義されているか判定
+eval (EList [ESym "bound?", arg]) = do
+  val <- eval arg
+  case val of
+    VSym name -> do
+      env <- get
+      pure $ VBool (Map.member name env)
+    _ -> throwError $ "bound?: シンボルが必要です"
+
 -- 関数適用: (f arg1 arg2 ...)
 --   マクロ展開は Expander.expand で処理済みの前提。
 eval (EList (x:xs)) = do
@@ -338,6 +370,22 @@ evalSequence :: [Expr] -> Eval Val
 evalSequence []     = pure VNil
 evalSequence [e]    = eval e
 evalSequence (e:es) = eval e >> evalSequence es
+
+-- | dotimes のループ実装
+dotimesLoop :: Text -> Integer -> [Expr] -> Integer -> Eval Val
+dotimesLoop _   count _    i | i >= count = pure VNil
+dotimesLoop var count body i = do
+  modify (Map.insert var (VInt i))
+  mapM_ eval body
+  dotimesLoop var count body (i + 1)
+
+-- | dolist のループ実装
+dolistLoop :: Text -> [Val] -> [Expr] -> Eval Val
+dolistLoop _   []     _    = pure VNil
+dolistLoop var (x:xs) body = do
+  modify (Map.insert var x)
+  mapM_ eval body
+  dolistLoop var xs body
 
 -- | パラメータリストからシンボル名を抽出する (fn / mac 共通)
 extractSym :: Expr -> Eval Text

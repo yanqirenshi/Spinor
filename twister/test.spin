@@ -235,4 +235,33 @@
 (assert-equal "(length nil)" (length nil) 0)
 (assert-equal "(length (list (list 1)))" (length (list (list 1))) 1)
 
+; ============================================================
+; Step 24: CL互換機能拡張のテスト
+; ============================================================
+
+; --- bound? ---
+(def defined-var 1)
+(assert-equal "bound? true" (bound? 'defined-var) #t)
+(assert-equal "bound? false" (bound? 'undefined-var) #f)
+
+; --- let* ---
+(assert-equal "let*"
+  (let* ((x 1) (y (+ x 1))) y)
+  2)
+
+; --- defvar ---
+(defvar v1 10)
+(defvar v1 20)
+(assert-equal "defvar no-overwrite" v1 10)
+
+; --- defparameter ---
+(defparameter p1 10)
+(defparameter p1 20)
+(assert-equal "defparameter overwrite" p1 20)
+
+; --- dotimes ---
+(def sum 0)
+(dotimes (i 4) (setq sum (+ sum i)))
+(assert-equal "dotimes" sum 6)
+
 (print "\nAll tests passed.\n")

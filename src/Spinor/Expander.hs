@@ -87,6 +87,33 @@ expand (EList [ESym "load", arg]) = do
           pure $ EBool True
     _ -> throwError "load: ファイルパス (文字列) が必要です"
 
+-- dotimes: count-expr と body を展開 (var は束縛変数なので展開しない)
+expand (EList (ESym "dotimes" : EList [var@(ESym _), countExpr] : body)) = do
+  countExpr' <- expand countExpr
+  body' <- mapM expand body
+  pure $ EList (ESym "dotimes" : EList [var, countExpr'] : body')
+
+-- dolist: list-expr と body を展開 (var は束縛変数なので展開しない)
+expand (EList (ESym "dolist" : EList [var@(ESym _), listExpr] : body)) = do
+  listExpr' <- expand listExpr
+  body' <- mapM expand body
+  pure $ EList (ESym "dolist" : EList [var, listExpr'] : body')
+
+-- マクロ生成の let フォームを ELet に変換して再展開
+--   マクロが (list 'let ...) で let を生成すると valToExpr で EList になるため、
+--   ここで ELet に変換してから再展開する。
+expand (EList (ESym "let" : EList bindingExprs : body@(_:_))) =
+  case mapM parseBinding bindingExprs of
+    Just bindings -> do
+      let bodyExpr = case body of
+            [b] -> b
+            _   -> EList (ESym "begin" : body)
+      expand (ELet bindings bodyExpr)
+    Nothing -> throwError "let: 不正な束縛リストです"
+  where
+    parseBinding (EList [ESym name, val]) = Just (name, val)
+    parseBinding _ = Nothing
+
 -- リスト: 先頭シンボルがマクロならマクロ展開、そうでなければ全要素を再帰展開
 expand (EList (ESym name : args)) = do
   env <- get

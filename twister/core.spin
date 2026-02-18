@@ -1,5 +1,5 @@
 ; core.spin — 基本論理関数とマクロ
-(module twister/core (export not id defun when unless cond and or))
+(module twister/core (export not id defun when unless cond and or let* defparameter defvar))
 
 (def not (fn (x) (if x #f #t)))
 (def id  (fn (x) x))
@@ -49,3 +49,27 @@
         (if (null? (cdr args))
             (car args)
             (list 'if (car args) (car args) (cons 'or (cdr args)))))))
+
+; (let* ((var1 val1) (var2 val2) ...) body...)
+;   順次束縛: 前の変数を後の定義で参照できる。ネストした let に展開。
+(def let*
+  (mac (bindings . body)
+    (if (null? bindings)
+        (cons 'begin body)
+        (list 'let (list (car bindings))
+              (cons 'let* (cons (cdr bindings) body))))))
+
+; (defparameter name value) — 常に値を上書きする
+(def defparameter
+  (mac (name val . docs)
+    (list 'def name val)))
+
+; (defvar name value) — 既に定義されている場合は値を上書きしない
+(def defvar
+  (mac (name val . docs)
+    (list 'if (list 'bound? (list 'quote name))
+          name
+          (list 'def name val))))
+
+; dotimes と dolist は Eval.hs で特殊形式として実装
+; (setq の副作用がクロージャ境界を超えないため)

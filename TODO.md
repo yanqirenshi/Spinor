@@ -41,13 +41,13 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [x] `when`, `unless`: 条件分岐マクロ。
     - [x] `cond`: 多分岐マクロ。
     - [x] `and`, `or`: 短絡評価マクロ。
-- [ ] **Step 23: リスト操作ユーティリティ (List Utilities)** (In Progress)
-    - [ ] `list`: 可変長引数リスト作成。
-    - [ ] `append`: リストの連結 (多引数対応)。
-    - [ ] `member`: リストのメンバシップ判定。
-    - [ ] `nth`: N番目の要素取得。
-    - [ ] `reverse`: リストの反転。
-    - [ ] `length`: リストの長さ。
+- [x] **Step 23: リスト操作ユーティリティ (List Utilities)** (In Progress)
+    - [x] `list`: 可変長引数リスト作成。
+    - [x] `append`: リストの連結 (多引数対応)。
+    - [x] `member`: リストのメンバシップ判定。
+    - [x] `nth`: N番目の要素取得。
+    - [x] `reverse`: リストの反転。
+    - [x] `length`: リストの長さ。
 - [ ] **Step 24: その他のCL互換機能**
     - [ ] `defvar` / `defparameter`: グローバル変数定義。
     - [ ] `let*`: 順次束縛マクロ。
