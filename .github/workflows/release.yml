@@ -44,13 +44,18 @@ jobs:
       - name: Build
         run: |
           cabal update
-          cabal build exe:spinor -O2 --enable-executable-stripping
+          cabal build exe:spinor -O2
 
       - name: Prepare binary
         shell: bash
         run: |
-          BIN_PATH=$(cabal list-bin exe:spinor)
-          cp "$BIN_PATH" "${{ matrix.artifact_name }}"
+          cabal install exe:spinor --installdir=. --install-method=copy --overwrite-policy=always
+          # Rename to platform-specific name
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            mv spinor.exe "${{ matrix.artifact_name }}"
+          else
+            mv spinor "${{ matrix.artifact_name }}"
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
