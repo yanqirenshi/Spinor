@@ -98,8 +98,8 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
 - [x] **Step 26: スタンドアロン コンパイル (Native Binary)**
     - [x] `spinor build` コマンドの実装 (トランスパイル後の C コードを gcc/clang でビルド)。
     - [x] Hello World のバイナリ生成と実行確認。
-- [ ] **Step 27: 最適化 (Optimization)**
-    - [ ] **TCO (Tail Call Optimization):** 末尾再帰を C の `goto` ループまたはトランポリンコードに展開。
+- [x] **Step 27: 最適化 (Optimization)**
+    - [x] **TCO (Tail Call Optimization):** 末尾再帰を C の `goto` ループまたはトランポリンコードに展開。
 - [ ] **Step 28: WebAssembly (WASM) 対応**
     - [ ] Emscripten を用いた C 出力からの WASM ビルドフローの確立。
     - [ ] ブラウザ上での REPL 動作 (LPへの埋め込み)。
