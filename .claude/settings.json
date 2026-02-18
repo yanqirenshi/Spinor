@@ -1,0 +1,19 @@
+{
+    "permissions": {
+        "allow": [
+            "Bash(ls:*)",
+            "Bash(git:*)",
+            "Bash(npm:*)",
+
+            "Bash(*)",
+            "Read(*)",
+            "Write(*)",
+            "Edit(*)",
+
+            "Bash(stack:*)",
+            "Bash(cabal:*)",
+            "Bash(ghc:*)",
+            "Bash(ghci:*)"
+        ]
+    }
+}

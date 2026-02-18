@@ -48,12 +48,12 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [x] `nth`: N番目の要素取得。
     - [x] `reverse`: リストの反転。
     - [x] `length`: リストの長さ。
-- [ ] **Step 24: その他のCL互換機能**
-    - [ ] `defvar` / `defparameter`: グローバル変数定義。
-    - [ ] `let*`: 順次束縛マクロ。
-    - [ ] `dolist`, `dotimes`: 反復マクロ。
-    - [ ] `progn`: (begin のエイリアスまたはマクロとして整備)。
-    - [ ] `error`: エラー送出プリミティブ。
+- [x] **Step 24: その他のCL互換機能**
+    - [x] `defvar` / `defparameter`: グローバル変数定義。
+    - [x] `let*`: 順次束縛マクロ。
+    - [x] `dolist`, `dotimes`: 反復マクロ。
+    - [x] `progn`: (begin のエイリアスまたはマクロとして整備)。
+    - [x] `error`: エラー送出プリミティブ。
 
 ## 📚 DevExp & Documentation (普及のための環境整備)
 ユーザーが迷わず使えるためのドキュメントとツール群。
@@ -74,12 +74,12 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
 ## 📢 Promotion & Website (広報・Web)
 Spinor / Twister の魅力を伝えるための Web プレゼンス。
 
-- [ ] **Landing Page Creation**
-    - [ ] プロジェクトのコンセプト ("Static Lisp with Haskell Semantics") を伝えるトップページ。
-    - [ ] インストール手順、クイックスタートガイド。
-    - [ ] シンプルでモダンなデザイン (HTML/CSS)。
+- [x] **Landing Page Creation**
+    - [x] プロジェクトのコンセプト ("Static Lisp with Haskell Semantics") を伝えるトップページ。
+    - [x] インストール手順、クイックスタートガイド。
+    - [x] シンプルでモダンなデザイン (HTML/CSS)。
 - [ ] **GitHub Pages Deployment**
-    - [ ] `docs/` フォルダへのデプロイ設定。
+    - [x] `docs/` フォルダへのデプロイ設定。
     - [ ] ユーザーマニュアルとの統合。
 
 ## 🚀 Performance & Compilation (パフォーマンスと移植性)
