@@ -109,14 +109,65 @@ emcc output.c runtime/spinor.c -Iruntime -o index.html -O2
 
 ---
 
-### 実装報告
+## 実装報告
 
 **実装完了後、この Markdown ファイルを直接編集し、以下の2つのセクションを追記して実装内容を報告してください。**
 
-#### Implementation Policy (実装方針)
+#### 実装方針
 
-*(ここに、実装する上で考慮した点や設計判断、採用したアプローチなどを記述してください)*
+- **Emscripten:** emsdk v5.0.1 (emcc 5.0.1) を `~/emsdk/` にインストールして使用。Docker は不使用。
+- **動作確認方法:** Node.js (v24.13.0) で `index.js` を直接実行して簡易確認。WSL2 環境のためブラウザ確認は省略。
+- **`<=` / `>=` 演算子の追加:** テストプログラムが `<=` を使用しているが、既存のコンパイラとランタイムは `<=` / `>=` をサポートしていなかったため、本タスクの一環として追加実装した。
 
-#### Implementation Details (実装内容)
+#### 実装内容
 
-*(ここに、具体的なコードの変更点や追加した関数の役割、苦労した点などを記述してください)*
+**1. 新規ファイル:**
+
+- `test-wasm.spin` — 階乗計算テスト (`(fact 5)` → `120`)
+- `scripts/build-wasm.sh` — C トランスパイル → WASM ビルドの自動化スクリプト
+
+**2. コンパイラ修正 (`src/Spinor/Compiler/Codegen.hs`):**
+
+- `<=` → `sp_lte()`, `>=` → `sp_gte()` のコード生成パターンを追加。
+- プリミティブ演算子リストに `"<="`, `">="` を追加し、ユーザー定義関数呼び出しと誤認されないようにした。
+
+**3. ランタイム修正 (`runtime/spinor.h`, `runtime/spinor.c`):**
+
+- `sp_lte()`, `sp_gte()` 関数を宣言・実装。
+
+**4. 生成された `output.c`:**
+
+```c
+#include <stdio.h>
+#include <stdbool.h>
+#include "spinor.h"
+
+SpObject* user_fact(SpObject* user_n) {
+    return (sp_lte(user_n, sp_make_int(1))->value.boolean ? sp_make_int(1) : sp_mul(user_n, user_fact(sp_sub(user_n, sp_make_int(1)))));
+}
+
+int main(void) {
+    sp_print(user_fact(sp_make_int(5)));
+    return 0;
+}
+```
+
+**5. WASM ビルド結果:**
+
+```
+$ emcc output.c runtime/spinor.c -Iruntime -o index.html -O2
+```
+
+生成ファイル:
+- `index.html` (19,571 bytes)
+- `index.js` (21,342 bytes)
+- `index.wasm` (11,562 bytes)
+
+**6. Node.js 実行結果:**
+
+```
+$ node index.js
+120
+```
+
+`fact(5) = 120` が正しく出力された。

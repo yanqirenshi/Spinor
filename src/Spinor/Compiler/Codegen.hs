@@ -165,6 +165,10 @@ compileExpr (EList [ESym "<", a, b]) =
     "sp_lt(" <> compileExpr a <> ", " <> compileExpr b <> ")"
 compileExpr (EList [ESym ">", a, b]) =
     "sp_gt(" <> compileExpr a <> ", " <> compileExpr b <> ")"
+compileExpr (EList [ESym "<=", a, b]) =
+    "sp_lte(" <> compileExpr a <> ", " <> compileExpr b <> ")"
+compileExpr (EList [ESym ">=", a, b]) =
+    "sp_gte(" <> compileExpr a <> ", " <> compileExpr b <> ")"
 
 -- 変数参照 (引数など)
 compileExpr (ESym s) = mangle s
@@ -176,7 +180,7 @@ compileExpr (EList (ESym fname : args))
             cArgs = T.intercalate ", " (map compileExpr args)
         in cFun <> "(" <> cArgs <> ")"
   where
-    primitives = ["+", "-", "*", "/", "=", "<", ">", "if", "defun"]
+    primitives = ["+", "-", "*", "/", "=", "<", ">", "<=", ">=", "if", "defun"]
 
 -- 未実装のパターン
 compileExpr other = "sp_make_nil() /* TODO: " <> T.pack (show other) <> " */"

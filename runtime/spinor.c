@@ -89,6 +89,14 @@ SpObject* sp_gt(SpObject* a, SpObject* b) {
     return sp_make_bool(a->value.integer > b->value.integer);
 }
 
+SpObject* sp_lte(SpObject* a, SpObject* b) {
+    return sp_make_bool(a->value.integer <= b->value.integer);
+}
+
+SpObject* sp_gte(SpObject* a, SpObject* b) {
+    return sp_make_bool(a->value.integer >= b->value.integer);
+}
+
 /* ========== ユーティリティ ========== */
 
 void sp_print(SpObject* obj) {

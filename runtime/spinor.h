@@ -61,6 +61,8 @@ SpObject* sp_div(SpObject* a, SpObject* b);
 SpObject* sp_eq(SpObject* a, SpObject* b);
 SpObject* sp_lt(SpObject* a, SpObject* b);
 SpObject* sp_gt(SpObject* a, SpObject* b);
+SpObject* sp_lte(SpObject* a, SpObject* b);
+SpObject* sp_gte(SpObject* a, SpObject* b);
 
 /* ========== ユーティリティ ========== */
 
