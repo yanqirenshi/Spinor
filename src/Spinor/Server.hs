@@ -105,6 +105,10 @@ handleSwankRequest h env form reqId = case form of
     EList [ESym "swank:interactive-eval", EStr code] -> do
         evalAndRespond h env code reqId
 
+    -- swank:compile-string-for-emacs - バッファからのコンパイル
+    EList (ESym "swank:compile-string-for-emacs" : EStr code : _) -> do
+        compileAndRespond h env code reqId
+
     -- swank:autodoc - 自動ドキュメント (簡易実装)
     EList (ESym "swank:autodoc" : _) -> do
         let response = mkOkResponse reqId (EList [EStr ":not-available", ESym "t"])
@@ -144,6 +148,28 @@ evalAndRespond h env code reqId =
                         -- SLY は結果を文字列として表示するため、文字列に変換
                         resultStr = exprToText resultExpr
                         response = mkOkResponse reqId (EStr resultStr)
+                    sendPacket h (exprToText response)
+                    pure env'
+
+-- | S式をコンパイル（評価）して固定の成功メッセージを返す
+compileAndRespond :: Handle -> Env -> Text -> Integer -> IO Env
+compileAndRespond h env code reqId =
+    case readExpr code of
+        Left err -> do
+            let response = mkAbortResponse reqId (T.pack err)
+            sendPacket h (exprToText response)
+            pure env
+        Right ast -> do
+            result <- runEval env (expand ast >>= eval)
+            case result of
+                Left err -> do
+                    let response = mkAbortResponse reqId err
+                    sendPacket h (exprToText response)
+                    pure env
+                Right (_, env') -> do
+                    -- 成功時は固定の成功メッセージを返す
+                    let successMsg = EList [EStr "Compilation finished.", ESym "t"]
+                        response = mkOkResponse reqId successMsg
                     sendPacket h (exprToText response)
                     pure env'
 

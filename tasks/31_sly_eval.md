@@ -112,14 +112,36 @@
 
 ---
 
-### 実装報告
+## 実装報告
 
 **実装完了後、この Markdown ファイルを直接編集し、以下の2つのセクションを追記して実装内容を報告してください。**
 
-#### Implementation Policy (実装方針)
+### 実装方針
 
-*(ここに、実装する上で考慮した点や設計判断、採用したアプローチなどを記述してください)*
+- **既存実装の活用**: `swank:interactive-eval` は既に `evalAndRespond` 関数で実装されていたため、新規実装は `swank:compile-string-for-emacs` のみとした。
+- **コードの一貫性**: `compileAndRespond` 関数は、既存の `evalAndRespond` と同じパターン（パース → 展開 → 評価）を踏襲し、成功時のレスポンス形式のみを変更した。
+- **シンプルさ優先**: タスク指示書のヒントにあった共通ヘルパー関数への括り出しは、現時点ではコードが十分にシンプルであるため見送り、将来の拡張時に検討することとした。
+- **Output Redirection**: 仕様書の指示通り、標準出力のキャプチャ機能は努力目標のためスキップした。
 
-#### Implementation Details (実装内容)
+### 実装内容
 
-*(ここに、具体的なコードの変更点や追加した関数の役割、苦労した点などを記述してください)*
+**変更ファイル**: `src/Spinor/Server.hs`
+
+1. **パターンマッチの追加** (108-110行目):
+   ```haskell
+   EList (ESym "swank:compile-string-for-emacs" : EStr code : _) ->
+       compileAndRespond h env code reqId
+   ```
+   - 可変長引数（buffer-name, position-info 等）を `_` で無視し、`code` 部分のみを抽出。
+
+2. **`compileAndRespond` 関数の実装** (152-169行目):
+   ```haskell
+   compileAndRespond :: Handle -> Env -> Text -> Integer -> IO Env
+   ```
+   - `evalAndRespond` と同じ評価ロジックを使用
+   - 成功時は固定メッセージ `(:ok ("Compilation finished." t))` を返す
+   - エラー時は `(:abort "error-msg")` を返す
+
+**動作確認結果**:
+- `swank:interactive-eval "(+ 10 20)"` → `(:return (:ok "30") 2)` ✓
+- `swank:compile-string-for-emacs "(defun f () 42)"` → `(:return (:ok ("Compilation finished." t)) 3)` ✓
