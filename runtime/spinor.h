@@ -67,6 +67,7 @@ SpObject* sp_gte(SpObject* a, SpObject* b);
 /* ========== ユーティリティ ========== */
 
 void sp_print(SpObject* obj);
+const char* sp_format(SpObject* obj);
 
 /* ========== 旧 API との互換性 (エイリアス) ========== */
 
