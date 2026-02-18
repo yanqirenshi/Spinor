@@ -15,6 +15,7 @@ library
     Spinor.Infer
     Spinor.Loader
     Spinor.Compiler.Codegen
+    Spinor.Server
   build-depends:
     base       >= 4.14 && < 5,
     containers >= 0.6  && < 1,
@@ -23,7 +24,8 @@ library
     text       >= 1.2  && < 3,
     bytestring >= 0.10 && < 1,
     filepath   >= 1.4  && < 2,
-    directory  >= 1.3  && < 2
+    directory  >= 1.3  && < 2,
+    network    >= 3.1  && < 4
   default-language: Haskell2010
   ghc-options:      -Wall
 

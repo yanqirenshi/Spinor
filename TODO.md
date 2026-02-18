@@ -67,10 +67,10 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [ ] 初学者に優しい型エラーメッセージ。
 - [ ] **LSP Server (Language Server Protocol)**
     - [ ] `spinor-lsp` の実装 (ホバー、定義ジャンプ)。
-- [ ] **Step 29: SLY / SLIME Support (TCP Socket Integration)**
-    - [ ] **Dependency:** `package.yaml` に `network` パッケージを追加。
-    - [ ] **Socket Server:** 指定ポートで待ち受け、接続を受け入れる `spinor server` コマンドの実装。
-    - [ ] **Message Loop:** 受信した文字列を S式 としてパースし、評価結果を返す簡易ループの実装。
+- [x] **Step 29: SLY / SLIME Support (TCP Socket Integration)**
+    - [x] **Dependency:** `package.yaml` に `network` パッケージを追加。
+    - [x] **Socket Server:** 指定ポートで待ち受け、接続を受け入れる `spinor server` コマンドの実装。
+    - [x] **Message Loop:** 受信した文字列を S式 としてパースし、評価結果を返す簡易ループの実装。
 
 ## 📢 Promotion & Website (広報・Web)
 Spinor / Twister の魅力を伝えるための Web プレゼンス。
@@ -91,9 +91,9 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [x] **AST to C:** 基本的なデータ型 (Int, Bool) と算術演算の C コード生成。
     - [x] **Runtime Integration:** C言語用の最小限のランタイム（メモリ管理/GC戦略）の策定と統合。
     - [x] **Control Flow:** `if`, `defun`, 関数呼び出しの C 言語へのマッピング。
-- [ ] **Step 26: スタンドアロン コンパイル (Native Binary)**
-    - [ ] `spinor build` コマンドの実装 (トランスパイル後の C コードを gcc/clang でビルド)。
-    - [ ] Hello World のバイナリ生成と実行確認。
+- [x] **Step 26: スタンドアロン コンパイル (Native Binary)**
+    - [x] `spinor build` コマンドの実装 (トランスパイル後の C コードを gcc/clang でビルド)。
+    - [x] Hello World のバイナリ生成と実行確認。
 - [ ] **Step 27: 最適化 (Optimization)**
     - [ ] **TCO (Tail Call Optimization):** 末尾再帰を C の `goto` ループまたはトランポリンコードに展開。
 - [ ] **Step 28: WebAssembly (WASM) 対応**

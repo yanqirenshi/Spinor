@@ -21,6 +21,7 @@ import Spinor.Infer     (Types(..), runInfer, inferTop, baseTypeEnv)
 import Spinor.Primitive (primitiveBindings)
 import Spinor.Loader    (LoaderConfig(..), newModuleRegistry, evalFileWithModules)
 import Spinor.Compiler.Codegen (compileProgram)
+import Spinor.Server    (runServer)
 
 -- | Twister ファイル一覧 (ロード順)
 twisterFiles :: [FilePath]
@@ -40,8 +41,19 @@ main = do
     []                -> replMode
     ["compile", file] -> compileMode file
     ["build", file]   -> buildMode file
+    ("server" : rest) -> serverMode rest
     [file]            -> batchMode file
-    _                 -> putStrLn "Usage: spinor [file] | spinor compile <file> | spinor build <file>"
+    _                 -> putStrLn "Usage: spinor [file] | spinor compile <file> | spinor build <file> | spinor server [--port <port>]"
+
+-- | サーバーモード: TCP ソケットで REPL サービスを提供
+serverMode :: [String] -> IO ()
+serverMode args = do
+  let port = case args of
+               ["--port", p] -> p
+               _             -> "4005"
+  putStrLn $ "Starting Spinor server on port " ++ port ++ "..."
+  (env, _) <- loadBoot primitiveBindings baseTypeEnv
+  runServer port env
 
 -- | REPL モード (引数なし)
 replMode :: IO ()
