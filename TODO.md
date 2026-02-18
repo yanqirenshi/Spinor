@@ -71,6 +71,10 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [x] **Dependency:** `package.yaml` に `network` パッケージを追加。
     - [x] **Socket Server:** 指定ポートで待ち受け、接続を受け入れる `spinor server` コマンドの実装。
     - [x] **Message Loop:** 受信した文字列を S式 としてパースし、評価結果を返す簡易ループの実装。
+- [ ] **Step 30: SLY Integration (Swank Protocol Basics)**
+    - [ ] **Message Framing:** Swank プロトコル仕様のパケット（長さヘッダ + ペイロード）の送受信実装。
+    - [ ] **RPC Dispatcher:** `(:emacs-rex ...)` 形式のリクエストを解析するディスパッチャの実装。
+    - [ ] **Handshake:** `M-x sly-connect` 接続時の初期化シーケンス (`connection-info`) への応答。
 
 ## 📢 Promotion & Website (広報・Web)
 Spinor / Twister の魅力を伝えるための Web プレゼンス。
