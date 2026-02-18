@@ -106,15 +106,15 @@ spec = describe "Spinor.Syntax (Parser)" $ do
     it "(module my-mod (export a b))" $
       readExpr "(module my-mod (export a b))" `shouldBe`
         Right (EModule "my-mod" ["a", "b"])
-    it "(module my-mod (export)) — 空エクスポート" $
+    it "(module my-mod (export)) - 空エクスポート" $
       readExpr "(module my-mod (export))" `shouldBe`
         Right (EModule "my-mod" [])
-    it "(module my-mod) — エクスポート省略" $
+    it "(module my-mod) - エクスポート省略" $
       readExpr "(module my-mod)" `shouldBe`
         Right (EModule "my-mod" [])
 
   describe "import 宣言" $ do
-    it "(import lib) — オプションなし" $
+    it "(import lib) - オプションなし" $
       readExpr "(import lib)" `shouldBe`
         Right (EImport "lib" [])
     it "(import lib (only a b))" $
@@ -129,6 +129,6 @@ spec = describe "Spinor.Syntax (Parser)" $ do
     it "(import lib (alias M))" $
       readExpr "(import lib (alias M))" `shouldBe`
         Right (EImport "lib" [Alias "M"])
-    it "(import 'twister/core) — quote 形式" $
+    it "(import 'twister/core) - quote 形式" $
       readExpr "(import 'twister/core)" `shouldBe`
         Right (EImport "twister/core" [])

@@ -100,8 +100,46 @@ Step 29 の行ベースのプロトコルを、Swank のヘッダ付きプロト
 
 #### Implementation Policy (実装方針)
 
-*(ここに、実装する上で考慮した点や設計判断、採用したアプローチなどを記述してください)*
+1. **Handle ベースの実装を採用**: タスク指示書では `Network.Socket.ByteString` を推奨していたが、Windows 環境での `network` パッケージの再ビルド問題を回避するため、`System.IO` の `Handle` を使用して ByteString を読み書きする方式を採用した。`BS.hGet` と `BS.hPut` を使用することで、同等の機能を実現。
+
+2. **Expr を Lisp 形式の文字列に変換する関数 (`exprToText`) を新規実装**: Swank プロトコルでは S式 形式での通信が必要なため、`Expr` 型を Lisp の構文に従った文字列に変換する関数を追加。
+
+3. **RPC ディスパッチャのパターンマッチによる拡張性**: `handleSwankRequest` 関数で Swank コマンドをパターンマッチし、将来的なコマンド追加を容易にする設計。
+
+4. **SLY 互換性のための追加コマンド対応**: `swank:connection-info` と `swank:listener-eval` に加え、SLY が送信する `swank:swank-require`, `swank:create-repl`, `swank:autodoc`, `swank:operator-arglist` にも最低限の応答を実装。
 
 #### Implementation Details (実装内容)
 
-*(ここに、具体的なコードの変更点や追加した関数の役割、苦労した点などを記述してください)*
+**変更ファイル:** `src/Spinor/Server.hs`
+
+**追加した主要な関数:**
+
+| 関数名 | 役割 |
+|--------|------|
+| `recvHeader` | 6バイトのヘッダを読み取り、ペイロード長を返す |
+| `recvPayload` | 指定された長さのペイロードを受信し、UTF-8 デコードして Text を返す |
+| `sendPacket` | Text をヘッダ付きでパケット送信する |
+| `exprToText` | Expr を Lisp 形式の文字列に変換 |
+| `escapeString` | 文字列内の特殊文字をエスケープ |
+| `handleSwankRequest` | Swank RPC リクエストのディスパッチャ |
+| `evalAndRespond` | S式を評価してレスポンスを送信 |
+| `mkOkResponse` | 成功レスポンスを構築 |
+| `mkAbortResponse` | エラーレスポンスを構築 |
+| `mkConnectionInfoResponse` | connection-info のレスポンスを構築 |
+| `dispatchRPC` | `:emacs-rex` 形式のパターンマッチ |
+
+**動作確認結果:**
+
+```bash
+# connection-info テスト
+$ printf '00002f(:emacs-rex (swank:connection-info) "user" t 1)' | nc localhost 4005
+0000d6(:return (:ok (:pid 0 :style :spawn :encoding (:coding-systems ("utf-8-unix")) :lisp-implementation (:type "Spinor" :version "0.1.0" :program "spinor" :package (:name "user" :prompt "SPINOR>")) :version "2.27")) 1)
+
+# listener-eval テスト
+$ printf '000037(:emacs-rex (swank:listener-eval "(+ 1 2)") "user" t 2)' | nc localhost 4005
+000015(:return (:ok "3") 2)
+```
+
+**ビルドに関する注意:**
+- Windows 環境では `network` パッケージのビルドに msys2 シェルの使用が必要な場合がある
+- ビルドコマンド: `C:/ghcup/msys64/usr/bin/bash.exe -lc "cd /c/Users/yanqi/prj/Spinor && cabal build"`
