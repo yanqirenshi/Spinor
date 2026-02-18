@@ -19,6 +19,7 @@ import Spinor.Expander  (expand)
 import Spinor.Infer     (Types(..), runInfer, inferTop, baseTypeEnv)
 import Spinor.Primitive (primitiveBindings)
 import Spinor.Loader    (LoaderConfig(..), newModuleRegistry, evalFileWithModules)
+import Spinor.Compiler.Codegen (compileProgram)
 
 -- | Twister ファイル一覧 (ロード順)
 twisterFiles :: [FilePath]
@@ -35,9 +36,10 @@ main = do
   hSetEncoding stdin utf8
   args <- getArgs
   case args of
-    []     -> replMode
-    [file] -> batchMode file
-    _      -> putStrLn "Usage: spinor [file]"
+    []               -> replMode
+    ["compile", file] -> compileMode file
+    [file]           -> batchMode file
+    _                -> putStrLn "Usage: spinor [file] | spinor compile <file>"
 
 -- | REPL モード (引数なし)
 replMode :: IO ()
@@ -74,6 +76,19 @@ batchMode file = do
     Right (_, False) -> do
       putStrLn "\nSome tests FAILED."
       exitFailure
+
+-- | コンパイルモード: .spin ファイルを C 言語に変換
+compileMode :: FilePath -> IO ()
+compileMode file = do
+  content <- readFileUtf8 file
+  case parseFile content of
+    Left err -> do
+      putStrLn $ "パースエラー: " ++ err
+      exitFailure
+    Right exprs -> do
+      let cCode = compileProgram exprs
+      TIO.writeFile "output.c" cCode
+      putStrLn "Compiled to output.c"
 
 -- | 起動時に Twister ファイルをロードする
 --   各式を展開 → 型推論 (ベストエフォート) → 評価し、

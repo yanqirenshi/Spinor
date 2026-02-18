@@ -14,6 +14,7 @@ library
     Spinor.Type
     Spinor.Infer
     Spinor.Loader
+    Spinor.Compiler.Codegen
   build-depends:
     base       >= 4.14 && < 5,
     containers >= 0.6  && < 1,
