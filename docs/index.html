@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spinor - The Statically-Typed Lisp</title>
+  <meta name="description" content="Lisp syntax with Haskell semantics. Built for safety, clarity, and performance.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header id="header">
+    <nav>
+      <a href="#" class="logo">Spinor</a>
+      <ul class="nav-links">
+        <li><a href="https://github.com/yanqirenshi/Spinor">GitHub</a></li>
+        <li><a href="https://github.com/yanqirenshi/Spinor/blob/master/TODO.md" data-i18n="nav.roadmap">Roadmap</a></li>
+        <li>
+          <select id="lang-select" class="lang-select" aria-label="Select language">
+            <option value="en">EN</option>
+            <option value="ja">JA</option>
+          </select>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- Hero Section -->
+    <section id="hero">
+      <h1 class="hero-name">Spinor</h1>
+      <p class="hero-tagline" data-i18n="hero.tagline">The Statically-Typed Lisp.</p>
+      <p class="hero-sub" data-i18n="hero.sub" data-i18n-html>Lisp syntax with Haskell semantics.<br>Built for safety, clarity, and performance.</p>
+      <div class="hero-cta">
+        <a href="#get-started" class="btn btn-primary" data-i18n="hero.cta1">Get Started</a>
+        <a href="https://github.com/yanqirenshi/Spinor" class="btn btn-secondary" data-i18n="hero.cta2">View on GitHub</a>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features">
+      <h2 data-i18n="features.title">Features</h2>
+      <div class="features-grid">
+
+        <div class="feature-card">
+          <div class="feature-icon">&#x03BB;</div>
+          <h3 data-i18n="features.typing.title">Static Typing</h3>
+          <p data-i18n="features.typing.desc">Catch errors at compile time, not at runtime. Powered by Hindley-Milner type inference for maximum safety with minimal annotations.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">&#x2192;</div>
+          <h3 data-i18n="features.semantics.title">Haskell Semantics</h3>
+          <p data-i18n="features.semantics.desc">Pure functions, algebraic data types, and pattern matching &mdash; the power of Haskell, expressed in the elegance of Lisp syntax.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">&#x221E;</div>
+          <h3 data-i18n="features.bootstrap.title">Self-Hosting</h3>
+          <p data-i18n="features.bootstrap.desc">A Haskell kernel implements the core; the standard library is written in Spinor itself. The language extends itself.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">&#x21C6;</div>
+          <h3 data-i18n="features.concurrency.title">Lightweight Concurrency</h3>
+          <p data-i18n="features.concurrency.desc">Built on Haskell's green threads and MVar primitives for simple, safe concurrent programming.</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Code Example Section -->
+    <section id="code-example">
+      <h2 data-i18n="code.title">See It in Action</h2>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">spinor</span>
+        </div>
+<pre><code><span class="c">;; Define a type-safe length function for lists</span>
+(<span class="k">defun</span> <span class="f">length</span> ((<span class="v">xs</span> (<span class="t">List</span> <span class="t">a</span>))) : <span class="t">Int</span>
+  (<span class="k">match</span> <span class="v">xs</span>
+    (<span class="s">'()</span> <span class="n">0</span>)
+    ((<span class="f">cons</span> <span class="v">_</span> <span class="v">rest</span>) (<span class="f">+</span> <span class="n">1</span> (<span class="f">length</span> <span class="v">rest</span>)))))
+
+<span class="c">;; Calculate the length of a list of integers</span>
+(<span class="f">length</span> <span class="s">'(1 2 3 4 5)</span>)
+<span class="c">;; =&gt; 5</span></code></pre>
+      </div>
+    </section>
+
+    <!-- Get Started Section -->
+    <section id="get-started">
+      <h2 data-i18n="start.title">Get Started</h2>
+      <div class="steps">
+
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3 data-i18n="start.step1">Clone the Repository</h3>
+            <div class="code-block code-block-small">
+<pre><code>git clone https://github.com/yanqirenshi/Spinor.git
+cd Spinor</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3 data-i18n="start.step2">Build from Source</h3>
+            <div class="code-block code-block-small">
+<pre><code>cabal build</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3 data-i18n="start.step3">Run the REPL</h3>
+            <div class="code-block code-block-small">
+<pre><code>cabal run spinor</code></pre>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer id="footer">
+    <div class="footer-content">
+      <p>&copy; 2026 Spinor Project</p>
+      <ul class="footer-links">
+        <li><a href="https://github.com/yanqirenshi/Spinor">GitHub</a></li>
+        <li><a href="https://github.com/yanqirenshi/Spinor/blob/master/TODO.md" data-i18n="nav.roadmap">Roadmap</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="i18n.js"></script>
+</body>
+</html>
