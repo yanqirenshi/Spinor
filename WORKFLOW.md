@@ -38,6 +38,7 @@
     * `specs/new_feature.md` (仕様) と `tasks/step_XX.md` (指示書) を生成させる。
 3.  **Implement (Engineer):**
     * Claude Code に `tasks/step_XX.md` を渡し、実装とテストを行わせる。
+    * **実装ログの記録:** 実装完了後、`tasks/step_XX.md` の末尾に「実装方針」と「実装内容」を追記する。
     * テストが通ったら完了報告を行う。
 4.  **Document (Tech Writer):**
     * 実装完了後、Gemini CLI に変更点を読ませ、`docs/` を更新させる。

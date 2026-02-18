@@ -83,11 +83,21 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [ ] ユーザーマニュアルとの統合。
 
 ## 🚀 Performance & Compilation (パフォーマンスと移植性)
-- [ ] **コンパイラ バックエンド**
-    - [ ] インタプリタ実行ではなく、**C言語** や **WebAssembly (WASM)** へのトランスパイル。
-    - [ ] スタンドアロンバイナリの生成。
-- [ ] **最適化**
-    - [ ] 末尾呼び出し最適化 (TCO) のカーネル内実装。
+
+インタプリタ依存からの脱却と、Web (WASM) 動作の実現。
+
+- [x] **Step 25: トランスパイラ基盤 (C Code Generation)**
+    - [x] **AST to C:** 基本的なデータ型 (Int, Bool) と算術演算の C コード生成。
+    - [x] **Runtime Integration:** C言語用の最小限のランタイム（メモリ管理/GC戦略）の策定と統合。
+    - [x] **Control Flow:** `if`, `defun`, 関数呼び出しの C 言語へのマッピング。
+- [ ] **Step 26: スタンドアロン コンパイル (Native Binary)**
+    - [ ] `spinor build` コマンドの実装 (トランスパイル後の C コードを gcc/clang でビルド)。
+    - [ ] Hello World のバイナリ生成と実行確認。
+- [ ] **Step 27: 最適化 (Optimization)**
+    - [ ] **TCO (Tail Call Optimization):** 末尾再帰を C の `goto` ループまたはトランポリンコードに展開。
+- [ ] **Step 28: WebAssembly (WASM) 対応**
+    - [ ] Emscripten を用いた C 出力からの WASM ビルドフローの確立。
+    - [ ] ブラウザ上での REPL 動作 (LPへの埋め込み)。
 
 ## 🔬 HPC & Science (科学技術計算と可視化)
 - [ ] **Matrix Operations (BLAS/LAPACK Integration)**
