@@ -132,12 +132,16 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
 - [ ] **Region-based Memory Management**
 
 ## 📦 Standard Library Expansion (標準ライブラリ拡充)
-- [ ] **文字列と IO** (ネイティブString, ファイルIO)
+- [ ] **Step 35: Standard Library Expansion (String & I/O)**
+    - [ ] **String Operations:** `string-append`, `string-length`, `substring`, `string=?` の実装。
+    - [ ] **File I/O:** `read-file`, `write-file`, `append-file` の実装。
+    - [ ] **System:** `command-line-args` の実装。
+    - [ ] **Dual Implementation:** インタプリタ (Haskell) とコンパイラ (C Runtime) の両対応。
 - [ ] **テストフレームワーク**
 - [ ] **JSON Support**
 
 ## 📦 Distribution & CI (配布・自動化)
-- [ ] **Step 34: Binary Distribution (GitHub Actions)**
-    - [ ] **CI Pipeline:** Push 時に Linux / Windows / macOS でビルドとテストを実行するワークフローの作成。
-    - [ ] **Release Automation:** タグ (`v0.1.0` 等) を打った際に、自動で `spinor-windows.exe`, `spinor-linux` 等をビルドし、GitHub Releases にアップロードする設定。
+- [x] **Step 34: Binary Distribution (GitHub Actions)**
+    - [x] **CI Pipeline:** Push 時に Linux / Windows / macOS でビルドとテストを実行するワークフローの作成。
+    - [x] **Release Automation:** タグ (`v0.1.0` 等) を打った際に、自動で `spinor-windows.exe`, `spinor-linux` 等をビルドし、GitHub Releases にアップロードする設定。
 

@@ -141,7 +141,7 @@ compileExpr :: Expr -> CCode
 -- リテラル
 compileExpr (EInt n)  = "sp_make_int(" <> T.pack (show n) <> ")"
 compileExpr (EBool b) = "sp_make_bool(" <> (if b then "true" else "false") <> ")"
-compileExpr (EStr _)  = "sp_make_nil() /* TODO: string */"
+compileExpr (EStr s)  = "sp_make_str(\"" <> escapeC s <> "\")"
 
 -- if 式: (if cond then else)
 compileExpr (EList [ESym "if", cond, thenE, elseE]) =
@@ -170,6 +170,26 @@ compileExpr (EList [ESym "<=", a, b]) =
 compileExpr (EList [ESym ">=", a, b]) =
     "sp_gte(" <> compileExpr a <> ", " <> compileExpr b <> ")"
 
+-- 文字列操作
+compileExpr (EList [ESym "string-append", a, b]) =
+    "sp_str_append(" <> compileExpr a <> ", " <> compileExpr b <> ")"
+compileExpr (EList [ESym "string-length", s]) =
+    "sp_str_length(" <> compileExpr s <> ")"
+compileExpr (EList [ESym "substring", s, start, end]) =
+    "sp_substring(" <> compileExpr s <> ", " <> compileExpr start <> ", " <> compileExpr end <> ")"
+compileExpr (EList [ESym "string=?", a, b]) =
+    "sp_str_eq(" <> compileExpr a <> ", " <> compileExpr b <> ")"
+
+-- ファイル I/O
+compileExpr (EList [ESym "read-file", path]) =
+    "sp_read_file(" <> compileExpr path <> ")"
+compileExpr (EList [ESym "write-file", path, content]) =
+    "sp_write_file(" <> compileExpr path <> ", " <> compileExpr content <> ")"
+compileExpr (EList [ESym "append-file", path, content]) =
+    "sp_append_file(" <> compileExpr path <> ", " <> compileExpr content <> ")"
+compileExpr (EList [ESym "file-exists?", path]) =
+    "sp_file_exists(" <> compileExpr path <> ")"
+
 -- 変数参照 (引数など)
 compileExpr (ESym s) = mangle s
 
@@ -180,7 +200,20 @@ compileExpr (EList (ESym fname : args))
             cArgs = T.intercalate ", " (map compileExpr args)
         in cFun <> "(" <> cArgs <> ")"
   where
-    primitives = ["+", "-", "*", "/", "=", "<", ">", "<=", ">=", "if", "defun"]
+    primitives = ["+", "-", "*", "/", "=", "<", ">", "<=", ">=", "if", "defun",
+                  "string-append", "string-length", "substring", "string=?",
+                  "read-file", "write-file", "append-file", "file-exists?"]
 
 -- 未実装のパターン
 compileExpr other = "sp_make_nil() /* TODO: " <> T.pack (show other) <> " */"
+
+-- | C 文字列リテラルのエスケープ
+escapeC :: Text -> Text
+escapeC = T.concatMap escapeChar
+  where
+    escapeChar '"'  = "\\\""
+    escapeChar '\\' = "\\\\"
+    escapeChar '\n' = "\\n"
+    escapeChar '\t' = "\\t"
+    escapeChar '\r' = "\\r"
+    escapeChar c    = T.singleton c

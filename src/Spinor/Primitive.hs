@@ -5,6 +5,7 @@ module Spinor.Primitive
   ) where
 
 import Data.Text (Text, pack)
+import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 
 import Spinor.Val (Val(..), Env)
@@ -27,6 +28,13 @@ primitiveBindings = Map.fromList
   , ("empty?", VPrim "empty?" primNull)
   , ("eq",     VPrim "eq"     primEq)
   , ("equal",  VPrim "equal"  primEqual)
+  -- 文字列操作
+  , ("string-append", VPrim "string-append" primStringAppend)
+  , ("string-length", VPrim "string-length" primStringLength)
+  , ("substring",     VPrim "substring"     primSubstring)
+  , ("string=?",      VPrim "string=?"      primStringEq)
+  , ("string->list",  VPrim "string->list"  primStringToList)
+  , ("list->string",  VPrim "list->string"  primListToString)
   ]
 
 -- | 整数の二項演算をラップするヘルパー
@@ -108,6 +116,52 @@ primEq args = Left $ "eq: 引数の数が不正です (期待: 2, 実際: " <> t
 primEqual :: [Val] -> Either Text Val
 primEqual [a, b] = Right $ VBool (a == b)
 primEqual args = Left $ "equal: 引数の数が不正です (期待: 2, 実際: " <> tshow (length args) <> ")"
+
+-- | string-append: 複数の文字列を連結する (可変長引数)
+primStringAppend :: [Val] -> Either Text Val
+primStringAppend args = case traverse getStr args of
+    Just strs -> Right $ VStr (T.concat strs)
+    Nothing   -> Left "string-append: 全ての引数は文字列である必要があります"
+  where
+    getStr (VStr s) = Just s
+    getStr _        = Nothing
+
+-- | string-length: 文字列の長さ (文字数) を返す
+primStringLength :: [Val] -> Either Text Val
+primStringLength [VStr s] = Right $ VInt (fromIntegral $ T.length s)
+primStringLength [_]      = Left "string-length: 文字列が必要です"
+primStringLength args     = Left $ "string-length: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"
+
+-- | substring: 部分文字列を取得 (0-indexed, [start, end) の範囲)
+primSubstring :: [Val] -> Either Text Val
+primSubstring [VStr s, VInt start, VInt end]
+    | start < 0 || end < start = Right $ VStr ""
+    | otherwise = Right $ VStr $ T.take (fromIntegral $ end - start) $ T.drop (fromIntegral start) s
+primSubstring [_, _, _] = Left "substring: (String, Int, Int) が必要です"
+primSubstring args = Left $ "substring: 引数の数が不正です (期待: 3, 実際: " <> tshow (length args) <> ")"
+
+-- | string=?: 文字列の等価判定
+primStringEq :: [Val] -> Either Text Val
+primStringEq [VStr a, VStr b] = Right $ VBool (a == b)
+primStringEq [_, _]           = Left "string=?: 文字列が必要です"
+primStringEq args             = Left $ "string=?: 引数の数が不正です (期待: 2, 実際: " <> tshow (length args) <> ")"
+
+-- | string->list: 文字列を1文字ずつのリストに変換
+primStringToList :: [Val] -> Either Text Val
+primStringToList [VStr s] = Right $ VList (map (VStr . T.singleton) (T.unpack s))
+primStringToList [_]      = Left "string->list: 文字列が必要です"
+primStringToList args     = Left $ "string->list: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"
+
+-- | list->string: 文字列のリストを連結して1つの文字列に
+primListToString :: [Val] -> Either Text Val
+primListToString [VList vs] = case traverse getStr vs of
+    Just strs -> Right $ VStr (T.concat strs)
+    Nothing   -> Left "list->string: リストの全要素は文字列である必要があります"
+  where
+    getStr (VStr s) = Just s
+    getStr _        = Nothing
+primListToString [_]   = Left "list->string: リストが必要です"
+primListToString args  = Left $ "list->string: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"
 
 tshow :: Show a => a -> Text
 tshow = pack . show

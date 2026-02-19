@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 /* ========== 型タグ ========== */
 
@@ -18,6 +19,7 @@ typedef enum {
     SP_NIL,
     SP_BOOL,
     SP_INT,
+    SP_STR,      /* 文字列型 */
     SP_SYM,      /* 将来の拡張用 */
     SP_PAIR,     /* 将来の拡張用 */
     SP_FUN,      /* 将来の拡張用 */
@@ -37,6 +39,7 @@ typedef struct SpPair {
 typedef union {
     bool     boolean;
     long     integer;
+    char*    string;   /* 文字列型 (heap-allocated) */
     char*    symbol;
     SpPair*  pair;
 } SpValue;
@@ -51,6 +54,7 @@ typedef struct SpObject {
 SpObject* sp_make_nil(void);
 SpObject* sp_make_bool(bool value);
 SpObject* sp_make_int(long value);
+SpObject* sp_make_str(const char* s);
 
 /* ========== プリミティブ演算 ========== */
 
@@ -63,6 +67,20 @@ SpObject* sp_lt(SpObject* a, SpObject* b);
 SpObject* sp_gt(SpObject* a, SpObject* b);
 SpObject* sp_lte(SpObject* a, SpObject* b);
 SpObject* sp_gte(SpObject* a, SpObject* b);
+
+/* ========== 文字列操作 ========== */
+
+SpObject* sp_str_append(SpObject* a, SpObject* b);
+SpObject* sp_str_length(SpObject* s);
+SpObject* sp_substring(SpObject* s, SpObject* start, SpObject* end);
+SpObject* sp_str_eq(SpObject* a, SpObject* b);
+
+/* ========== ファイル I/O ========== */
+
+SpObject* sp_read_file(SpObject* path);
+SpObject* sp_write_file(SpObject* path, SpObject* content);
+SpObject* sp_append_file(SpObject* path, SpObject* content);
+SpObject* sp_file_exists(SpObject* path);
 
 /* ========== ユーティリティ ========== */
 

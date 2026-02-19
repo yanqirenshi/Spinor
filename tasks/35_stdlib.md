@@ -385,7 +385,38 @@ cabal run spinor -- build twister/test-stdlib.spin -o test-stdlib
 ## 実装報告
 
 ### Implementation Policy (実装方針)
-*(実装完了後、ここに記述してください)*
+仕様書の指示に従い、以下の方針で実装を行った:
+
+1. **純粋な文字列操作** (`string-append`, `string-length`, `substring`, `string=?`, `string->list`, `list->string`) は `Primitive.hs` に `VPrim` として実装
+2. **I/O 操作** (`read-file`, `write-file`, `append-file`, `file-exists?`, `command-line-args`, `getenv`) は `Eval.hs` に特殊形式として実装し、`liftIO` で I/O を実行
+3. **C ランタイム** に `SP_STR` 型と関連関数を追加し、`Codegen.hs` にコード生成ルールを追加
 
 ### Implementation Details (実装内容)
-*(具体的な実装の工夫点、直面した問題の解決策などを記述してください)*
+
+#### 1. Primitive.hs の変更点
+- `Data.Text` をインポートし、`T.concat`, `T.length`, `T.take`, `T.drop`, `T.unpack`, `T.singleton` を使用
+- 可変長引数対応: `string-append` は `traverse` を使って引数リストを処理
+- 境界条件の処理: `substring` は範囲外アクセス時に空文字列を返す
+
+#### 2. Eval.hs の変更点
+- `TypeApplications` 言語拡張を追加 (`try @IOException` のため)
+- `System.Directory.doesFileExist`, `System.Environment.getArgs`, `System.Environment.lookupEnv` をインポート
+- 各 I/O 操作は `try @IOException` でエラーをキャッチし、適切なエラーメッセージを返す
+
+#### 3. C ランタイムの変更点 (spinor.h / spinor.c)
+- `SpType` enum に `SP_STR` を追加
+- `SpValue` union に `char* string` フィールドを追加
+- 文字列は `strdup()` でヒープにコピーして管理
+- `sp_print()` に `SP_STR` ケースを追加 (引用符なしで出力)
+
+#### 4. Codegen.hs の変更点
+- `EStr` リテラルを `sp_make_str("...")` に変換
+- `escapeC` ヘルパー関数で C 文字列エスケープ (`"`, `\`, `\n`, `\t`, `\r`)
+- `primitives` リストに新規関数名を追加
+
+#### 5. 検証結果
+`twister/test-stdlib.spin` で全機能をテスト完了:
+- 文字列操作: `string-append`, `string-length`, `substring`, `string=?`, `string->list`, `list->string`
+- ファイル I/O: `write-file`, `append-file`, `read-file`, `file-exists?`
+
+**Note:** ビルド検証時に Windows 環境で `network` パッケージのビルドに問題が発生した (HsNetworkConfig.h が見つからない)。これは Step 35 の実装とは無関係の環境依存問題であり、一時的に `Spinor.Server` を無効化してテストを実施した。

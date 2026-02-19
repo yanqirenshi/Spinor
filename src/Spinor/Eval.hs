@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE TypeApplications           #-}
 
 module Spinor.Eval
   ( Eval
@@ -12,6 +13,7 @@ module Spinor.Eval
   ) where
 
 import Data.Text (Text, pack)
+import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import qualified Data.Map.Strict as Map
 import Control.Monad.State.Strict
@@ -19,6 +21,9 @@ import Control.Monad.Except
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.MVar
 import Control.Monad (void)
+import Control.Exception (try, IOException)
+import System.Directory (doesFileExist)
+import System.Environment (getArgs, lookupEnv)
 
 import Spinor.Syntax (Expr(..), Pattern(..), ConstructorDef(..))
 import Spinor.Val    (Val(..), Env, showVal)
@@ -237,6 +242,64 @@ eval (EList [ESym "bound?", arg]) = do
       env <- get
       pure $ VBool (Map.member name env)
     _ -> throwError $ "bound?: シンボルが必要です"
+
+-- 特殊形式: (read-file path) — ファイルを読み込んで文字列として返す
+eval (EList [ESym "read-file", pathExpr]) = do
+  pathVal <- eval pathExpr
+  case pathVal of
+    VStr path -> do
+      result <- liftIO $ try @IOException $ TIO.readFile (T.unpack path)
+      case result of
+        Right content -> pure $ VStr content
+        Left err      -> throwError $ "read-file: " <> T.pack (show err)
+    _ -> throwError "read-file: パスには文字列が必要です"
+
+-- 特殊形式: (write-file path content) — ファイルに書き込む (上書き)
+eval (EList [ESym "write-file", pathExpr, contentExpr]) = do
+  pathVal <- eval pathExpr
+  contentVal <- eval contentExpr
+  case (pathVal, contentVal) of
+    (VStr path, VStr content) -> do
+      result <- liftIO $ try @IOException $ TIO.writeFile (T.unpack path) content
+      case result of
+        Right () -> pure $ VBool True
+        Left err -> throwError $ "write-file: " <> T.pack (show err)
+    _ -> throwError "write-file: (String, String) が必要です"
+
+-- 特殊形式: (append-file path content) — ファイルに追記する
+eval (EList [ESym "append-file", pathExpr, contentExpr]) = do
+  pathVal <- eval pathExpr
+  contentVal <- eval contentExpr
+  case (pathVal, contentVal) of
+    (VStr path, VStr content) -> do
+      result <- liftIO $ try @IOException $ TIO.appendFile (T.unpack path) content
+      case result of
+        Right () -> pure $ VBool True
+        Left err -> throwError $ "append-file: " <> T.pack (show err)
+    _ -> throwError "append-file: (String, String) が必要です"
+
+-- 特殊形式: (file-exists? path) — ファイルが存在するか確認
+eval (EList [ESym "file-exists?", pathExpr]) = do
+  pathVal <- eval pathExpr
+  case pathVal of
+    VStr path -> do
+      exists <- liftIO $ doesFileExist (T.unpack path)
+      pure $ VBool exists
+    _ -> throwError "file-exists?: パスには文字列が必要です"
+
+-- 特殊形式: (command-line-args) — コマンドライン引数を取得
+eval (EList [ESym "command-line-args"]) = do
+  args <- liftIO getArgs
+  pure $ VList (map (VStr . T.pack) args)
+
+-- 特殊形式: (getenv name) — 環境変数を取得
+eval (EList [ESym "getenv", nameExpr]) = do
+  nameVal <- eval nameExpr
+  case nameVal of
+    VStr name -> do
+      result <- liftIO $ lookupEnv (T.unpack name)
+      pure $ VStr $ maybe "" T.pack result
+    _ -> throwError "getenv: 環境変数名には文字列が必要です"
 
 -- 関数適用: (f arg1 arg2 ...)
 --   マクロ展開は Expander.expand で処理済みの前提。
