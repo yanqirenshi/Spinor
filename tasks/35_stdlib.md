@@ -420,3 +420,14 @@ cabal run spinor -- build twister/test-stdlib.spin -o test-stdlib
 - ファイル I/O: `write-file`, `append-file`, `read-file`, `file-exists?`
 
 **Note:** ビルド検証時に Windows 環境で `network` パッケージのビルドに問題が発生した (HsNetworkConfig.h が見つからない)。これは Step 35 の実装とは無関係の環境依存問題であり、一時的に `Spinor.Server` を無効化してテストを実施した。
+
+### WSL2/Ubuntu 検証結果 (2026-02-19)
+
+| 検証項目 | 結果 | 備考 |
+|---|---|---|
+| `cabal build` | **PASS** | GHC 9.6.6 / cabal 3.16.1.0。`network` パッケージ含め全モジュール正常ビルド |
+| `cabal run spinor -- twister/test-stdlib.spin` | **PASS** | 期待出力と完全一致 |
+| `cabal test` | **PASS** | 79 examples, 0 failures |
+
+- Windows で問題だった `network` パッケージ (`Spinor.Server`) は WSL2/Ubuntu (Linux 6.6.87.2) で問題なくビルド可能
+- Step 35 の全機能 (文字列操作 6 関数 + I/O 6 関数 + C ランタイム + コード生成) が正常に動作することを確認
