@@ -103,10 +103,10 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [x] **README Refactoring:** ...
     - [x] **Doc Viewer:** ...
     - [x] **UI Overhaul:** `github-markdown-css` と `highlight.js` によるデザイン刷新 (Step 33-C)。
-- [ ] **Step 33-D: Add Project Logo**
-    - [ ] 作成した `spinor.png` をリポジトリ（例: `assets/` や `docs/assets/`）に配置。
-    - [ ] `README.md` のトップにロゴ画像を追加。
-    - [ ] `docs/index.html` および `docs/doc.html` のヘッダー等にロゴを配置してブランディングを強化。
+- [x] **Step 33-D: Add Project Logo**
+    - [x] 作成した `spinor.png` をリポジトリ（例: `assets/` や `docs/assets/`）に配置。
+    - [x] `README.md` のトップにロゴ画像を追加。
+    - [x] `docs/index.html` および `docs/doc.html` のヘッダー等にロゴを配置してブランディングを強化。
 
 ## 🚀 Performance & Compilation (パフォーマンスと移植性)
 
