@@ -6,6 +6,12 @@
   <title>Documentation - Spinor</title>
   <meta name="description" content="Spinor Documentation">
   <link rel="stylesheet" href="style.css">
+
+  <!-- GitHub Markdown CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown-light.min.css">
+
+  <!-- Highlight.js Theme -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 </head>
 <body>
 
@@ -21,9 +27,21 @@
     </nav>
   </header>
 
-  <main>
-    <!-- Documentation Content -->
-    <section id="doc-content">
+  <main class="doc-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="doc-sidebar">
+      <nav class="sidebar-nav">
+        <h3>Documentation</h3>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="doc.html?src=reference.md" data-src="reference.md">Language Reference</a></li>
+          <li><a href="doc.html?src=emacs.md" data-src="emacs.md">Emacs Integration</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <section class="doc-main">
       <article id="content" class="markdown-body">
         <p>Loading...</p>
       </article>
@@ -40,6 +58,11 @@
       </ul>
     </div>
   </footer>
+
+  <!-- Highlight.js Core + Languages -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/lisp.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/haskell.min.js"></script>
 
   <!-- marked.js for Markdown rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -62,6 +85,17 @@
       function showError(message) {
         const content = document.getElementById('content');
         content.innerHTML = '<div class="doc-error"><h2>Error</h2><p>' + message + '</p><p><a href="index.html">Back to Home</a></p></div>';
+      }
+
+      // Highlight active navigation link
+      function updateActiveLink() {
+        const links = document.querySelectorAll('.sidebar-nav a[data-src]');
+        links.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('data-src') === src) {
+            link.classList.add('active');
+          }
+        });
       }
 
       // Fetch and render Markdown
@@ -88,6 +122,14 @@
           if (firstH1) {
             document.title = firstH1.textContent + ' - Spinor';
           }
+
+          // Apply syntax highlighting
+          content.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block);
+          });
+
+          // Update active nav link
+          updateActiveLink();
 
         } catch (error) {
           showError(error.message);

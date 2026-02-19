@@ -252,7 +252,43 @@ npx serve .
 ## 実装報告
 
 ### Implementation Policy (実装方針)
-*(実装完了後、ここに記述してください)*
+
+- **テーマ:** GitHub Light テーマを採用。`github-markdown-css` (v5.5.1) で Markdown の見た目を GitHub 風に統一し、`highlight.js` (v11.9.0) の `github` テーマでコードブロックを色付け。
+- **レスポンシブ対応:** 900px 以下でサイドバーを `display: none` で非表示にし、メインコンテンツのパディングを縮小。デスクトップではサイドバーを `position: sticky` で固定表示。
 
 ### Implementation Details (実装内容)
-*(具体的な実装の工夫点、直面した問題の解決策などを記述してください)*
+
+#### `docs/doc.html` の変更点
+1. **`<head>` に CDN リンクを追加:**
+   - `github-markdown-css` (5.5.1) — Markdown スタイル
+   - `highlight.js/styles/github.min.css` (11.9.0) — シンタックスハイライトテーマ
+2. **`</body>` 前に highlight.js スクリプトを追加:**
+   - `highlight.min.js` (コアライブラリ)
+   - `languages/lisp.min.js` (Spinor コード用)
+   - `languages/haskell.min.js` (Haskell コード用)
+3. **HTML 構造を変更:**
+   - `<main>` を `<main class="doc-layout">` (flex コンテナ) に変更
+   - `<aside class="doc-sidebar">` にサイドバーナビゲーション (Home, Language Reference, Emacs Integration) を追加
+   - メインコンテンツを `<section class="doc-main">` に配置
+4. **JavaScript を更新:**
+   - `loadDocument()` 内で `hljs.highlightElement()` を全 `<pre><code>` ブロックに適用
+   - `updateActiveLink()` 関数を追加し、URL の `src` パラメータに基づいてサイドバーのアクティブリンクをハイライト
+
+#### `docs/style.css` の変更点
+1. **Documentation Layout セクションを追加:**
+   - `.doc-layout` — flex コンテナ (header 高さ分の `padding-top: 64px`)
+   - `.doc-sidebar` — 幅 250px、`position: sticky`、背景色 `var(--bg-secondary)`
+   - `.sidebar-nav` — リンクスタイル (ホバー・アクティブ状態のハイライト)
+   - `.doc-main` — `flex: 1`、`max-width: 900px`
+2. **Highlight.js Overrides セクションを追加:**
+   - `.markdown-body pre` — 背景色・角丸を highlight.js テーマに合わせて調整
+3. **レスポンシブルールを追加:**
+   - `@media (max-width: 900px)` でサイドバー非表示、コンテンツパディング縮小
+
+#### ブラウザでの表示確認結果
+- `python3 -m http.server 8000` でローカルサーバーを起動
+- `http://localhost:8000/doc.html?src=reference.md` および `?src=emacs.md` に対して HTTP 200 を確認
+- HTML 構造: サイドバー (`<aside class="doc-sidebar">`) が正しく出力されている
+- JavaScript: `hljs.highlightElement()` 呼び出しと `updateActiveLink()` が `loadDocument()` 内に含まれている
+- CSS: サイドバーレイアウト、アクティブリンクスタイル、レスポンシブルール (900px) が適用されている
+- 既存の Markdown ファイル (`reference.md`, `emacs.md`) は既に ` ```lisp ` / ` ```elisp ` / ` ```bash ` でコードブロックを指定済みのため、追加修正は不要
