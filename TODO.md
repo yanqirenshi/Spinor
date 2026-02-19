@@ -65,8 +65,6 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
 - [ ] **エラーメッセージの改善**
     - [ ] ソース位置情報の追跡 (ファイル名, 行, 列)。
     - [ ] 初学者に優しい型エラーメッセージ。
-- [ ] **LSP Server (Language Server Protocol)**
-    - [ ] `spinor-lsp` の実装 (ホバー、定義ジャンプ)。
 - [x] **Step 29: SLY / SLIME Support (TCP Socket Integration)**
     - [x] **Dependency:** `package.yaml` に `network` パッケージを追加。
     - [x] **Socket Server:** 指定ポートで待ち受け、接続を受け入れる `spinor server` コマンドの実装。
@@ -79,6 +77,13 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [x] **Interactive Eval:** `swank:interactive-eval` (`C-x C-e` 等) の実装と結果返却。
     - [x] **Compilation:** `swank:compile-string-for-emacs` (`C-c C-c`) の実装。
     - [ ] **Output Redirection:** 標準出力 (`print` 等) を Emacs の REPL バッファに転送する仕組み。
+- [x] **Step 37: LSP Server Foundation (Language Server Protocol)**
+    - [x] **Setup:** `lsp` パッケージの導入と、`spinor lsp` コマンドの作成。
+    - [x] **Lifecycle:** `initialize`, `shutdown` 等の基本ハンドシェイクの実装。
+    - [x] **Diagnostics:** パースエラー発生時にエディタ上に赤波線を表示する機能の実装。
+- [ ] **Step 38: LSP Advanced Features (Hover & Completion)**
+    - [ ] **Hover:** カーソル下のシンボルの情報（ドキュメント等）を表示 (textDocument/hover)。
+    - [ ] **Completion:** 組み込み関数の入力補完 (textDocument/completion)。
 
 ## 📢 Promotion & Website (広報・Web)
 Spinor / Twister の魅力を伝えるための Web プレゼンス。
@@ -130,7 +135,7 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [ ] **Comparison:** 現行の C言語トランスパイル方式とのパフォーマンス・ビルド時間の比較。
 
 ## 📦 Standard Library Expansion (標準ライブラリ拡充)
-- [ ] **Step 35: Standard Library Expansion (String & I/O)**
+- [x] **Step 35: Standard Library Expansion (String & I/O)**
     - [x] **String Operations:** `string-append`, `string-length`, `substring`, `string=?` の実装。
     - [x] **File I/O:** `read-file`, `write-file`, `append-file` の実装。
     - [x] **System:** `command-line-args` の実装。
