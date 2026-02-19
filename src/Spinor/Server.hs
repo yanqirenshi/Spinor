@@ -150,11 +150,13 @@ escapeString = T.concatMap escapeChar
 --     slynk-mrepl:create-mrepl -> swank:mrepl:create-mrepl
 --     slynk-completion:flex-completions -> swank:completion:flex-completions
 --     slynk-trace-dialog:dialog-toggle-trace -> swank:trace:dialog-toggle-trace
+--     slynk-stickers:fetch -> swank:stickers:fetch
 normalizeCommand :: Text -> Text
 normalizeCommand cmd
     | "slynk-completion:" `T.isPrefixOf` cmd = "swank:completion:" <> T.drop 17 cmd
     | "slynk-mrepl:" `T.isPrefixOf` cmd = "swank:mrepl:" <> T.drop 12 cmd
     | "slynk-trace-dialog:" `T.isPrefixOf` cmd = "swank:trace:" <> T.drop 19 cmd
+    | "slynk-stickers:" `T.isPrefixOf` cmd = "swank:stickers:" <> T.drop 15 cmd
     | "slynk:slynk-" `T.isPrefixOf` cmd = "swank:swank-" <> T.drop 12 cmd
     | "slynk:" `T.isPrefixOf` cmd       = "swank:" <> T.drop 6 cmd
     | otherwise                         = cmd
@@ -462,6 +464,81 @@ handleSwankRequest h env tracedFns form reqId = case normalizeForm form of
     -- swank:trace:clear-trace-tree - トレースツリーをクリア
     EList [ESym "swank:trace:clear-trace-tree"] -> do
         let response = mkOkResponse reqId (EBool True)
+        sendPacket h (exprToText response)
+        pure env
+
+    --------------------------------------------------------------------------------
+    -- Stickers Handlers
+    --------------------------------------------------------------------------------
+
+    -- swank:stickers:compile-for-stickers - スティッカー付きコードをコンパイル
+    EList (ESym "swank:stickers:compile-for-stickers" : _) -> do
+        -- スティッカーの完全な実装には評価器との統合が必要
+        -- 現時点では成功を返す
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:stickers:kill-stickers - スティッカーを削除
+    EList [ESym "swank:stickers:kill-stickers", _ids] -> do
+        let response = mkOkResponse reqId (EBool True)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:stickers:toggle-break-on-stickers - ブレーク切り替え
+    EList [ESym "swank:stickers:toggle-break-on-stickers"] -> do
+        -- ブレーク機能は未サポート
+        let response = mkOkResponse reqId (EBool False)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:stickers:total-recordings - 記録総数を返す
+    EList [ESym "swank:stickers:total-recordings"] -> do
+        let response = mkOkResponse reqId (EInt 0)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:stickers:search-for-recording - 記録を検索
+    EList (ESym "swank:stickers:search-for-recording" : _) -> do
+        -- 記録がないので nil を返す
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:stickers:fetch - スティッカー情報を取得
+    EList [ESym "swank:stickers:fetch", _deadStickers] -> do
+        -- スティッカーリスト (空)
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:stickers:fetch - その他の形式
+    EList (ESym "swank:stickers:fetch" : _) -> do
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:stickers:forget - 記録をクリア
+    EList (ESym "swank:stickers:forget" : _) -> do
+        let response = mkOkResponse reqId (EInt 0)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:stickers:find-recording-or-lose - 特定の記録を取得
+    EList (ESym "swank:stickers:find-recording-or-lose" : _) -> do
+        let response = mkAbortResponse reqId "No recordings available"
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:stickers:inspect-sticker - スティッカーを検査
+    EList [ESym "swank:stickers:inspect-sticker", _stickerId] -> do
+        let response = mkAbortResponse reqId "Sticker inspection not available"
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:stickers:inspect-sticker-recording - スティッカー記録を検査
+    EList (ESym "swank:stickers:inspect-sticker-recording" : _) -> do
+        let response = mkAbortResponse reqId "No recordings to inspect"
         sendPacket h (exprToText response)
         pure env
 

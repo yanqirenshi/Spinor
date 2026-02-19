@@ -43,6 +43,12 @@ spec = do
             it "slynk-trace-dialog:report-specs -> swank:trace:report-specs" $
                 normalizeCommand "slynk-trace-dialog:report-specs" `shouldBe` "swank:trace:report-specs"
 
+        describe "slynk-stickers: prefix" $ do
+            it "slynk-stickers:fetch -> swank:stickers:fetch" $
+                normalizeCommand "slynk-stickers:fetch" `shouldBe` "swank:stickers:fetch"
+            it "slynk-stickers:total-recordings -> swank:stickers:total-recordings" $
+                normalizeCommand "slynk-stickers:total-recordings" `shouldBe` "swank:stickers:total-recordings"
+
         describe "slynk:slynk- prefix" $ do
             it "slynk:slynk-add-load-paths -> swank:swank-add-load-paths" $
                 normalizeCommand "slynk:slynk-add-load-paths" `shouldBe` "swank:swank-add-load-paths"
