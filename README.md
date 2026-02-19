@@ -69,6 +69,45 @@ cabal run spinor -- build hello.spin
 | `spinor compile <file>` | Cソースコードのみを出力 |
 | `spinor server [--port <port>]` | SLY 接続用の Swank サーバーを起動 |
 
+## Testing
+
+### ユニットテスト
+
+```bash
+cabal test
+```
+
+Hspec を使用したテストスイートが実行されます:
+- `Spinor.ParserSpec` — パーサーのテスト
+- `Spinor.EvalSpec` — 評価器のテスト
+- `Spinor.ServerSpec` — SLY/Swank サーバーのテスト
+
+### E2E テスト (SLY 統合)
+
+SLY を通じた統合テストを実行できます:
+
+1. Spinor サーバーを起動:
+   ```bash
+   cabal run spinor -- server
+   ```
+
+2. Emacs で SLY に接続:
+   ```
+   M-x sly-connect RET localhost RET 4005
+   ```
+
+3. テストファイルをロード:
+   ```
+   M-x load-file RET test/e2e/sly-test.el
+   ```
+
+4. テストを実行:
+   ```
+   M-x spinor-run-e2e-tests
+   ```
+
+テスト結果は `*Messages*` バッファに出力されます。
+
 ## Documentation
 
 - [Language Reference](docs/reference.md) — 特殊形式とプリミティブ関数
