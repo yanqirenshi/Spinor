@@ -1,6 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Spinor.Server (runServer) where
+module Spinor.Server
+  ( -- * Server
+    runServer
+    -- * Exported for testing
+  , normalizeCommand
+  , normalizeForm
+  , extractTraceSpec
+  , exprToText
+    -- * Response builders (for testing)
+  , mkOkResponse
+  , mkAbortResponse
+    -- * Trace State (for testing)
+  , TracedFunctions
+  , newTracedFunctions
+  , addTracedFunction
+  , removeTracedFunction
+  , isTraced
+  , getTracedFunctions
+  , clearAllTraces
+  ) where
 
 import Network.Socket
 import Control.Concurrent (forkFinally)
