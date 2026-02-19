@@ -100,6 +100,13 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [x] **Emacs Guide:** `docs/emacs.md` の作成。
     - [x] **CLI Polish:** `spinor --help`, `--version` の改善。
     - [x] **Doc Viewer:** `docs/doc.html` による Markdown の動的レンダリング (GitHub Pages 対応)。
+    - [x] **README Refactoring:** ...
+    - [x] **Doc Viewer:** ...
+    - [x] **UI Overhaul:** `github-markdown-css` と `highlight.js` によるデザイン刷新 (Step 33-C)。
+- [ ] **Step 33-D: Add Project Logo**
+    - [ ] 作成した `spinor.png` をリポジトリ（例: `assets/` や `docs/assets/`）に配置。
+    - [ ] `README.md` のトップにロゴ画像を追加。
+    - [ ] `docs/index.html` および `docs/doc.html` のヘッダー等にロゴを配置してブランディングを強化。
 
 ## 🚀 Performance & Compilation (パフォーマンスと移植性)
 
@@ -122,6 +129,15 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [ ] **Prototype:** 小さな計算式 (`+`, `*`) を LLVM JIT でメモリ内コンパイル・実行するプロトタイプの作成。
     - [ ] **Comparison:** 現行の C言語トランスパイル方式とのパフォーマンス・ビルド時間の比較。
 
+## 📦 Standard Library Expansion (標準ライブラリ拡充)
+- [ ] **Step 35: Standard Library Expansion (String & I/O)**
+    - [x] **String Operations:** `string-append`, `string-length`, `substring`, `string=?` の実装。
+    - [x] **File I/O:** `read-file`, `write-file`, `append-file` の実装。
+    - [x] **System:** `command-line-args` の実装。
+    - [x] **Dual Implementation:** インタプリタ (Haskell) とコンパイラ (C Runtime) の両対応。
+- [ ] **テストフレームワーク**
+- [ ] **JSON Support**
+
 ## 🔬 HPC & Science (科学技術計算と可視化)
 - [ ] **Matrix Operations (BLAS/LAPACK Integration)**
 - [ ] **GPGPU Support (OpenCL)**
@@ -131,17 +147,10 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
 - [ ] **Linear Types / Ownership (所有権システム)**
 - [ ] **Region-based Memory Management**
 
-## 📦 Standard Library Expansion (標準ライブラリ拡充)
-- [ ] **Step 35: Standard Library Expansion (String & I/O)**
-    - [ ] **String Operations:** `string-append`, `string-length`, `substring`, `string=?` の実装。
-    - [ ] **File I/O:** `read-file`, `write-file`, `append-file` の実装。
-    - [ ] **System:** `command-line-args` の実装。
-    - [ ] **Dual Implementation:** インタプリタ (Haskell) とコンパイラ (C Runtime) の両対応。
-- [ ] **テストフレームワーク**
-- [ ] **JSON Support**
-
 ## 📦 Distribution & CI (配布・自動化)
 - [x] **Step 34: Binary Distribution (GitHub Actions)**
     - [x] **CI Pipeline:** Push 時に Linux / Windows / macOS でビルドとテストを実行するワークフローの作成。
     - [x] **Release Automation:** タグ (`v0.1.0` 等) を打った際に、自動で `spinor-windows.exe`, `spinor-linux` 等をビルドし、GitHub Releases にアップロードする設定。
-
+- [ ] **Fix Windows Native Build (network package)**
+    - [ ] `network` パッケージの `HsNetworkConfig.h` 生成エラーの解消 (GHC 9.6 + MSYS2)。
+    - [ ] 必要であれば CI (GitHub Actions) の Windows ランナーでの動作を修正。
