@@ -110,5 +110,10 @@ jobs:
    - `generate_release_notes: true` を追加し、リリースノートを自動生成
    - `permissions: contents: write` を明示的に追加
 
+5. **バイナリ抽出方法の変更** (実行時エラーにより修正)
+   - `cabal list-bin` → `cabal install --installdir=. --install-method=copy` に変更
+   - キャッシュされた `dist-newstyle` とビルド成果物の不整合問題を回避
+   - `--enable-executable-stripping` を削除（互換性のため）
+
 #### 検証
-- `workflow_dispatch` による手動実行、または `v0.1.0-rc1` などのテストタグで検証可能
+- `v0.1.0-rc2` タグで全3プラットフォーム (Linux, Windows, macOS) のビルドとリリースを確認済み
