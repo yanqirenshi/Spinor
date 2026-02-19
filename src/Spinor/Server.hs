@@ -7,6 +7,9 @@ import Control.Concurrent (forkFinally)
 import Control.Monad (forever, void)
 import Control.Exception (bracket, SomeException, catch)
 import Data.List (nub)
+import Data.IORef
+import Data.Set (Set)
+import qualified Data.Set as Set
 import System.IO (Handle, IOMode(..), hSetBuffering, BufferMode(..), hClose, hSetBinaryMode)
 import qualified Data.ByteString as BS
 import Data.Text (Text)
@@ -21,6 +24,47 @@ import Spinor.Val (Env, Val(..))
 import Spinor.Expander (expand)
 import Spinor.Lsp.Docs (primitiveDocs, DocEntry(..))
 import qualified Data.Map.Strict as Map
+
+--------------------------------------------------------------------------------
+-- Trace State
+--------------------------------------------------------------------------------
+
+-- | トレース対象の関数名を保持するセット
+type TracedFunctions = IORef (Set Text)
+
+-- | 新しいトレース状態を作成する
+newTracedFunctions :: IO TracedFunctions
+newTracedFunctions = newIORef Set.empty
+
+-- | 関数をトレース対象に追加する
+addTracedFunction :: TracedFunctions -> Text -> IO ()
+addTracedFunction ref name = modifyIORef' ref (Set.insert name)
+
+-- | 関数をトレース対象から削除する
+removeTracedFunction :: TracedFunctions -> Text -> IO ()
+removeTracedFunction ref name = modifyIORef' ref (Set.delete name)
+
+-- | 関数がトレース対象かどうかを確認する
+isTraced :: TracedFunctions -> Text -> IO Bool
+isTraced ref name = Set.member name <$> readIORef ref
+
+-- | トレース対象の関数一覧を取得する
+getTracedFunctions :: TracedFunctions -> IO [Text]
+getTracedFunctions ref = Set.toList <$> readIORef ref
+
+-- | 全てのトレースをクリアする
+clearAllTraces :: TracedFunctions -> IO ()
+clearAllTraces ref = writeIORef ref Set.empty
+
+-- | トレース対象の関数名を Expr から抽出する
+-- SLY は (slynk::from-string "name") という形式で送信する
+extractTraceSpec :: Expr -> Text
+extractTraceSpec (EStr s) = s
+extractTraceSpec (ESym s) = s
+extractTraceSpec (EList [ESym "swank::from-string", EStr s]) = s
+extractTraceSpec (EList [ESym "slynk::from-string", EStr s]) = s
+extractTraceSpec (EList [ESym _, EStr s]) = s  -- その他の from-string 形式
+extractTraceSpec _ = ""
 
 --------------------------------------------------------------------------------
 -- Swank Protocol Layer
@@ -86,10 +130,12 @@ escapeString = T.concatMap escapeChar
 --     slynk:slynk-add-load-paths -> swank:swank-add-load-paths
 --     slynk-mrepl:create-mrepl -> swank:mrepl:create-mrepl
 --     slynk-completion:flex-completions -> swank:completion:flex-completions
+--     slynk-trace-dialog:dialog-toggle-trace -> swank:trace:dialog-toggle-trace
 normalizeCommand :: Text -> Text
 normalizeCommand cmd
     | "slynk-completion:" `T.isPrefixOf` cmd = "swank:completion:" <> T.drop 17 cmd
     | "slynk-mrepl:" `T.isPrefixOf` cmd = "swank:mrepl:" <> T.drop 12 cmd
+    | "slynk-trace-dialog:" `T.isPrefixOf` cmd = "swank:trace:" <> T.drop 19 cmd
     | "slynk:slynk-" `T.isPrefixOf` cmd = "swank:swank-" <> T.drop 12 cmd
     | "slynk:" `T.isPrefixOf` cmd       = "swank:" <> T.drop 6 cmd
     | otherwise                         = cmd
@@ -104,8 +150,8 @@ normalizeForm other = other
 --------------------------------------------------------------------------------
 
 -- | Swank RPC リクエストを処理する
-handleSwankRequest :: Handle -> Env -> Expr -> Integer -> IO Env
-handleSwankRequest h env form reqId = case normalizeForm form of
+handleSwankRequest :: Handle -> Env -> TracedFunctions -> Expr -> Integer -> IO Env
+handleSwankRequest h env tracedFns form reqId = case normalizeForm form of
     -- swank:connection-info - ハンドシェイク
     EList [ESym "swank:connection-info"] -> do
         let response = mkConnectionInfoResponse reqId
@@ -180,9 +226,10 @@ handleSwankRequest h env form reqId = case normalizeForm form of
 
     -- slynk-mrepl:create-mrepl - MREPL作成
     -- 引数: (create-mrepl channel-id)
+    -- 戻り値: (channel-id thread-id)
     EList [ESym "swank:mrepl:create-mrepl", EInt channelId] -> do
-        -- チャンネル作成成功を返す
-        let response = mkOkResponse reqId (EList [EInt channelId])
+        -- チャンネル作成成功を返す (channel-id, thread-id)
+        let response = mkOkResponse reqId (EList [EInt channelId, EInt 0])
         sendPacket h (exprToText response)
         -- 初期プロンプトを送信
         sendMreplPrompt h channelId
@@ -191,7 +238,7 @@ handleSwankRequest h env form reqId = case normalizeForm form of
     -- slynk-mrepl:create-mrepl - その他の形式
     EList (ESym "swank:mrepl:create-mrepl" : _) -> do
         -- デフォルトでチャンネルID 1 を使用
-        let response = mkOkResponse reqId (EList [EInt 1])
+        let response = mkOkResponse reqId (EList [EInt 1, EInt 0])
         sendPacket h (exprToText response)
         sendMreplPrompt h 1
         pure env
@@ -322,6 +369,80 @@ handleSwankRequest h env form reqId = case normalizeForm form of
     -- swank:quit-inspector - インスペクタを閉じる
     EList [ESym "swank:quit-inspector"] -> do
         let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    --------------------------------------------------------------------------------
+    -- Trace Dialog Handlers
+    --------------------------------------------------------------------------------
+
+    -- swank:trace:dialog-toggle-trace - トレースのトグル
+    -- 形式: (dialog-toggle-trace (slynk::from-string "name")) または (dialog-toggle-trace "name")
+    EList [ESym "swank:trace:dialog-toggle-trace", specExpr] -> do
+        let spec = extractTraceSpec specExpr
+        traced <- isTraced tracedFns spec
+        if traced
+            then removeTracedFunction tracedFns spec
+            else addTracedFunction tracedFns spec
+        let newState = not traced
+            -- SLY expects a string message about what happened
+            msg = if newState
+                  then spec <> " is now traced for trace dialog"
+                  else spec <> " is now untraced for trace dialog"
+            response = mkOkResponse reqId (EStr msg)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:trace:dialog-traced-p - トレース状態を確認
+    EList [ESym "swank:trace:dialog-traced-p", specExpr] -> do
+        let spec = extractTraceSpec specExpr
+        traced <- isTraced tracedFns spec
+        let response = mkOkResponse reqId (EBool traced)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:trace:dialog-untrace - トレースを解除
+    EList [ESym "swank:trace:dialog-untrace", specExpr] -> do
+        let spec = extractTraceSpec specExpr
+        removeTracedFunction tracedFns spec
+        let response = mkOkResponse reqId (EBool True)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:trace:dialog-untrace-all - 全トレースを解除
+    EList [ESym "swank:trace:dialog-untrace-all"] -> do
+        tracedList <- getTracedFunctions tracedFns
+        clearAllTraces tracedFns
+        let response = mkOkResponse reqId (EList [EInt (fromIntegral $ length tracedList), EInt 0])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:trace:report-specs - トレース対象の関数一覧を返す
+    EList [ESym "swank:trace:report-specs"] -> do
+        tracedList <- getTracedFunctions tracedFns
+        -- 各関数を (name . details) の形式で返す
+        let specs = map (\name -> EList [EStr name]) tracedList
+            response = mkOkResponse reqId (EList specs)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:trace:report-total - トレース総数を返す
+    EList [ESym "swank:trace:report-total"] -> do
+        -- 現時点ではトレースエントリを保持していないので 0 を返す
+        let response = mkOkResponse reqId (EInt 0)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:trace:report-partial-tree - トレースツリーの一部を返す
+    EList (ESym "swank:trace:report-partial-tree" : _) -> do
+        -- 空のツリーを返す: (traces . remaining)
+        let response = mkOkResponse reqId (EList [EList [], EInt 0])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:trace:clear-trace-tree - トレースツリーをクリア
+    EList [ESym "swank:trace:clear-trace-tree"] -> do
+        let response = mkOkResponse reqId (EBool True)
         sendPacket h (exprToText response)
         pure env
 
@@ -796,8 +917,9 @@ mkIndentationUpdate =
 -- | TCP サーバーを起動する
 runServer :: String -> Env -> IO ()
 runServer port initialEnv = do
+    tracedFns <- newTracedFunctions
     addr <- resolve
-    bracket (open addr) close acceptLoop
+    bracket (open addr) close (acceptLoop tracedFns)
   where
     resolve = do
         let hints = defaultHints
@@ -814,18 +936,18 @@ runServer port initialEnv = do
         putStrLn $ "Swank server listening on port " ++ port
         pure sock
 
-    acceptLoop sock = forever $ do
+    acceptLoop tracedFns sock = forever $ do
         (conn, peer) <- accept sock
         putStrLn $ "Client connected: " ++ show peer
-        void $ forkFinally (handleClient conn initialEnv) (\_ -> close conn)
+        void $ forkFinally (handleClient conn initialEnv tracedFns) (\_ -> close conn)
 
 -- | クライアント接続を処理する
-handleClient :: Socket -> Env -> IO ()
-handleClient sock env = do
+handleClient :: Socket -> Env -> TracedFunctions -> IO ()
+handleClient sock env tracedFns = do
     h <- socketToHandle sock ReadWriteMode
     hSetBuffering h NoBuffering
     hSetBinaryMode h True
-    clientLoop h env `catch` handleDisconnect h
+    clientLoop h env tracedFns `catch` handleDisconnect h
   where
     handleDisconnect :: Handle -> SomeException -> IO ()
     handleDisconnect hdl _ = do
@@ -833,8 +955,8 @@ handleClient sock env = do
         hClose hdl
 
 -- | クライアントとの Swank プロトコルループ
-clientLoop :: Handle -> Env -> IO ()
-clientLoop h env = do
+clientLoop :: Handle -> Env -> TracedFunctions -> IO ()
+clientLoop h env tracedFns = do
     mLen <- recvHeader h
     case mLen of
         Nothing -> putStrLn "Client disconnected."
@@ -843,17 +965,17 @@ clientLoop h env = do
             case readExpr payload of
                 Left err -> do
                     putStrLn $ "Parse error: " ++ err
-                    clientLoop h env
+                    clientLoop h env tracedFns
                 Right expr -> do
-                    env' <- dispatchRPC h env expr
-                    clientLoop h env'
+                    env' <- dispatchRPC h env tracedFns expr
+                    clientLoop h env' tracedFns
 
 -- | RPC ディスパッチ
-dispatchRPC :: Handle -> Env -> Expr -> IO Env
-dispatchRPC h env expr = case expr of
+dispatchRPC :: Handle -> Env -> TracedFunctions -> Expr -> IO Env
+dispatchRPC h env tracedFns expr = case expr of
     -- (:emacs-rex form package thread-id request-id)
     EList [ESym ":emacs-rex", form, _package, _threadId, EInt reqId] ->
-        handleSwankRequest h env form reqId
+        handleSwankRequest h env tracedFns form reqId
 
     -- (:emacs-channel-send channel-id message)
     -- MREPL のチャンネルメッセージを処理
