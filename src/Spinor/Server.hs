@@ -110,6 +110,8 @@ handleSwankRequest h env form reqId = case normalizeForm form of
     EList [ESym "swank:connection-info"] -> do
         let response = mkConnectionInfoResponse reqId
         sendPacket h (exprToText response)
+        -- インデント情報を送信
+        sendPacket h (exprToText mkIndentationUpdate)
         pure env
 
     -- swank:swank-require - モジュールロード
@@ -474,6 +476,30 @@ mkConnectionInfoResponse reqId =
             ]
         , EInt reqId
         ]
+
+-- | インデント情報を生成する
+-- Spinor の特殊形式に対するインデントルールを Emacs に送信
+mkIndentationUpdate :: Expr
+mkIndentationUpdate =
+    EList
+        [ ESym ":indentation-update"
+        , EList $ map mkIndentRule
+            [ ("fn", 1)           -- (fn (args) body...) - body を 1 インデント
+            , ("let", 1)          -- (let bindings body...) - body を 1 インデント
+            , ("if", 1)           -- (if cond then else)
+            , ("match", 2)        -- (match expr cases...) - case のように 2
+            , ("define", 1)       -- (define name value)
+            , ("data", 1)         -- (data TypeName constructors...)
+            , ("begin", 0)        -- (begin forms...) - 全て同じレベル
+            , ("when", 1)         -- (when cond body...)
+            , ("unless", 1)       -- (unless cond body...)
+            , ("module", 1)       -- (module name exports...)
+            , ("import", 1)       -- (import name options...)
+            ]
+        ]
+  where
+    mkIndentRule :: (Text, Integer) -> Expr
+    mkIndentRule (name, indent) = EList [EStr name, EInt indent]
 
 --------------------------------------------------------------------------------
 -- TCP Server
