@@ -81,9 +81,9 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [x] **Setup:** `lsp` パッケージの導入と、`spinor lsp` コマンドの作成。
     - [x] **Lifecycle:** `initialize`, `shutdown` 等の基本ハンドシェイクの実装。
     - [x] **Diagnostics:** パースエラー発生時にエディタ上に赤波線を表示する機能の実装。
-- [ ] **Step 38: LSP Advanced Features (Hover & Completion)**
-    - [ ] **Hover:** カーソル下のシンボルの情報（ドキュメント等）を表示 (textDocument/hover)。
-    - [ ] **Completion:** 組み込み関数の入力補完 (textDocument/completion)。
+- [x] **Step 38: LSP Advanced Features (Hover & Completion)**
+    - [x] **Hover:** カーソル下のシンボルの情報（ドキュメント等）を表示 (textDocument/hover)。
+    - [x] **Completion:** 組み込み関数の入力補完 (textDocument/completion)。
 
 ## 📢 Promotion & Website (広報・Web)
 Spinor / Twister の魅力を伝えるための Web プレゼンス。
