@@ -250,7 +250,23 @@ cabal build
 ## 実装報告
 
 ### Implementation Policy (実装方針)
-*(実装完了後、ここに記述してください)*
+仕様書 (specs/38_lsp_advanced.md) およびタスク指示書に従い、LSP サーバーに Hover と Completion 機能を追加した。ドキュメント辞書は独立したモジュール (`Spinor.Lsp.Docs`) として分離し、将来的な拡張やメンテナンスを容易にした。
 
 ### Implementation Details (実装内容)
-*(具体的な実装の工夫点、直面した問題の解決策などを記述してください)*
+
+**1. 新規モジュール作成: `src/Spinor/Lsp/Docs.hs`**
+- `DocEntry` データ型: シグネチャ、説明文、CompletionItemKind を保持
+- `primitiveDocs`: 全 37 エントリ (特殊形式 13、算術 4、比較 3、リスト 8、文字列 6、I/O 4、並行処理 5)
+- `lookupDoc`, `allDocEntries` を公開 API として提供
+
+**2. Server.hs の更新**
+- `extractWordAt`: Lisp シンボル構成文字 (`[a-zA-Z0-9_+\-*/=<>?!]`) を走査してカーソル位置の単語を抽出
+- Hover ハンドラ: VFS からファイル内容を取得 → 行テキスト抽出 → 単語抽出 → 辞書検索 → Markdown 形式でレスポンス
+- Completion ハンドラ: 全ドキュメントエントリを `CompletionItem` に変換して返却
+
+**3. 直面した問題と解決**
+- Completion ハンドラの戻り値の型で `InL $ InL items` としていたが、正しくは `InL items` であった (lsp パッケージの型 `[CompletionItem] |? (CompletionList |? Null)` に対応)
+
+**4. 検証結果**
+- `cabal build`: 成功
+- `cabal test`: 全 79 テストパス
