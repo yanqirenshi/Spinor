@@ -236,6 +236,84 @@ handleSwankRequest h env form reqId = case normalizeForm form of
         sendPacket h (exprToText response)
         pure env
 
+    -- swank:eval-for-inspector - インスペクタコンテキストで評価
+    -- 形式: (slynk:eval-for-inspector inspector-id thread-id (quote slynk:func) args...)
+    EList (ESym "swank:eval-for-inspector" : _inspId : _threadId : EList [ESym "quote", ESym func] : args) -> do
+        let normalizedFunc = normalizeCommand func
+        case (normalizedFunc, args) of
+            ("swank:init-inspector", [EStr code]) -> do
+                result <- inspectValue env code
+                let response = mkOkResponse reqId result
+                sendPacket h (exprToText response)
+                pure env
+            _ -> do
+                -- 未対応の inspector 関数
+                let response = mkOkResponse reqId (EList [])
+                sendPacket h (exprToText response)
+                pure env
+
+    -- swank:eval-for-inspector - その他の形式
+    EList (ESym "swank:eval-for-inspector" : _) -> do
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:init-inspector - 直接呼び出し形式
+    EList [ESym "swank:init-inspector", EStr code] -> do
+        result <- inspectValue env code
+        let response = mkOkResponse reqId result
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:init-inspector - その他の形式
+    EList (ESym "swank:init-inspector" : _) -> do
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:inspect-nth-part - インスペクタの要素を検査
+    EList [ESym "swank:inspect-nth-part", EInt _partId] -> do
+        -- 簡易実装: 詳細な部品検査は未サポート
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:inspector-pop - 前の検査対象に戻る
+    EList [ESym "swank:inspector-pop"] -> do
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:inspector-next - 次の検査対象に進む
+    EList [ESym "swank:inspector-next"] -> do
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:inspector-reinspect - 現在のオブジェクトを再検査
+    EList [ESym "swank:inspector-reinspect"] -> do
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:inspector-range - インスペクタの範囲取得
+    EList (ESym "swank:inspector-range" : _) -> do
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:inspector-call-nth-action - アクション実行
+    EList (ESym "swank:inspector-call-nth-action" : _) -> do
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:quit-inspector - インスペクタを閉じる
+    EList [ESym "swank:quit-inspector"] -> do
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
     -- その他 - 未実装コマンド
     _ -> do
         let errMsg = "Unknown swank command: " <> exprToText form
@@ -375,6 +453,112 @@ getFlexCompletions env prefix =
             , EList []            -- chunks (マッチ位置、省略)
             , EStr classification -- 分類
             ]
+
+--------------------------------------------------------------------------------
+-- Inspector Helpers
+--------------------------------------------------------------------------------
+
+-- | 値を検査してインスペクタ形式で返す
+inspectValue :: Env -> Text -> IO Expr
+inspectValue env code =
+    case readExpr code of
+        Left err -> pure $ mkInspectorError (T.pack err)
+        Right ast -> do
+            result <- runEval env (expand ast >>= eval)
+            case result of
+                Left err -> pure $ mkInspectorError err
+                Right (val, _) -> pure $ mkInspectorContent val
+
+-- | インスペクタエラーを生成
+mkInspectorError :: Text -> Expr
+mkInspectorError err =
+    EList
+        [ ESym ":title", EStr "Error"
+        , ESym ":id", EInt 0
+        , ESym ":content", EList
+            [ EList [EStr ("Error: " <> err)]  -- content parts
+            , EInt 1  -- length
+            , EInt 0  -- start
+            , EInt 1  -- end
+            ]
+        ]
+
+-- | 値のインスペクタ表示を生成
+mkInspectorContent :: Val -> Expr
+mkInspectorContent val =
+    EList
+        [ ESym ":title", EStr (valTitle val <> " [" <> valTypeName val <> "]")
+        , ESym ":id", EInt 0
+        , ESym ":content", EList
+            [ EList [EStr (valContentText val)]  -- content parts
+            , EInt 1  -- length
+            , EInt 0  -- start
+            , EInt 1  -- end
+            ]
+        ]
+
+-- | 値のコンテンツをテキストとして生成
+valContentText :: Val -> Text
+valContentText (VInt n) = T.unlines
+    [ "Value: " <> T.pack (show n)
+    , "Hex: " <> T.pack (printf "0x%x" n)
+    , "Octal: " <> T.pack (printf "0o%o" n)
+    ]
+valContentText (VBool b) = "Value: " <> (if b then "#t" else "#f")
+valContentText (VStr s) = T.unlines
+    [ "Value: \"" <> s <> "\""
+    , "Length: " <> T.pack (show (T.length s))
+    ]
+valContentText (VSym s) = "Symbol: " <> s
+valContentText VNil = "Empty list (nil)"
+valContentText (VList xs) = T.unlines $
+    ("Length: " <> T.pack (show (length xs))) :
+    map (\(i, v) -> "  [" <> T.pack (show i) <> "] " <> valTitle v) (zip [(0::Int)..] xs)
+valContentText (VFunc args _ _) = T.unlines
+    [ "Arguments: (" <> T.intercalate " " args <> ")"
+    , "Type: User-defined function"
+    ]
+valContentText (VMacro args _ _) = T.unlines
+    [ "Arguments: (" <> T.intercalate " " args <> ")"
+    , "Type: User-defined macro"
+    ]
+valContentText (VPrim name _) = T.unlines
+    [ "Name: " <> name
+    , "Type: Built-in primitive"
+    ]
+valContentText (VData name fields) = T.unlines $
+    ("Constructor: " <> name) :
+    map (\(i, v) -> "  [" <> T.pack (show i) <> "] " <> valTitle v) (zip [(0::Int)..] fields)
+valContentText (VMVar _) = "Mutable variable (MVar)"
+
+-- | 値のタイトルを取得
+valTitle :: Val -> Text
+valTitle (VInt n) = T.pack (show n)
+valTitle (VBool True) = "#t"
+valTitle (VBool False) = "#f"
+valTitle (VStr s) = "\"" <> s <> "\""
+valTitle (VSym s) = s
+valTitle VNil = "nil"
+valTitle (VList xs) = "(" <> T.pack (show (length xs)) <> " elements)"
+valTitle (VFunc args _ _) = "(fn (" <> T.intercalate " " args <> ") ...)"
+valTitle (VMacro args _ _) = "(macro (" <> T.intercalate " " args <> ") ...)"
+valTitle (VPrim name _) = "<primitive: " <> name <> ">"
+valTitle (VData name _) = "<" <> name <> ">"
+valTitle (VMVar _) = "<mvar>"
+
+-- | 値の型名を取得
+valTypeName :: Val -> Text
+valTypeName (VInt _) = "Integer"
+valTypeName (VBool _) = "Boolean"
+valTypeName (VStr _) = "String"
+valTypeName (VSym _) = "Symbol"
+valTypeName VNil = "Nil"
+valTypeName (VList _) = "List"
+valTypeName (VFunc _ _ _) = "Function"
+valTypeName (VMacro _ _ _) = "Macro"
+valTypeName (VPrim _ _) = "Primitive"
+valTypeName (VData name _) = name
+valTypeName (VMVar _) = "MVar"
 
 --------------------------------------------------------------------------------
 -- Eval/Compile Handlers
