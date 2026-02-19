@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/spinor-logo.png" width="200" alt="Spinor Logo">
+</p>
+
 # Spinor (スピノル)
 
 > **Static Lisp with Haskell Semantics**

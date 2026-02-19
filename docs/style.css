@@ -68,13 +68,26 @@ header nav {
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.logo-img {
+  height: 32px;
+  width: auto;
+}
+
+.logo-text {
   font-size: 1.35rem;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.02em;
+  transition: color 0.2s;
 }
 
-.logo:hover {
+.logo:hover .logo-text {
   color: var(--accent-light);
 }
 
@@ -140,6 +153,12 @@ header nav {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.hero-logo {
+  height: 8em;
+  width: auto;
+  margin-bottom: 1.5rem;
 }
 
 .hero-tagline {
@@ -648,6 +667,14 @@ footer {
 @media (max-width: 768px) {
   nav {
     height: 56px;
+  }
+
+  .logo-text {
+    font-size: 1.2rem;
+  }
+
+  .logo-img {
+    height: 28px;
   }
 
   .nav-links {

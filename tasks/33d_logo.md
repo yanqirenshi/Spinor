@@ -141,7 +141,29 @@ python -m http.server 8000
 ## 実装報告
 
 ### Implementation Policy (実装方針)
-*(実装完了後、ここに記述してください)*
+
+- **画像フォーマット:** ユーザー提供の PNG (`spinor-logo.png`) を使用。
+- **配置パス:** `docs/assets/spinor-logo.png` に配置。README からは `docs/assets/spinor-logo.png`、docs 内の HTML からは `assets/spinor-logo.png` の相対パスで参照。
+- **CSS 方針:**
+  - **ヘッダー:** 既存の `.logo` クラスを flexbox ベースに変更し、`.logo-img` (32px) と `.logo-text` の子要素でロゴ画像とテキストを横並び配置。
+  - **Hero セクション:** タイトル「Spinor」の上にロゴ画像を独立要素として配置 (`.hero-logo`, height: 8em)。
+- **レスポンシブ:** 768px 以下でヘッダーロゴを 28px、テキストを 1.2rem に縮小。
 
 ### Implementation Details (実装内容)
-*(具体的な実装の工夫点、直面した問題の解決策などを記述してください)*
+
+**変更ファイル一覧:**
+
+| ファイル | 変更内容 |
+|----------|----------|
+| `docs/assets/spinor-logo.png` | ユーザー提供のロゴ画像を配置 |
+| `README.md` | 先頭にセンタリングされたロゴ画像を追加 (`<p align="center">`) |
+| `docs/index.html` | ヘッダーの `<a class="logo">` を `<img>` + `<span>` 構造に変更。Hero セクションのタイトル上にロゴ画像を追加 |
+| `docs/doc.html` | ヘッダーの `<a class="logo">` を `<img>` + `<span>` 構造に変更 |
+| `docs/style.css` | `.logo` を flexbox に変更、`.logo-img` / `.logo-text` / `.hero-logo` スタイル追加、レスポンシブ対応追加 |
+
+**ローカルサーバーでの表示確認:**
+- `docs/index.html`: ヘッダー左側にロゴアイコン + "Spinor" テキストが横並びで表示される。Hero セクションではタイトルの上にロゴ画像 (8em) が表示される
+- `docs/doc.html`: ヘッダーにロゴアイコン + テキストが表示される
+- `README.md`: GitHub 上でタイトル上部にセンタリングされたロゴが表示される
+- ホバー時にヘッダーのテキスト色が `var(--accent-light)` に変化する
+- 768px 以下でヘッダーロゴサイズが適切に縮小される
