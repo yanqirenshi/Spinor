@@ -110,6 +110,20 @@
     (let ((result (sly-eval '(slynk-stickers:forget nil))))
       (spinor-e2e-assert (integerp result) "Should return integer"))))
 
+(defun spinor-e2e-test-profiler ()
+  "Test profiler functionality."
+  (spinor-e2e-test "Profiler report-latest-timings"
+    (let ((result (sly-eval '(slynk-profiler:report-latest-timings))))
+      (spinor-e2e-assert (listp result) "Should return list")))
+
+  (spinor-e2e-test "Profiler clear-timing-tree"
+    (let ((result (sly-eval '(slynk-profiler:clear-timing-tree))))
+      (spinor-e2e-assert result "Should return truthy value")))
+
+  (spinor-e2e-test "Profiler untime-all"
+    (let ((result (sly-eval '(slynk-profiler:untime-all))))
+      (spinor-e2e-assert (listp result) "Should return list"))))
+
 ;;; Test Runner
 
 (defun spinor-run-e2e-tests ()
@@ -132,6 +146,7 @@
   (spinor-e2e-test-report-specs)
   (spinor-e2e-test-inspector)
   (spinor-e2e-test-stickers)
+  (spinor-e2e-test-profiler)
 
   ;; Summary
   (spinor-e2e-log "================================")

@@ -49,6 +49,12 @@ spec = do
             it "slynk-stickers:total-recordings -> swank:stickers:total-recordings" $
                 normalizeCommand "slynk-stickers:total-recordings" `shouldBe` "swank:stickers:total-recordings"
 
+        describe "slynk-profiler: prefix" $ do
+            it "slynk-profiler:toggle-timing -> swank:profiler:toggle-timing" $
+                normalizeCommand "slynk-profiler:toggle-timing" `shouldBe` "swank:profiler:toggle-timing"
+            it "slynk-profiler:report-latest-timings -> swank:profiler:report-latest-timings" $
+                normalizeCommand "slynk-profiler:report-latest-timings" `shouldBe` "swank:profiler:report-latest-timings"
+
         describe "slynk:slynk- prefix" $ do
             it "slynk:slynk-add-load-paths -> swank:swank-add-load-paths" $
                 normalizeCommand "slynk:slynk-add-load-paths" `shouldBe` "swank:swank-add-load-paths"

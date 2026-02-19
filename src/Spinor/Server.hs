@@ -151,12 +151,14 @@ escapeString = T.concatMap escapeChar
 --     slynk-completion:flex-completions -> swank:completion:flex-completions
 --     slynk-trace-dialog:dialog-toggle-trace -> swank:trace:dialog-toggle-trace
 --     slynk-stickers:fetch -> swank:stickers:fetch
+--     slynk-profiler:toggle-timing -> swank:profiler:toggle-timing
 normalizeCommand :: Text -> Text
 normalizeCommand cmd
     | "slynk-completion:" `T.isPrefixOf` cmd = "swank:completion:" <> T.drop 17 cmd
     | "slynk-mrepl:" `T.isPrefixOf` cmd = "swank:mrepl:" <> T.drop 12 cmd
     | "slynk-trace-dialog:" `T.isPrefixOf` cmd = "swank:trace:" <> T.drop 19 cmd
     | "slynk-stickers:" `T.isPrefixOf` cmd = "swank:stickers:" <> T.drop 15 cmd
+    | "slynk-profiler:" `T.isPrefixOf` cmd = "swank:profiler:" <> T.drop 15 cmd
     | "slynk:slynk-" `T.isPrefixOf` cmd = "swank:swank-" <> T.drop 12 cmd
     | "slynk:" `T.isPrefixOf` cmd       = "swank:" <> T.drop 6 cmd
     | otherwise                         = cmd
@@ -539,6 +541,52 @@ handleSwankRequest h env tracedFns form reqId = case normalizeForm form of
     -- swank:stickers:inspect-sticker-recording - スティッカー記録を検査
     EList (ESym "swank:stickers:inspect-sticker-recording" : _) -> do
         let response = mkAbortResponse reqId "No recordings to inspect"
+        sendPacket h (exprToText response)
+        pure env
+
+    --------------------------------------------------------------------------------
+    -- Profiler Handlers
+    --------------------------------------------------------------------------------
+
+    -- swank:profiler:toggle-timing - タイミング計測の切り替え
+    EList [ESym "swank:profiler:toggle-timing", specExpr] -> do
+        let spec = extractTraceSpec specExpr
+            -- プロファイリングは未サポートなので、トグル状態を返す
+            msg = spec <> " timing toggled (profiling not yet implemented)"
+        let response = mkOkResponse reqId (EStr msg)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:profiler:timed-spec-p - タイミング計測中か確認
+    EList [ESym "swank:profiler:timed-spec-p", _specExpr] -> do
+        -- 常に False を返す (プロファイリング未実装)
+        let response = mkOkResponse reqId (EBool False)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:profiler:untime-all - 全てのタイミング計測を解除
+    EList [ESym "swank:profiler:untime-all"] -> do
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:profiler:report-latest-timings - タイミングレポートを取得
+    EList [ESym "swank:profiler:report-latest-timings"] -> do
+        -- 空のレポートを返す
+        -- 形式: (partial-timings grand-total)
+        let response = mkOkResponse reqId (EList [EList [], EInt 0])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:profiler:clear-timing-tree - タイミングデータをクリア
+    EList [ESym "swank:profiler:clear-timing-tree"] -> do
+        let response = mkOkResponse reqId (EBool True)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:profiler:report-specs - タイミング対象の一覧を返す
+    EList [ESym "swank:profiler:report-specs"] -> do
+        let response = mkOkResponse reqId (EList [])
         sendPacket h (exprToText response)
         pure env
 
@@ -974,6 +1022,7 @@ mkConnectionInfoResponse reqId =
                     , EStr "SLYNK/MREPL"
                     , EStr "SLYNK/TRACE-DIALOG"
                     , EStr "SLYNK/STICKERS"
+                    , EStr "SLYNK/PROFILER"
                     , EStr "SLYNK/INDENTATION"
                     , EStr "SLYNK/RETRO"
                     ]
