@@ -95,6 +95,21 @@
       ;; Check for :title key
       (spinor-e2e-assert (plist-get result :title) "Should have :title"))))
 
+(defun spinor-e2e-test-stickers ()
+  "Test stickers functionality."
+  (spinor-e2e-test "Stickers total-recordings"
+    (let ((result (sly-eval '(slynk-stickers:total-recordings))))
+      (spinor-e2e-assert (integerp result) "Should return integer")
+      (spinor-e2e-assert (= result 0) "Should be 0 (no recordings)")))
+
+  (spinor-e2e-test "Stickers fetch"
+    (let ((result (sly-eval '(slynk-stickers:fetch nil))))
+      (spinor-e2e-assert (listp result) "Should return list")))
+
+  (spinor-e2e-test "Stickers forget"
+    (let ((result (sly-eval '(slynk-stickers:forget nil))))
+      (spinor-e2e-assert (integerp result) "Should return integer"))))
+
 ;;; Test Runner
 
 (defun spinor-run-e2e-tests ()
@@ -116,6 +131,7 @@
   (spinor-e2e-test-trace-dialog)
   (spinor-e2e-test-report-specs)
   (spinor-e2e-test-inspector)
+  (spinor-e2e-test-stickers)
 
   ;; Summary
   (spinor-e2e-log "================================")
