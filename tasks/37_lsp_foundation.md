@@ -42,7 +42,38 @@ Haskell の `lsp` パッケージを使用して、Spinor 言語の構文エラ�
 ## 実装報告
 
 ### Implementation Policy (実装方針)
-*(実装完了後、ここに記述してください)*
+
+1. **lsp パッケージ 2.x 系を採用**: 最新の LSP プロトコル仕様に対応した `lsp` (2.8.0.0) と `lsp-types` (2.4.0.0) を使用。
+2. **VFS (Virtual File System) の活用**: `textDocument/didChange` 時は VFS からドキュメント内容を取得することで、Union 型の複雑な処理を回避。
+3. **パーサーの拡張**: `Spinor.Syntax` モジュールに `SpinorParseError` 型と `parseFileWithErrors` 関数を追加し、エラー位置情報を取得可能に。
 
 ### Implementation Details (実装内容)
-*(実装完了後、ここに記述してください)*
+
+#### 変更ファイル一覧
+
+1. **spinor.cabal**
+   - `lsp >= 2.4 && < 3`
+   - `lens >= 5.0 && < 6`
+   - `co-log-core >= 0.3 && < 1`
+   - `stm >= 2.5 && < 3`
+   - `Spinor.Lsp.Server` を exposed-modules に追加
+
+2. **src/Spinor/Syntax.hs**
+   - `SpinorParseError` データ型を追加 (行番号、列番号、エラーメッセージ)
+   - `parseFileWithErrors :: Text -> Either [SpinorParseError] [Expr]` を追加
+
+3. **src/Spinor/Lsp/Server.hs** (新規作成)
+   - `runLspServer :: IO Int` エントリーポイント
+   - `ServerDefinition` 設定 (TextDocumentSyncKind_Full)
+   - `SMethod_TextDocumentDidOpen` / `SMethod_TextDocumentDidChange` / `SMethod_TextDocumentDidClose` ハンドラ
+   - `parseAndDiagnose` / `toDiagnostic` 関数で診断生成
+
+4. **app/Main.hs**
+   - `["lsp"]` ケースを追加
+   - `lspMode` 関数で `runLspServer` を呼び出し
+
+#### 検証結果
+
+- `cabal build`: 成功
+- `cabal run spinor -- lsp`: 正常起動 (`[Info] Server starting` 出力)
+- `cabal test`: 全79テストパス

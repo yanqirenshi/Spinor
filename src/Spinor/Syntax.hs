@@ -8,9 +8,12 @@ module Spinor.Syntax
   , ImportOption(..)
   , readExpr
   , parseFile
+  , SpinorParseError(..)
+  , parseFileWithErrors
   ) where
 
 import Data.Char (isUpper)
+import Data.List.NonEmpty (NonEmpty(..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
@@ -274,3 +277,36 @@ parseFile :: Text -> Either String [Expr]
 parseFile input = case parse (sc *> many parseExpr <* eof) "<file>" input of
   Left  err  -> Left (errorBundlePretty err)
   Right asts -> Right asts
+
+-- | パースエラー (位置情報付き)
+data SpinorParseError = SpinorParseError
+  { errorLine    :: Int    -- ^ 1-indexed 行番号
+  , errorColumn  :: Int    -- ^ 1-indexed 列番号
+  , errorMessage :: Text   -- ^ エラーメッセージ
+  } deriving (Show, Eq)
+
+-- | ファイル全体のパース (位置情報付きエラー)
+--   LSP サーバーなどで使用するため、エラー発生位置を正確に返す
+parseFileWithErrors :: Text -> Either [SpinorParseError] [Expr]
+parseFileWithErrors input = case parse (sc *> many parseExpr <* eof) "<file>" input of
+  Left err -> Left (extractErrors err)
+  Right asts -> Right asts
+  where
+    extractErrors :: ParseErrorBundle Text Void -> [SpinorParseError]
+    extractErrors bundle =
+      let errs = bundleErrors bundle
+          posState = bundlePosState bundle
+      in map (toSpinorParseError posState) (toList errs)
+
+    toSpinorParseError :: PosState Text -> ParseError Text Void -> SpinorParseError
+    toSpinorParseError posState err =
+      let offset = errorOffset err
+          (_, newPosState) = reachOffset offset posState
+          SourcePos _ line col = pstateSourcePos newPosState
+      in SpinorParseError
+           { errorLine    = unPos line
+           , errorColumn  = unPos col
+           , errorMessage = T.pack (parseErrorTextPretty err)
+           }
+
+    toList (e :| es) = e : es

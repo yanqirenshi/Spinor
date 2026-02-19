@@ -22,6 +22,7 @@ import Spinor.Primitive (primitiveBindings)
 import Spinor.Loader    (LoaderConfig(..), newModuleRegistry, evalFileWithModules)
 import Spinor.Compiler.Codegen (compileProgram)
 import Spinor.Server    (runServer)
+import Spinor.Lsp.Server (runLspServer)
 
 -- | Twister ファイル一覧 (ロード順)
 twisterFiles :: [FilePath]
@@ -48,6 +49,7 @@ helpMessage = unlines
   , "  build <file>           Compile to native binary (via C + GCC)"
   , "  compile <file>         Transpile to C source code only"
   , "  server [--port <n>]    Start Swank server for SLY/SLIME (default: 4005)"
+  , "  lsp                    Start LSP server (for editor integration)"
   , ""
   , "Options:"
   , "  --help, -h             Show this help message"
@@ -75,6 +77,7 @@ main = do
     ["compile", file]   -> compileMode file
     ["build", file]     -> buildMode file
     ("server" : rest)   -> serverMode rest
+    ["lsp"]             -> lspMode
     [file]              -> batchMode file
     _                   -> putStr helpMessage
 
@@ -87,6 +90,14 @@ serverMode args = do
   putStrLn $ "Starting Spinor server on port " ++ port ++ "..."
   (env, _) <- loadBoot primitiveBindings baseTypeEnv
   runServer port env
+
+-- | LSP モード: Language Server Protocol サーバーとして起動
+lspMode :: IO ()
+lspMode = do
+  exitCode <- runLspServer
+  if exitCode == 0
+    then exitSuccess
+    else exitFailure
 
 -- | REPL モード (引数なし)
 replMode :: IO ()
