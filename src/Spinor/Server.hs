@@ -179,10 +179,21 @@ handleSwankRequest h env form reqId = case normalizeForm form of
         pure env
 
     -- slynk-mrepl:create-mrepl - MREPL作成
-    EList (ESym "swank:mrepl:create-mrepl" : _) -> do
-        -- チャンネルID 1 でREPLを作成
-        let response = mkOkResponse reqId (EList [EInt 1, ESym ":prompt", EStr "SPINOR>"])
+    -- 引数: (create-mrepl channel-id)
+    EList [ESym "swank:mrepl:create-mrepl", EInt channelId] -> do
+        -- チャンネル作成成功を返す
+        let response = mkOkResponse reqId (EList [EInt channelId])
         sendPacket h (exprToText response)
+        -- 初期プロンプトを送信
+        sendMreplPrompt h channelId
+        pure env
+
+    -- slynk-mrepl:create-mrepl - その他の形式
+    EList (ESym "swank:mrepl:create-mrepl" : _) -> do
+        -- デフォルトでチャンネルID 1 を使用
+        let response = mkOkResponse reqId (EList [EInt 1])
+        sendPacket h (exprToText response)
+        sendMreplPrompt h 1
         pure env
 
     -- slynk:buffer-first-change - バッファ変更通知 (無視して成功を返す)
@@ -561,6 +572,99 @@ valTypeName (VData name _) = name
 valTypeName (VMVar _) = "MVar"
 
 --------------------------------------------------------------------------------
+-- MREPL Channel Handlers
+--------------------------------------------------------------------------------
+
+-- | MREPL チャンネルメッセージを処理する
+handleChannelMessage :: Handle -> Env -> Integer -> Expr -> IO Env
+handleChannelMessage h env channelId msg = case msg of
+    -- (:process "code") - コードを評価
+    EList [ESym ":process", EStr code] -> do
+        meplEvalAndRespond h env channelId code
+
+    -- (:teardown) - チャンネルを閉じる
+    EList [ESym ":teardown"] -> do
+        putStrLn $ "MREPL channel " ++ show channelId ++ " teardown"
+        pure env
+
+    -- (:clear-repl-history) - 履歴をクリア
+    EList [ESym ":clear-repl-history"] -> do
+        pure env
+
+    -- その他
+    _ -> do
+        putStrLn $ "Unknown channel message: " ++ show msg
+        pure env
+
+-- | MREPL 用の評価とレスポンス
+meplEvalAndRespond :: Handle -> Env -> Integer -> Text -> IO Env
+meplEvalAndRespond h env channelId code =
+    case readExpr code of
+        Left err -> do
+            -- 評価エラー: :evaluation-aborted を送信
+            let abortMsg = EList
+                    [ ESym ":channel-send"
+                    , EInt channelId
+                    , EList [ESym ":evaluation-aborted", EStr (T.pack err)]
+                    ]
+            sendPacket h (exprToText abortMsg)
+            -- プロンプトを送信
+            sendMreplPrompt h channelId
+            pure env
+        Right ast -> do
+            result <- runEval env (expand ast >>= eval)
+            case result of
+                Left err -> do
+                    -- 評価エラー
+                    let abortMsg = EList
+                            [ ESym ":channel-send"
+                            , EInt channelId
+                            , EList [ESym ":evaluation-aborted", EStr err]
+                            ]
+                    sendPacket h (exprToText abortMsg)
+                    sendMreplPrompt h channelId
+                    pure env
+                Right (val, env') -> do
+                    -- 結果を送信
+                    let resultStr = exprToText (valToExpr val)
+                        -- :write-values の形式: ((pretty-printed entry-idx copy-string) ...)
+                        writeValuesMsg = EList
+                            [ ESym ":channel-send"
+                            , EInt channelId
+                            , EList
+                                [ ESym ":write-values"
+                                , EList
+                                    [ EList
+                                        [ EStr resultStr  -- pretty-printed value
+                                        , EInt 0          -- history entry index
+                                        , EStr resultStr  -- copy string
+                                        ]
+                                    ]
+                                ]
+                            ]
+                    sendPacket h (exprToText writeValuesMsg)
+                    -- プロンプトを送信
+                    sendMreplPrompt h channelId
+                    pure env'
+
+-- | MREPL プロンプトを送信する
+sendMreplPrompt :: Handle -> Integer -> IO ()
+sendMreplPrompt h channelId = do
+    -- :prompt の形式: (package-name package-short-name error-level history-length)
+    let promptMsg = EList
+            [ ESym ":channel-send"
+            , EInt channelId
+            , EList
+                [ ESym ":prompt"
+                , EStr "SPINOR"  -- package name
+                , EStr "SPINOR"  -- package short name
+                , EInt 0         -- error/debug level
+                , EInt 0         -- history length
+                ]
+            ]
+    sendPacket h (exprToText promptMsg)
+
+--------------------------------------------------------------------------------
 -- Eval/Compile Handlers
 --------------------------------------------------------------------------------
 
@@ -750,6 +854,15 @@ dispatchRPC h env expr = case expr of
     -- (:emacs-rex form package thread-id request-id)
     EList [ESym ":emacs-rex", form, _package, _threadId, EInt reqId] ->
         handleSwankRequest h env form reqId
+
+    -- (:emacs-channel-send channel-id message)
+    -- MREPL のチャンネルメッセージを処理
+    EList [ESym ":emacs-channel-send", EInt channelId, msg] ->
+        handleChannelMessage h env channelId msg
+
+    -- チャンネルIDが nil やシンボルの場合 (デフォルトチャンネル 1 を使用)
+    EList [ESym ":emacs-channel-send", _, msg] ->
+        handleChannelMessage h env 1 msg
 
     -- その他のフォーマット
     _ -> do
