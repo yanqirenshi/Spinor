@@ -84,6 +84,10 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
 - [x] **Step 38: LSP Advanced Features (Hover & Completion)**
     - [x] **Hover:** カーソル下のシンボルの情報（ドキュメント等）を表示 (textDocument/hover)。
     - [x] **Completion:** 組み込み関数の入力補完 (textDocument/completion)。
+- [x] **Step 39: Reference Generator (docgen)**
+    - [x] **SSoT:** `Docs.hs` のデータを唯一の正解 (Single Source of Truth) とする。
+    - [x] **Generator:** `spinor docgen` コマンドによる Markdown 自動生成の実装。
+    - [x] **Indexing:** `docs/reference.md` の自動更新と個別ファイルへのリンク生成。
 
 ## 📢 Promotion & Website (広報・Web)
 Spinor / Twister の魅力を伝えるための Web プレゼンス。

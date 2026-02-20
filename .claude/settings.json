@@ -4,7 +4,10 @@
             "Bash",
             "Read(*)",
             "Write(*)",
-            "Edit(*)"
+            "Edit(*)",
+            "WebFetch(domain:github.com)",
+            "WebFetch(domain:raw.githubusercontent.com)",
+            "WebSearch"
         ]
     }
 }
