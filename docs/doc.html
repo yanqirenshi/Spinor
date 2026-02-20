@@ -80,8 +80,10 @@
       // Security: Only allow specific file patterns (no directory traversal)
       function isValidSource(s) {
         if (!s) return false;
-        // Only allow alphanumeric, hyphen, underscore, and .md extension
-        return /^[a-zA-Z0-9_-]+\.md$/.test(s);
+        // Allow subdirectories (alphanumeric, hyphen, underscore) with .md extension
+        // Reject directory traversal (..)
+        if (s.includes('..')) return false;
+        return /^[a-zA-Z0-9_/-]+\.md$/.test(s);
       }
 
       // Render error message
