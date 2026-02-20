@@ -1,0 +1,6 @@
+# *
+
+**Kind:** Function
+**Signature:** `(Int, Int) -> Int`
+
+2‚Â‚Ì®”‚ðæŽZ‚µ‚Ü‚·B

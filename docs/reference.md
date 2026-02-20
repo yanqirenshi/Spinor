@@ -1,214 +1,68 @@
-# Spinor Language Reference
+# Spinor Reference
 
-Spinor の言語仕様リファレンスです。
+Spinor �̑g�ݍ��݊֐��E����`���̃��t�@�����X�ł��B
 
-## Special Forms (特殊形式)
+## Special Forms
 
-### `defun` / `define` — 関数定義
+- [begin](doc.html?src=ref/begin.md)
+- [data](doc.html?src=ref/data.md)
+- [def](doc.html?src=ref/def.md)
+- [define](doc.html?src=ref/define.md)
+- [fn](doc.html?src=ref/fn.md)
+- [if](doc.html?src=ref/if.md)
+- [let](doc.html?src=ref/let.md)
+- [mac](doc.html?src=ref/mac.md)
+- [match](doc.html?src=ref/match.md)
+- [progn](doc.html?src=ref/progn.md)
+- [quote](doc.html?src=ref/quote.md)
+- [setq](doc.html?src=ref/setq.md)
 
-トップレベルで関数を定義します。
+## Arithmetic
 
-```lisp
-(defun square (x) (* x x))
+- [%](doc.html?src=ref/mod.md)
+- [*](doc.html?src=ref/mul.md)
+- [+](doc.html?src=ref/add.md)
+- [-](doc.html?src=ref/sub.md)
 
-(defun fact (n)
-  (if (= n 0)
-      1
-      (* n (fact (- n 1)))))
-```
+## Comparison
 
-### `fn` — 無名関数 (Lambda)
+- [<](doc.html?src=ref/lt.md)
+- [=](doc.html?src=ref/eq-op.md)
+- [>](doc.html?src=ref/gt.md)
 
-無名関数を生成します。
+## List Operations
 
-```lisp
-(fn (x) (* x x))
+- [car](doc.html?src=ref/car.md)
+- [cdr](doc.html?src=ref/cdr.md)
+- [cons](doc.html?src=ref/cons.md)
+- [empty?](doc.html?src=ref/empty-p.md)
+- [eq](doc.html?src=ref/eq.md)
+- [equal](doc.html?src=ref/equal.md)
+- [list](doc.html?src=ref/list.md)
+- [null?](doc.html?src=ref/null-p.md)
 
-(map (fn (x) (+ x 1)) (list 1 2 3))
-;; => (2 3 4)
-```
+## String Operations
 
-### `if` — 条件分岐
+- [list->string](doc.html?src=ref/list-to-string.md)
+- [string->list](doc.html?src=ref/string-to-list.md)
+- [string-append](doc.html?src=ref/string-append.md)
+- [string-length](doc.html?src=ref/string-length.md)
+- [string=?](doc.html?src=ref/string-eq.md)
+- [substring](doc.html?src=ref/substring.md)
 
-```lisp
-(if condition then-expr else-expr)
+## I/O
 
-(if (> x 0) "positive" "non-positive")
-```
+- [append-file](doc.html?src=ref/append-file.md)
+- [file-exists?](doc.html?src=ref/file-exists-p.md)
+- [print](doc.html?src=ref/print.md)
+- [read-file](doc.html?src=ref/read-file.md)
+- [write-file](doc.html?src=ref/write-file.md)
 
-### `let` — ローカル束縛 (Let多相)
+## Concurrency
 
-ローカル変数を束縛します。Let多相により、束縛された変数は多相的に使用できます。
+- [new-mvar](doc.html?src=ref/new-mvar.md)
+- [put-mvar](doc.html?src=ref/put-mvar.md)
+- [sleep](doc.html?src=ref/sleep.md)
+- [spawn](doc.html?src=ref/spawn.md)
+- [take-mvar](doc.html?src=ref/take-mvar.md)
 
-```lisp
-(let id (fn (x) x)
-  (if (id #t) (id 1) (id 0)))
-;; id は Bool -> Bool としても Int -> Int としても使える
-```
-
-### `match` — パターンマッチング
-
-代数的データ型に対するパターンマッチングを行います。
-
-```lisp
-(data Maybe a
-  (Nothing)
-  (Just a))
-
-(defun fromMaybe (default m)
-  (match m
-    ((Nothing) default)
-    ((Just x)  x)))
-```
-
-### `data` — 代数的データ型定義
-
-新しいデータ型を定義します。
-
-```lisp
-(data Bool
-  (True)
-  (False))
-
-(data List a
-  (Nil)
-  (Cons a (List a)))
-
-(data Either a b
-  (Left a)
-  (Right b))
-```
-
-### `mac` — マクロ定義
-
-ハイジニックマクロを定義します。マクロは評価前の展開フェーズで処理されます。
-
-```lisp
-(mac when (cond body)
-  (list 'if cond body 'nil))
-
-(when (> x 0)
-  (print "positive"))
-;; 展開結果: (if (> x 0) (print "positive") nil)
-```
-
-### `quote` — クォート
-
-式を評価せずにそのまま返します。
-
-```lisp
-(quote (1 2 3))  ;; => (1 2 3)
-'(1 2 3)         ;; 同上 (シンタックスシュガー)
-```
-
-## Primitive Functions (プリミティブ関数)
-
-### 算術演算
-
-| 関数 | 型 | 説明 |
-|------|----|----|
-| `+` | `Int -> Int -> Int` | 加算 |
-| `-` | `Int -> Int -> Int` | 減算 |
-| `*` | `Int -> Int -> Int` | 乗算 |
-| `/` | `Int -> Int -> Int` | 整数除算 |
-| `%` | `Int -> Int -> Int` | 剰余 |
-
-### 比較演算
-
-| 関数 | 型 | 説明 |
-|------|----|----|
-| `=` | `Int -> Int -> Bool` | 等価 |
-| `<` | `Int -> Int -> Bool` | 小なり |
-| `>` | `Int -> Int -> Bool` | 大なり |
-| `<=` | `Int -> Int -> Bool` | 以下 |
-| `>=` | `Int -> Int -> Bool` | 以上 |
-
-### リスト操作
-
-| 関数 | 型 | 説明 |
-|------|----|----|
-| `cons` | `a -> [a] -> [a]` | リストの先頭に要素を追加 |
-| `car` | `[a] -> a` | リストの先頭要素を取得 |
-| `cdr` | `[a] -> [a]` | リストの残りを取得 |
-| `nil` | `[a]` | 空リスト |
-| `null?` | `[a] -> Bool` | 空リストかどうか |
-| `list` | `a... -> [a]` | 引数からリストを構築 |
-
-### 入出力
-
-| 関数 | 型 | 説明 |
-|------|----|----|
-| `print` | `a -> ()` | 値を標準出力に表示 |
-
-## Twister Library (標準ライブラリ)
-
-Spinor 言語自身で記述された標準ライブラリです。
-
-### リスト操作 (`twister/list.spin`)
-
-```lisp
-(map f xs)      ;; 各要素に関数を適用
-(filter p xs)   ;; 条件を満たす要素を抽出
-(foldl f z xs)  ;; 左畳み込み
-(foldr f z xs)  ;; 右畳み込み
-(append xs ys)  ;; リストの連結
-(reverse xs)    ;; リストの反転
-(length xs)     ;; リストの長さ
-```
-
-### 論理演算 (`twister/core.spin`)
-
-```lisp
-(not x)         ;; 論理否定
-(and a b)       ;; 論理積 (マクロ)
-(or a b)        ;; 論理和 (マクロ)
-```
-
-### 制御構造 (`twister/core.spin`)
-
-```lisp
-(cond           ;; 多分岐条件 (マクロ)
-  (cond1 expr1)
-  (cond2 expr2)
-  (#t default))
-
-(when cond body) ;; 条件が真のときのみ実行 (マクロ)
-```
-
-### 数学関数 (`twister/math.spin`)
-
-```lisp
-(fact n)        ;; 階乗
-(fib n)         ;; フィボナッチ数
-(even? n)       ;; 偶数判定
-(odd? n)        ;; 奇数判定
-(abs n)         ;; 絶対値
-(max a b)       ;; 最大値
-(min a b)       ;; 最小値
-```
-
-## Types (型)
-
-### 基本型
-
-- `Int` — 整数
-- `Bool` — 真偽値 (`#t`, `#f`)
-- `()` — Unit 型
-
-### 型構築子
-
-- `[a]` — リスト型 (例: `[Int]`, `[[Bool]]`)
-- `a -> b` — 関数型 (例: `Int -> Bool`)
-
-### 型推論
-
-Spinor は Hindley-Milner 型推論 (Algorithm W) を採用しています。
-型注釈なしでも、式の型は自動的に推論されます。
-
-```lisp
-spinor> (fn (x) (+ x 1))
-:: Int -> Int
-
-spinor> (fn (f) (fn (x) (f (f x))))
-:: (a -> a) -> a -> a
-```

@@ -16,6 +16,7 @@ library
     Spinor.Loader
     Spinor.Compiler.Codegen
     Spinor.Server
+    Spinor.DocGen
     Spinor.Lsp.Docs
     Spinor.Lsp.Server
   build-depends:

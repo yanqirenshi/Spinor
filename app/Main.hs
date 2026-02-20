@@ -23,6 +23,7 @@ import Spinor.Loader    (LoaderConfig(..), newModuleRegistry, evalFileWithModule
 import Spinor.Compiler.Codegen (compileProgram)
 import Spinor.Server    (runServer)
 import Spinor.Lsp.Server (runLspServer)
+import Spinor.DocGen    (generateDocs)
 
 -- | Twister ファイル一覧 (ロード順)
 twisterFiles :: [FilePath]
@@ -50,6 +51,7 @@ helpMessage = unlines
   , "  compile <file>         Transpile to C source code only"
   , "  server [--port <n>]    Start Swank server for SLY/SLIME (default: 4005)"
   , "  lsp                    Start LSP server (for editor integration)"
+  , "  docgen                 Generate Markdown reference documentation"
   , ""
   , "Options:"
   , "  --help, -h             Show this help message"
@@ -78,6 +80,7 @@ main = do
     ["build", file]     -> buildMode file
     ("server" : rest)   -> serverMode rest
     ["lsp"]             -> lspMode
+    ["docgen"]          -> generateDocs
     [file]              -> batchMode file
     _                   -> putStr helpMessage
 
