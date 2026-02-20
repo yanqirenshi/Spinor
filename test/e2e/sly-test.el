@@ -124,6 +124,63 @@
     (let ((result (sly-eval '(slynk-profiler:untime-all))))
       (spinor-e2e-assert (listp result) "Should return list"))))
 
+(defun spinor-e2e-test-package-fu ()
+  "Test package-fu functionality."
+  (spinor-e2e-test "Package-fu list-all-package-names"
+    (let ((result (sly-eval '(slynk-package-fu:list-all-package-names))))
+      (spinor-e2e-assert (listp result) "Should return list")
+      (spinor-e2e-assert (member "SPINOR" result) "Should include SPINOR package")))
+
+  (spinor-e2e-test "Package-fu set-package"
+    (let ((result (sly-eval '(slynk-package-fu:set-package "SPINOR"))))
+      (spinor-e2e-assert (listp result) "Should return list")
+      (spinor-e2e-assert (stringp (car result)) "First element should be package name"))))
+
+(defun spinor-e2e-test-macrostep ()
+  "Test macrostep functionality."
+  (spinor-e2e-test "Macrostep expand-1"
+    (let ((result (sly-eval '(slynk-macrostep:macrostep-expand-1 "(+ 1 2)"))))
+      (spinor-e2e-assert (listp result) "Should return plist")
+      (spinor-e2e-assert (plist-get result :expansion) "Should have :expansion")))
+
+  (spinor-e2e-test "Macrostep expand"
+    (let ((result (sly-eval '(slynk-macrostep:macrostep-expand "(list 1 2 3)"))))
+      (spinor-e2e-assert (listp result) "Should return plist")
+      (spinor-e2e-assert (plist-get result :expansion) "Should have :expansion"))))
+
+(defun spinor-e2e-test-apropos ()
+  "Test apropos functionality."
+  (spinor-e2e-test "Apropos search for 'cons'"
+    (let ((result (sly-eval '(slynk-apropos:apropos-list-for-emacs "cons" t nil nil))))
+      (spinor-e2e-assert (listp result) "Should return list")
+      ;; Should find at least 'cons' function
+      (spinor-e2e-assert (> (length result) 0) "Should find at least one match")))
+
+  (spinor-e2e-test "Apropos search for 'map'"
+    (let ((result (sly-eval '(slynk-apropos:apropos-list-for-emacs "map" t nil nil))))
+      (spinor-e2e-assert (listp result) "Should return list"))))
+
+(defun spinor-e2e-test-xref ()
+  "Test xref functionality."
+  (spinor-e2e-test "Xref callers"
+    (let ((result (sly-eval '(slynk:xref :callers "cons"))))
+      (spinor-e2e-assert (listp result) "Should return list")))
+
+  (spinor-e2e-test "Xref callees"
+    (let ((result (sly-eval '(slynk:xref :callees "map"))))
+      (spinor-e2e-assert (listp result) "Should return list"))))
+
+(defun spinor-e2e-test-disassemble ()
+  "Test disassemble functionality."
+  (spinor-e2e-test "Disassemble form"
+    (let ((result (sly-eval '(slynk:disassemble-form "(+ 1 2)"))))
+      (spinor-e2e-assert (stringp result) "Should return string")
+      (spinor-e2e-assert (string-match "Spinor Disassembly" result) "Should contain header")))
+
+  (spinor-e2e-test "Disassemble symbol"
+    (let ((result (sly-eval '(slynk:disassemble-symbol "cons"))))
+      (spinor-e2e-assert (stringp result) "Should return string"))))
+
 ;;; Test Runner
 
 (defun spinor-run-e2e-tests ()
@@ -147,6 +204,11 @@
   (spinor-e2e-test-inspector)
   (spinor-e2e-test-stickers)
   (spinor-e2e-test-profiler)
+  (spinor-e2e-test-package-fu)
+  (spinor-e2e-test-macrostep)
+  (spinor-e2e-test-apropos)
+  (spinor-e2e-test-xref)
+  (spinor-e2e-test-disassemble)
 
   ;; Summary
   (spinor-e2e-log "================================")

@@ -55,6 +55,32 @@ spec = do
             it "slynk-profiler:report-latest-timings -> swank:profiler:report-latest-timings" $
                 normalizeCommand "slynk-profiler:report-latest-timings" `shouldBe` "swank:profiler:report-latest-timings"
 
+        describe "slynk-package-fu: prefix" $ do
+            it "slynk-package-fu:list-all-package-names -> swank:package-fu:list-all-package-names" $
+                normalizeCommand "slynk-package-fu:list-all-package-names" `shouldBe` "swank:package-fu:list-all-package-names"
+            it "slynk-package-fu:set-package -> swank:package-fu:set-package" $
+                normalizeCommand "slynk-package-fu:set-package" `shouldBe` "swank:package-fu:set-package"
+            it "slynk-package-fu:apropos-package -> swank:package-fu:apropos-package" $
+                normalizeCommand "slynk-package-fu:apropos-package" `shouldBe` "swank:package-fu:apropos-package"
+
+        describe "slynk-macrostep: prefix" $ do
+            it "slynk-macrostep:macrostep-expand-1 -> swank:macrostep:macrostep-expand-1" $
+                normalizeCommand "slynk-macrostep:macrostep-expand-1" `shouldBe` "swank:macrostep:macrostep-expand-1"
+            it "slynk-macrostep:macrostep-expand -> swank:macrostep:macrostep-expand" $
+                normalizeCommand "slynk-macrostep:macrostep-expand" `shouldBe` "swank:macrostep:macrostep-expand"
+            it "slynk-macrostep:compiler-macroexpand-1 -> swank:macrostep:compiler-macroexpand-1" $
+                normalizeCommand "slynk-macrostep:compiler-macroexpand-1" `shouldBe` "swank:macrostep:compiler-macroexpand-1"
+
+        describe "slynk-apropos: prefix" $ do
+            it "slynk-apropos:apropos-list-for-emacs -> swank:apropos:apropos-list-for-emacs" $
+                normalizeCommand "slynk-apropos:apropos-list-for-emacs" `shouldBe` "swank:apropos:apropos-list-for-emacs"
+
+        describe "slynk-xref: prefix" $ do
+            it "slynk-xref:xref -> swank:xref:xref" $
+                normalizeCommand "slynk-xref:xref" `shouldBe` "swank:xref:xref"
+            it "slynk-xref:xrefs -> swank:xref:xrefs" $
+                normalizeCommand "slynk-xref:xrefs" `shouldBe` "swank:xref:xrefs"
+
         describe "slynk:slynk- prefix" $ do
             it "slynk:slynk-add-load-paths -> swank:swank-add-load-paths" $
                 normalizeCommand "slynk:slynk-add-load-paths" `shouldBe` "swank:swank-add-load-paths"

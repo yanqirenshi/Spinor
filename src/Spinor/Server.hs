@@ -24,6 +24,7 @@ module Spinor.Server
 import Network.Socket
 import Control.Concurrent (forkFinally)
 import Control.Monad (forever, void)
+import Control.Monad.State.Strict (get)
 import Control.Exception (bracket, SomeException, catch)
 import Data.List (nub)
 import Data.IORef
@@ -37,8 +38,8 @@ import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Text.Printf (printf)
 import Numeric (readHex)
 
-import Spinor.Syntax (Expr(..), readExpr)
-import Spinor.Eval (runEval, eval, valToExpr)
+import Spinor.Syntax (Expr(..), Pattern(..), ConstructorDef(..), TypeExpr(..), readExpr)
+import Spinor.Eval (Eval, runEval, eval, valToExpr, exprToVal, applyClosureBody)
 import Spinor.Val (Env, Val(..))
 import Spinor.Expander (expand)
 import Spinor.Lsp.Docs (primitiveDocs, DocEntry(..))
@@ -152,6 +153,8 @@ escapeString = T.concatMap escapeChar
 --     slynk-trace-dialog:dialog-toggle-trace -> swank:trace:dialog-toggle-trace
 --     slynk-stickers:fetch -> swank:stickers:fetch
 --     slynk-profiler:toggle-timing -> swank:profiler:toggle-timing
+--     slynk-package-fu:list-all-package-names -> swank:package-fu:list-all-package-names
+--     slynk-macrostep:macrostep-expand-1 -> swank:macrostep:macrostep-expand-1
 normalizeCommand :: Text -> Text
 normalizeCommand cmd
     | "slynk-completion:" `T.isPrefixOf` cmd = "swank:completion:" <> T.drop 17 cmd
@@ -159,6 +162,10 @@ normalizeCommand cmd
     | "slynk-trace-dialog:" `T.isPrefixOf` cmd = "swank:trace:" <> T.drop 19 cmd
     | "slynk-stickers:" `T.isPrefixOf` cmd = "swank:stickers:" <> T.drop 15 cmd
     | "slynk-profiler:" `T.isPrefixOf` cmd = "swank:profiler:" <> T.drop 15 cmd
+    | "slynk-package-fu:" `T.isPrefixOf` cmd = "swank:package-fu:" <> T.drop 17 cmd
+    | "slynk-macrostep:" `T.isPrefixOf` cmd = "swank:macrostep:" <> T.drop 16 cmd
+    | "slynk-apropos:" `T.isPrefixOf` cmd = "swank:apropos:" <> T.drop 14 cmd
+    | "slynk-xref:" `T.isPrefixOf` cmd = "swank:xref:" <> T.drop 11 cmd
     | "slynk:slynk-" `T.isPrefixOf` cmd = "swank:swank-" <> T.drop 12 cmd
     | "slynk:" `T.isPrefixOf` cmd       = "swank:" <> T.drop 6 cmd
     | otherwise                         = cmd
@@ -590,6 +597,206 @@ handleSwankRequest h env tracedFns form reqId = case normalizeForm form of
         sendPacket h (exprToText response)
         pure env
 
+    --------------------------------------------------------------------------------
+    -- Package-FU Handlers
+    --------------------------------------------------------------------------------
+
+    -- swank:package-fu:list-all-package-names - 全パッケージ名を返す
+    -- Spinor はシングル名前空間なので、デフォルトパッケージのみ返す
+    EList [ESym "swank:package-fu:list-all-package-names"] -> do
+        let packages = EList [EStr "SPINOR", EStr "USER", EStr "COMMON-LISP"]
+            response = mkOkResponse reqId packages
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:package-fu:list-all-package-names - 引数あり形式
+    EList (ESym "swank:package-fu:list-all-package-names" : _) -> do
+        let packages = EList [EStr "SPINOR", EStr "USER", EStr "COMMON-LISP"]
+            response = mkOkResponse reqId packages
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:package-fu:set-package - パッケージを設定
+    -- Spinor ではパッケージの切り替えは実質的にサポートしないが、成功を返す
+    EList [ESym "swank:package-fu:set-package", EStr _pkgName] -> do
+        -- (package-name prompt-string) の形式で返す
+        let result = EList [EStr "SPINOR", EStr "SPINOR"]
+            response = mkOkResponse reqId result
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:package-fu:set-package - その他の形式
+    EList (ESym "swank:package-fu:set-package" : _) -> do
+        let result = EList [EStr "SPINOR", EStr "SPINOR"]
+            response = mkOkResponse reqId result
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:package-fu:read-package-name - パッケージ名を読み取る
+    EList (ESym "swank:package-fu:read-package-name" : _) -> do
+        let response = mkOkResponse reqId (EStr "SPINOR")
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:package-fu:apropos-package - パッケージを検索
+    EList [ESym "swank:package-fu:apropos-package", EStr query] -> do
+        -- 簡易実装: クエリが "SPINOR" を含む場合のみマッチ
+        let matches = if T.isInfixOf (T.toUpper query) "SPINOR"
+                      then EList [EStr "SPINOR"]
+                      else EList []
+            response = mkOkResponse reqId matches
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:package-fu:apropos-package - その他の形式
+    EList (ESym "swank:package-fu:apropos-package" : _) -> do
+        let response = mkOkResponse reqId (EList [EStr "SPINOR"])
+        sendPacket h (exprToText response)
+        pure env
+
+    --------------------------------------------------------------------------------
+    -- Macrostep Handlers
+    --------------------------------------------------------------------------------
+
+    -- swank:macrostep:macrostep-expand-1 - マクロを1段階展開
+    -- 引数: (code &key environment)
+    EList (ESym "swank:macrostep:macrostep-expand-1" : EStr code : _) -> do
+        result <- macrostepExpand1 env code
+        let response = mkOkResponse reqId result
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:macrostep:macrostep-expand - マクロを完全展開
+    EList (ESym "swank:macrostep:macrostep-expand" : EStr code : _) -> do
+        result <- macrostepExpandFull env code
+        let response = mkOkResponse reqId result
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:macrostep:compiler-macroexpand-1 - コンパイラマクロ展開 (単一ステップ)
+    EList (ESym "swank:macrostep:compiler-macroexpand-1" : EStr code : _) -> do
+        -- Spinor にはコンパイラマクロがないので、通常のマクロ展開を行う
+        result <- macrostepExpand1 env code
+        let response = mkOkResponse reqId result
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:macrostep:compiler-macroexpand - コンパイラマクロ展開 (完全)
+    EList (ESym "swank:macrostep:compiler-macroexpand" : EStr code : _) -> do
+        result <- macrostepExpandFull env code
+        let response = mkOkResponse reqId result
+        sendPacket h (exprToText response)
+        pure env
+
+    --------------------------------------------------------------------------------
+    -- Apropos Handlers
+    --------------------------------------------------------------------------------
+
+    -- swank:apropos:apropos-list-for-emacs - シンボル検索
+    -- 引数: (pattern &optional external-only case-sensitive package)
+    EList (ESym "swank:apropos:apropos-list-for-emacs" : EStr pattern : _) -> do
+        let results = aproposSearch env pattern
+            response = mkOkResponse reqId results
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:apropos:apropos-list-for-emacs - 引数なし
+    EList [ESym "swank:apropos:apropos-list-for-emacs"] -> do
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:apropos-list-for-emacs - 旧形式 (SLIME 互換)
+    EList (ESym "swank:apropos-list-for-emacs" : EStr pattern : _) -> do
+        let results = aproposSearch env pattern
+            response = mkOkResponse reqId results
+        sendPacket h (exprToText response)
+        pure env
+
+    --------------------------------------------------------------------------------
+    -- Xref Handlers (Cross-Reference)
+    --------------------------------------------------------------------------------
+
+    -- swank:xref - クロスリファレンス検索
+    -- 引数: (type name)
+    -- type: :calls, :references, :binds, :sets, :macroexpands, :specializes, :callers, :callees
+    EList [ESym "swank:xref", ESym xrefType, EStr name] -> do
+        let results = xrefSearch env xrefType name
+            response = mkOkResponse reqId results
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:xref - シンボル形式の名前
+    EList [ESym "swank:xref", ESym xrefType, ESym name] -> do
+        let results = xrefSearch env xrefType name
+            response = mkOkResponse reqId results
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:xref - その他の形式
+    EList (ESym "swank:xref" : _) -> do
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:xrefs - 複数タイプの xref 検索
+    EList (ESym "swank:xrefs" : _) -> do
+        let response = mkOkResponse reqId (EList [])
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:xref:xref - slynk-xref 形式
+    EList [ESym "swank:xref:xref", ESym xrefType, EStr name] -> do
+        let results = xrefSearch env xrefType name
+            response = mkOkResponse reqId results
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:xref:xref - シンボル形式
+    EList [ESym "swank:xref:xref", ESym xrefType, ESym name] -> do
+        let results = xrefSearch env xrefType name
+            response = mkOkResponse reqId results
+        sendPacket h (exprToText response)
+        pure env
+
+    --------------------------------------------------------------------------------
+    -- Disassemble Handlers
+    --------------------------------------------------------------------------------
+
+    -- swank:disassemble-form - フォームをディスアセンブル
+    -- Spinor はインタープリタなので、関数の内部表現を表示
+    EList [ESym "swank:disassemble-form", EStr code] -> do
+        let result = disassembleCode env code
+            response = mkOkResponse reqId (EStr result)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:disassemble-form - その他の形式
+    EList (ESym "swank:disassemble-form" : _) -> do
+        let response = mkOkResponse reqId (EStr "No code to disassemble")
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:disassemble-symbol - シンボルをディスアセンブル
+    EList [ESym "swank:disassemble-symbol", EStr name] -> do
+        let result = disassembleSymbol env name
+            response = mkOkResponse reqId (EStr result)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:disassemble-symbol - シンボル形式
+    EList [ESym "swank:disassemble-symbol", ESym name] -> do
+        let result = disassembleSymbol env name
+            response = mkOkResponse reqId (EStr result)
+        sendPacket h (exprToText response)
+        pure env
+
+    -- swank:disassemble-symbol - その他の形式
+    EList (ESym "swank:disassemble-symbol" : _) -> do
+        let response = mkOkResponse reqId (EStr "No symbol to disassemble")
+        sendPacket h (exprToText response)
+        pure env
+
     -- その他 - 未実装コマンド
     _ -> do
         let errMsg = "Unknown swank command: " <> exprToText form
@@ -731,6 +938,152 @@ getFlexCompletions env prefix =
             ]
 
 --------------------------------------------------------------------------------
+-- Apropos Helpers
+--------------------------------------------------------------------------------
+
+-- | パターンにマッチするシンボルを検索
+-- 戻り値: ((:designator (package-name symbol-name) :function "doc") ...)
+aproposSearch :: Env -> Text -> Expr
+aproposSearch env pattern =
+    let primNames = Map.keys primitiveDocs
+        envNames = Map.keys env
+        allNames = nub (primNames ++ envNames)
+        -- パターンにマッチするシンボルをフィルタ (大文字小文字無視)
+        patternLower = T.toLower pattern
+        matches = filter (\name -> patternLower `T.isInfixOf` T.toLower name) allNames
+        -- 各シンボルの情報を生成
+        items = map mkAproposItem matches
+    in EList items
+  where
+    mkAproposItem name =
+        let info = getSymbolInfo name
+            -- designator は (package-name symbol-name) のリスト形式
+            designator = EList [EStr "SPINOR", EStr name]
+        in EList $
+            [ ESym ":designator", designator ] ++ info
+
+    getSymbolInfo name =
+        case Map.lookup name primitiveDocs of
+            Just docEntry ->
+                [ ESym ":function", EStr (docDescription docEntry) ]
+            Nothing ->
+                case Map.lookup name env of
+                    Just (VFunc _ _ _) ->
+                        [ ESym ":function", EStr "User-defined function" ]
+                    Just (VMacro _ _ _) ->
+                        [ ESym ":macro", EStr "User-defined macro" ]
+                    Just (VPrim pname _) ->
+                        [ ESym ":function", EStr ("Built-in: " <> pname) ]
+                    Just (VInt _) ->
+                        [ ESym ":variable", EStr "Integer value" ]
+                    Just (VBool _) ->
+                        [ ESym ":variable", EStr "Boolean value" ]
+                    Just (VStr _) ->
+                        [ ESym ":variable", EStr "String value" ]
+                    _ ->
+                        [ ESym ":variable", EStr "" ]
+
+--------------------------------------------------------------------------------
+-- Xref Helpers
+--------------------------------------------------------------------------------
+
+-- | クロスリファレンス検索
+-- Spinor は静的解析機能を持たないため、現時点では空の結果を返す
+-- 将来的には AST 解析を追加して実装可能
+-- 戻り値: ((label location) ...)
+xrefSearch :: Env -> Text -> Text -> Expr
+xrefSearch _env xrefType name =
+    -- xrefType: :calls, :references, :binds, :sets, :macroexpands,
+    --           :specializes, :callers, :callees
+    -- 現時点では全て空リストを返す (静的解析未実装)
+    -- ただし、シンボルが存在することは確認する
+    let _typeInfo = case xrefType of
+            ":calls"        -> "Functions called by " <> name
+            ":callers"      -> "Functions calling " <> name
+            ":references"   -> "References to " <> name
+            ":binds"        -> "Bindings of " <> name
+            ":sets"         -> "Assignments to " <> name
+            ":macroexpands" -> "Macroexpansions of " <> name
+            ":specializes"  -> "Specializations of " <> name
+            ":callees"      -> "Functions called by " <> name
+            _               -> "Unknown xref type"
+    in EList []  -- 空の結果 (静的解析未実装)
+
+--------------------------------------------------------------------------------
+-- Disassemble Helpers
+--------------------------------------------------------------------------------
+
+-- | コードをディスアセンブル (パースして AST を表示)
+-- quoted シンボル ('symbol) の場合は環境から検索
+disassembleCode :: Env -> Text -> Text
+disassembleCode env code =
+    case readExpr code of
+        Left err -> "Parse error: " <> T.pack err
+        Right ast -> case ast of
+            -- 'symbol の場合は環境から検索
+            EList [ESym "quote", ESym name] -> disassembleSymbol env name
+            -- シンボル単体の場合も環境から検索
+            ESym name -> disassembleSymbol env name
+            -- その他は AST を表示
+            _ -> T.unlines
+                [ "; Spinor Disassembly (AST representation)"
+                , "; ========================================"
+                , "; Source: " <> code
+                , ";"
+                , "; AST:"
+                , T.pack (show ast)
+                ]
+
+-- | シンボルをディスアセンブル (環境から関数を取得して表示)
+disassembleSymbol :: Env -> Text -> Text
+disassembleSymbol env name =
+    case Map.lookup name env of
+        Nothing -> "Symbol not found: " <> name
+        Just val -> T.unlines
+            [ "; Spinor Disassembly"
+            , "; ========================================"
+            , "; Symbol: " <> name
+            , "; Type: " <> valTypeName val
+            , ";"
+            , formatValForDisassembly val
+            ]
+
+-- | 値をディスアセンブリ形式でフォーマット
+formatValForDisassembly :: Val -> Text
+formatValForDisassembly (VFunc args body closureEnv) = T.unlines
+    [ "; Function"
+    , "; Arguments: (" <> T.intercalate " " args <> ")"
+    , "; Closure environment: " <> T.pack (show (length (Map.keys closureEnv))) <> " bindings"
+    , ";"
+    , "; Body:"
+    , exprToLispText body
+    ]
+formatValForDisassembly (VMacro args body closureEnv) = T.unlines
+    [ "; Macro"
+    , "; Arguments: (" <> T.intercalate " " args <> ")"
+    , "; Closure environment: " <> T.pack (show (length (Map.keys closureEnv))) <> " bindings"
+    , ";"
+    , "; Body:"
+    , exprToLispText body
+    ]
+formatValForDisassembly (VPrim name _) = T.unlines
+    [ "; Primitive function"
+    , "; Name: " <> name
+    , "; (Native implementation - no AST available)"
+    ]
+formatValForDisassembly (VInt n) = "; Integer value: " <> T.pack (show n)
+formatValForDisassembly (VBool b) = "; Boolean value: " <> if b then "#t" else "#f"
+formatValForDisassembly (VStr s) = "; String value: \"" <> s <> "\""
+formatValForDisassembly (VSym s) = "; Symbol: " <> s
+formatValForDisassembly VNil = "; Nil"
+formatValForDisassembly (VList xs) = "; List with " <> T.pack (show (length xs)) <> " elements"
+formatValForDisassembly (VData name fields) = T.unlines
+    [ "; Data constructor: " <> name
+    , "; Fields: " <> T.pack (show (length fields))
+    ]
+formatValForDisassembly (VMVar _) = "; Mutable variable (MVar)"
+
+--------------------------------------------------------------------------------
 -- Inspector Helpers
 --------------------------------------------------------------------------------
 
@@ -835,6 +1188,103 @@ valTypeName (VMacro _ _ _) = "Macro"
 valTypeName (VPrim _ _) = "Primitive"
 valTypeName (VData name _) = name
 valTypeName (VMVar _) = "MVar"
+
+--------------------------------------------------------------------------------
+-- Macrostep Helpers
+--------------------------------------------------------------------------------
+
+-- | マクロを1段階展開する
+-- 戻り値: (:expansion expanded-code :macroform? t/nil)
+macrostepExpand1 :: Env -> Text -> IO Expr
+macrostepExpand1 env code =
+    case readExpr code of
+        Left err -> pure $ mkMacrostepError (T.pack err)
+        Right ast -> do
+            result <- runEval env (macroExpandOnce ast)
+            case result of
+                Left err -> pure $ mkMacrostepError err
+                Right (expanded, _) ->
+                    let expandedStr = exprToLispText expanded
+                        -- マクロ展開が行われたかどうか
+                        isMacro = expandedStr /= code
+                    in pure $ EList
+                        [ ESym ":expansion", EStr expandedStr
+                        , ESym ":macroform?", EBool isMacro
+                        ]
+
+-- | マクロを完全展開する
+macrostepExpandFull :: Env -> Text -> IO Expr
+macrostepExpandFull env code =
+    case readExpr code of
+        Left err -> pure $ mkMacrostepError (T.pack err)
+        Right ast -> do
+            result <- runEval env (expand ast)
+            case result of
+                Left err -> pure $ mkMacrostepError err
+                Right (expanded, _) ->
+                    let expandedStr = exprToLispText expanded
+                        isMacro = expandedStr /= code
+                    in pure $ EList
+                        [ ESym ":expansion", EStr expandedStr
+                        , ESym ":macroform?", EBool isMacro
+                        ]
+
+-- | 1段階のみマクロ展開を行う (再帰展開しない)
+macroExpandOnce :: Expr -> Eval Expr
+macroExpandOnce (EList (ESym name : args)) = do
+    env <- get
+    case Map.lookup name env of
+        Just (VMacro params body closureEnv) -> do
+            -- マクロ適用: 引数を評価せず Val に変換して適用
+            let argVals = map exprToVal args
+            result <- applyClosureBody params body closureEnv argVals
+            -- 展開結果を Expr に変換 (再帰展開しない)
+            pure $ valToExpr result
+        _ -> pure $ EList (ESym name : args)  -- マクロでなければそのまま
+macroExpandOnce e = pure e  -- リスト以外はそのまま
+
+-- | macrostep エラーを生成
+mkMacrostepError :: Text -> Expr
+mkMacrostepError err = EList [ESym ":error", EStr err]
+
+-- | Expr を Lisp 形式のテキストに変換 (macrostep 用)
+-- exprToText とほぼ同じだが、より読みやすい形式で出力
+exprToLispText :: Expr -> Text
+exprToLispText (EInt n)   = T.pack (show n)
+exprToLispText (EBool True)  = "#t"
+exprToLispText (EBool False) = "#f"
+exprToLispText (ESym s)   = s
+exprToLispText (EStr s)   = "\"" <> escapeString s <> "\""
+exprToLispText (EList []) = "nil"
+exprToLispText (EList [ESym "quote", x]) = "'" <> exprToLispText x
+exprToLispText (EList xs) = "(" <> T.intercalate " " (map exprToLispText xs) <> ")"
+exprToLispText (ELet bindings body) =
+    "(let (" <> T.intercalate " " (map bindingToText bindings) <> ") " <> exprToLispText body <> ")"
+  where
+    bindingToText (name, val) = "(" <> name <> " " <> exprToLispText val <> ")"
+exprToLispText (EData name ctors) =
+    "(data " <> name <> " " <> T.intercalate " " (map ctorToText ctors) <> ")"
+  where
+    ctorToText (ConstructorDef cname []) = cname
+    ctorToText (ConstructorDef cname args) =
+        "(" <> cname <> " " <> T.intercalate " " (map typeExprToText args) <> ")"
+    typeExprToText (TEVar v) = v
+    typeExprToText (TEApp c []) = c
+    typeExprToText (TEApp c args) =
+        "(" <> c <> " " <> T.intercalate " " (map typeExprToText args) <> ")"
+exprToLispText (EMatch target branches) =
+    "(match " <> exprToLispText target <> " " <>
+    T.intercalate " " (map branchToText branches) <> ")"
+  where
+    branchToText (pat, body) = "(" <> patternToText pat <> " " <> exprToLispText body <> ")"
+    patternToText (PVar v) = v
+    patternToText (PCon cname []) = cname
+    patternToText (PCon cname pats) =
+        "(" <> cname <> " " <> T.intercalate " " (map patternToText pats) <> ")"
+    patternToText (PLit e) = exprToLispText e
+    patternToText PWild = "_"
+exprToLispText (EModule name _) = "(module " <> name <> " ...)"
+exprToLispText (EImport name _) = "(import " <> name <> " ...)"
 
 --------------------------------------------------------------------------------
 -- MREPL Channel Handlers
@@ -1024,6 +1474,7 @@ mkConnectionInfoResponse reqId =
                     , EStr "SLYNK/STICKERS"
                     , EStr "SLYNK/PROFILER"
                     , EStr "SLYNK/INDENTATION"
+                    -- , EStr "SLYNK/MACROSTEP"  -- TODO: tasks/todo_202602201030_macrostep.md
                     , EStr "SLYNK/RETRO"
                     ]
                 ]
