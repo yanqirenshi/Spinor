@@ -3,4 +3,4 @@
 **Kind:** Special Form
 **Signature:** `(Expr) -> Val`
 
-����]�������ɒl�Ƃ��ĕԂ��܂��B
+式を評価せずに値として返します。

@@ -3,4 +3,4 @@
 **Kind:** Special Form
 **Signature:** `(Symbol, Expr) -> Val`
 
-Šù‘¶‚Ì•Ï”‚ÉV‚µ‚¢’l‚ð‘ã“ü‚µ‚Ü‚·B
+æ—¢å­˜ã®å¤‰æ•°ã«æ–°ã—ã„å€¤ã‚’ä»£å…¥ã—ã¾ã™ã€‚

@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `(MVar) -> Val`
 
-MVar ‚©‚ç’l‚ðŽæ‚èo‚µ‚Ü‚· (ƒuƒƒbƒLƒ“ƒO)B
+MVar ã‹ã‚‰å€¤ã‚’å–ã‚Šå‡ºã—ã¾ã™ (ãƒ–ãƒ­ãƒƒã‚­ãƒ³ã‚°)ã€‚

@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `(String, Int, Int) -> String`
 
-•”•ª•¶š—ñ‚ğæ“¾‚µ‚Ü‚·B(start, end) ‚Í 0-indexedB
+éƒ¨åˆ†æ–‡å­—åˆ—ã‚’å–å¾—ã—ã¾ã™ã€‚(start, end) ã¯ 0-indexedã€‚

@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `(a) -> Bool`
 
-���X�g���󂩂ǂ����𔻒肵�܂��B
+リストが空かどうかを判定します。

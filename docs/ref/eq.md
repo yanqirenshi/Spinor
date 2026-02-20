@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `(a, a) -> Bool`
 
-2�̒l�����ꂩ�𔻒肵�܂� (�A�g���̂�)�B
+2つの値が同一かを判定します (アトムのみ)。

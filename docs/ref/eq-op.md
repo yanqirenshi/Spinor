@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `(a, a) -> Bool`
 
-2�̒l�����������𔻒肵�܂��B
+2つの値が等しいかを判定します。

@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `(String...) -> String`
 
-•¡”‚Ì•¶Žš—ñ‚ð˜AŒ‹‚µ‚Ü‚·B
+è¤‡æ•°ã®æ–‡å­—åˆ—ã‚’é€£çµã—ã¾ã™ã€‚

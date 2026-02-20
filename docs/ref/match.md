@@ -3,4 +3,4 @@
 **Kind:** Special Form
 **Signature:** `(Expr, Branches...) -> Val`
 
-パターンマッチを行います。
+繝代ち繝ｼ繝ｳ繝槭ャ繝√ｒ陦後＞縺ｾ縺吶�

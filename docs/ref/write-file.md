@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `(String, String) -> Bool`
 
-ƒtƒ@ƒCƒ‹‚É•¶Žš—ñ‚ð‘‚«ž‚Ý‚Ü‚· (ã‘‚«)B
+ãƒ•ã‚¡ã‚¤ãƒ«ã«æ–‡å­—åˆ—ã‚’æ›¸ãè¾¼ã¿ã¾ã™ (ä¸Šæ›¸ã)ã€‚

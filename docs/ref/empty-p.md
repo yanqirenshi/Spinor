@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `(a) -> Bool`
 
-null? В╠ГGГCГКГAГXБB
+null? уБоуВиуВдуГкуВвуВ╣уАВ

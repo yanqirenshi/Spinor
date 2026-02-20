@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `(MVar, Val) -> Bool`
 
-MVar ‚É’l‚ðŠi”[‚µ‚Ü‚· (ƒuƒƒbƒLƒ“ƒO)B
+MVar ã«å€¤ã‚’æ ¼ç´ã—ã¾ã™ (ãƒ–ãƒ­ãƒƒã‚­ãƒ³ã‚°)ã€‚

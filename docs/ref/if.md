@@ -3,4 +3,4 @@
 **Kind:** Special Form
 **Signature:** `(Bool, Then, Else) -> Val`
 
-ðŒ•ªŠòBðŒ‚ª^‚È‚ç Then ‚ðA‹U‚È‚ç Else ‚ð•]‰¿‚µ‚Ü‚·B
+æ¡ä»¶åˆ†å²ã€‚æ¡ä»¶ãŒçœŸãªã‚‰ Then ã‚’ã€å½ãªã‚‰ Else ã‚’è©•ä¾¡ã—ã¾ã™ã€‚

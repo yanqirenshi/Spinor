@@ -3,4 +3,4 @@
 **Kind:** Special Form
 **Signature:** `(TypeName, Constructors...) -> ()`
 
-�㐔�I�f�[�^�^ (ADT) ���`���܂��B
+代数的データ型 (ADT) を定義します。

@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `(String, String) -> Bool`
 
-2�̕����񂪓��������𔻒肵�܂��B
+2つの文字列が等しいかを判定します。

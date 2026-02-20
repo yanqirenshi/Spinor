@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `(String, String) -> Bool`
 
-�t�@�C���ɕ������ǋL���܂��B
+ファイルに文字列を追記します。

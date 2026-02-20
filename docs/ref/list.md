@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `(a...) -> [a]`
 
-���������X�g�ɂ܂Ƃ߂܂��B
+引数をリストにまとめます。

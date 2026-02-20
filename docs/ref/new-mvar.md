@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `() -> MVar`
 
-V‚µ‚¢ MVar ‚ðì¬‚µ‚Ü‚·B
+æ–°ã—ã„ MVar ã‚’ä½œæˆã—ã¾ã™ã€‚

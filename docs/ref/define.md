@@ -3,4 +3,4 @@
 **Kind:** Special Form
 **Signature:** `(Symbol, Expr) -> Val`
 
-変数を定義します。(def のエイリアス)
+螟画焚繧貞ｮ夂ｾｩ縺励∪縺吶�(def 縺ｮ繧ｨ繧､繝ｪ繧｢繧ｹ)

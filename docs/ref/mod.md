@@ -3,4 +3,4 @@
 **Kind:** Function
 **Signature:** `(Int, Int) -> Int`
 
-®”‚Ìè—]‚ðŒvŽZ‚µ‚Ü‚·B
+æ•´æ•°ã®å‰°ä½™ã‚’è¨ˆç®—ã—ã¾ã™ã€‚
