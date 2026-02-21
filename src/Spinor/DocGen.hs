@@ -19,9 +19,9 @@ generateDocs :: IO ()
 generateDocs = do
   putStrLn "Generating documentation..."
 
-  -- manual/public/ref/ および manual/public/docs/ ディレクトリを作成
-  createDirectoryIfMissing True "manual/public/ref"
+  -- manual/public/docs/ および manual/public/docs/ref/ ディレクトリを作成
   createDirectoryIfMissing True "manual/public/docs"
+  createDirectoryIfMissing True "manual/public/docs/ref"
 
   -- 各エントリの個別ファイルを生成
   let entries = allDocEntries
@@ -37,7 +37,7 @@ generateDocs = do
 generateEntryFile :: (Text, DocEntry) -> IO ()
 generateEntryFile (name, entry) = do
   let slug = docSlug entry
-      path = "manual/public/ref/" ++ T.unpack slug ++ ".md"
+      path = "manual/public/docs/ref/" ++ T.unpack slug ++ ".md"
       content = renderEntry name entry
   TIO.writeFile path content
 
