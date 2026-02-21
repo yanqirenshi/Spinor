@@ -1,0 +1,38 @@
+name: Deploy Manual to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies and build site
+        run: |
+          cd manual
+          npm install
+          npm run build
+
+      - name: Clear old docs directory
+        run: rm -rf docs/*
+
+      - name: Copy build output to docs directory
+        run: |
+          cp -r manual/dist/* docs/
+          touch docs/.nojekyll
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: Auto-deploy manual site from build"
+          file_pattern: docs/* docs/.nojekyll

@@ -91,8 +91,25 @@ git commit -m "chore: Remove legacy docs files before GH Actions setup"
 
 ### 実装方針
 
-- （ここに実装の概要やアーキテクチャ上の判断を記述）
+- 仕様書 (`specs/42_github_actions.md`) に従い、`main` ブランチへの push をトリガーとする GitHub Actions ワークフローを作成した。
+- ワークフローは `manual/` のビルド成果物を `docs/` ディレクトリにコピーし、`stefanzweifel/git-auto-commit-action@v5` で自動コミット・プッシュする方式を採用。
+- GitHub Pages のサブディレクトリホスティングに対応するため、Vite の `base` を `/Spinor/` に設定。
+- 旧来の手動生成ドキュメント (`docs/` 配下) は CI 自動生成に置き換わるため全削除。
 
 ### 実装内容
 
-- （変更したファイル、追加したコンポーネント、直面した課題などを具体的に記述）
+**新規作成:**
+
+1. **`.github/workflows/deploy-docs.yml`** — GitHub Actions ワークフロー定義。`main` push → checkout → Node.js 20 セットアップ → `npm install && npm run build` → `docs/` クリーン → ビルド成果物コピー → `.nojekyll` 作成 → 自動コミット&プッシュ。
+
+**変更:**
+
+2. **`manual/vite.config.ts`** — `base: '/Spinor/'` を追加。GitHub Pages のサブディレクトリパスでアセットが正しく解決されるようにした。
+
+**削除:**
+
+3. **`docs/` ディレクトリ (50 ファイル)** — 旧手動生成ドキュメント (`index.html`, `doc.html`, `style.css`, `i18n.js`, `emacs.md`, `reference.md`, `ref/*.md`, `assets/`) を全て `git rm` で削除。今後は CI が自動的にビルド成果物を `docs/` に配置する。
+
+**確認結果:**
+
+- `npm run build` (manual/) → `base: '/Spinor/'` 適用下で TypeScript コンパイル・Vite ビルドともに成功。
