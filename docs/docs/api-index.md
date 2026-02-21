@@ -4,65 +4,65 @@ Spinor の組み込み関数・特殊形式のリファレンスです。
 
 ## Special Forms
 
-- [begin](/docs/ref/begin)
-- [data](/docs/ref/data)
-- [def](/docs/ref/def)
-- [define](/docs/ref/define)
-- [fn](/docs/ref/fn)
-- [if](/docs/ref/if)
-- [let](/docs/ref/let)
-- [mac](/docs/ref/mac)
-- [match](/docs/ref/match)
-- [progn](/docs/ref/progn)
-- [quote](/docs/ref/quote)
-- [setq](/docs/ref/setq)
+- [begin](ref/begin)
+- [data](ref/data)
+- [def](ref/def)
+- [define](ref/define)
+- [fn](ref/fn)
+- [if](ref/if)
+- [let](ref/let)
+- [mac](ref/mac)
+- [match](ref/match)
+- [progn](ref/progn)
+- [quote](ref/quote)
+- [setq](ref/setq)
 
 ## Arithmetic
 
-- [%](/docs/ref/mod)
-- [*](/docs/ref/mul)
-- [+](/docs/ref/add)
-- [-](/docs/ref/sub)
+- [%](ref/mod)
+- [*](ref/mul)
+- [+](ref/add)
+- [-](ref/sub)
 
 ## Comparison
 
-- [<](/docs/ref/lt)
-- [=](/docs/ref/eq-op)
-- [>](/docs/ref/gt)
+- [<](ref/lt)
+- [=](ref/eq-op)
+- [>](ref/gt)
 
 ## List Operations
 
-- [car](/docs/ref/car)
-- [cdr](/docs/ref/cdr)
-- [cons](/docs/ref/cons)
-- [empty?](/docs/ref/empty-p)
-- [eq](/docs/ref/eq)
-- [equal](/docs/ref/equal)
-- [list](/docs/ref/list)
-- [null?](/docs/ref/null-p)
+- [car](ref/car)
+- [cdr](ref/cdr)
+- [cons](ref/cons)
+- [empty?](ref/empty-p)
+- [eq](ref/eq)
+- [equal](ref/equal)
+- [list](ref/list)
+- [null?](ref/null-p)
 
 ## String Operations
 
-- [list->string](/docs/ref/list-to-string)
-- [string->list](/docs/ref/string-to-list)
-- [string-append](/docs/ref/string-append)
-- [string-length](/docs/ref/string-length)
-- [string=?](/docs/ref/string-eq)
-- [substring](/docs/ref/substring)
+- [list->string](ref/list-to-string)
+- [string->list](ref/string-to-list)
+- [string-append](ref/string-append)
+- [string-length](ref/string-length)
+- [string=?](ref/string-eq)
+- [substring](ref/substring)
 
 ## I/O
 
-- [append-file](/docs/ref/append-file)
-- [file-exists?](/docs/ref/file-exists-p)
-- [print](/docs/ref/print)
-- [read-file](/docs/ref/read-file)
-- [write-file](/docs/ref/write-file)
+- [append-file](ref/append-file)
+- [file-exists?](ref/file-exists-p)
+- [print](ref/print)
+- [read-file](ref/read-file)
+- [write-file](ref/write-file)
 
 ## Concurrency
 
-- [new-mvar](/docs/ref/new-mvar)
-- [put-mvar](/docs/ref/put-mvar)
-- [sleep](/docs/ref/sleep)
-- [spawn](/docs/ref/spawn)
-- [take-mvar](/docs/ref/take-mvar)
+- [new-mvar](ref/new-mvar)
+- [put-mvar](ref/put-mvar)
+- [sleep](ref/sleep)
+- [spawn](ref/spawn)
+- [take-mvar](ref/take-mvar)
 
