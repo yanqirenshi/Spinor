@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import hljs from 'highlight.js'
@@ -7,6 +7,7 @@ import 'highlight.js/styles/github.css'
 
 export default function MarkdownViewer() {
   const { '*': path } = useParams<{ '*': string }>()
+  const navigate = useNavigate()
   const [content, setContent] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -61,6 +62,29 @@ export default function MarkdownViewer() {
     []
   )
 
+  // Intercept internal /docs/ links and use React Router navigation
+  const renderLink = useCallback(
+    (props: React.AnchorHTMLAttributes<HTMLAnchorElement> & { children?: React.ReactNode }) => {
+      const { href, children, ...rest } = props
+      if (href && href.startsWith('/docs/')) {
+        return (
+          <a
+            href={href}
+            {...rest}
+            onClick={(e) => {
+              e.preventDefault()
+              navigate(href)
+            }}
+          >
+            {children}
+          </a>
+        )
+      }
+      return <a href={href} {...rest}>{children}</a>
+    },
+    [navigate]
+  )
+
   if (loading) return <p>Loading...</p>
   if (error) return <p className="error">{error}</p>
 
@@ -68,7 +92,7 @@ export default function MarkdownViewer() {
     <article className="markdown-body">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        components={{ code: renderCode }}
+        components={{ code: renderCode, a: renderLink }}
       >
         {content}
       </ReactMarkdown>

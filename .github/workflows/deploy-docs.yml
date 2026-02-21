@@ -34,6 +34,7 @@ jobs:
       - name: Copy build output to docs directory
         run: |
           cp -r manual/dist/* docs/
+          cp docs/index.html docs/404.html
           touch docs/.nojekyll
 
       - name: Commit and push changes
