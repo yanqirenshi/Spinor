@@ -17,7 +17,7 @@ export default function MarkdownViewer() {
     setLoading(true)
     setError(null)
 
-    fetch(`/${path}.md`)
+    fetch(`${import.meta.env.BASE_URL}${path}.md`)
       .then((res) => {
         if (!res.ok) throw new Error(`Document not found: ${path}`)
         return res.text()
