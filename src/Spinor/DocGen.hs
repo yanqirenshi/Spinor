@@ -110,4 +110,4 @@ renderCategory title entries =
   ++ [""]
   where
     renderLink (name, entry) =
-      "- [" <> name <> "](/docs/ref/" <> docSlug entry <> ")"
+      "- [" <> name <> "](ref/" <> docSlug entry <> ")"

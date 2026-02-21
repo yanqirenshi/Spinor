@@ -62,18 +62,20 @@ export default function MarkdownViewer() {
     []
   )
 
-  // Intercept internal /docs/ links and use React Router navigation
+  // Intercept internal links and use React Router navigation
   const renderLink = useCallback(
     (props: React.AnchorHTMLAttributes<HTMLAnchorElement> & { children?: React.ReactNode }) => {
       const { href, children, ...rest } = props
-      if (href && href.startsWith('/docs/')) {
+      const isExternal = href && (href.startsWith('http://') || href.startsWith('https://'))
+      if (href && !isExternal) {
+        const target = href.startsWith('/') ? href : `/docs/${href}`
         return (
           <a
             href={href}
             {...rest}
             onClick={(e) => {
               e.preventDefault()
-              navigate(href)
+              navigate(target)
             }}
           >
             {children}
