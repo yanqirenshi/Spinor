@@ -3,7 +3,7 @@ name: Deploy Manual to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build-and-deploy:
@@ -23,8 +23,10 @@ jobs:
           npm install
           npm run build
 
-      - name: Clear old docs directory
-        run: rm -rf docs/*
+      - name: Clear and recreate docs directory
+        run: |
+          rm -rf docs
+          mkdir -p docs
 
       - name: Copy build output to docs directory
         run: |
