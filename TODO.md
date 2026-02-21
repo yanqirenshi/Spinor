@@ -172,10 +172,10 @@ React を用いて、CLHS ライクでモダンなリファレンスサイトを
     - [x] 左サイドバー（ナビゲーション）と右メインコンテンツのレイアウト実装。
     - [x] `react-router-dom` によるルーティングの導入。
     - [x] Markdown を動的にフェッチしてレンダリングするコンポーネントの実装 (`react-markdown`)。
-- [ ] **Step 41: Content Architecture & DocGen Integration**
-    - [ ] Introduction, Syntax, Types, Control Flow などの静的ページ (MD) の枠組みを作成。
-    - [ ] `spinor docgen` の出力先を `manual/public/ref/` 等に連携させ、React アプリから動的に読み込める仕組みの構築。
-    - [ ] Master Index (A-Z, Category) の一覧表示画面の実装。
-    - [ ] LP (ランディングページ) と WASM REPL を新しいマニュアルサイトに統合。
+- [x] **Step 41: Content Architecture & DocGen Integration**
+    - [x] Introduction, Syntax, Types, Control Flow などの静的ページ (MD) の枠組みを作成。
+    - [x] `spinor docgen` の出力先を `manual/public/ref/` 等に連携させ、React アプリから動的に読み込める仕組みの構築。
+    - [x] Master Index (A-Z, Category) の一覧表示画面の実装。
+    - [x] LP (ランディングページ) と WASM REPL を新しいマニュアルサイトに統合。
 - [ ] **Step 42: GitHub Actions Integration**
     - [ ] Push 時に `manual/` をビルドし、成果物をリポジトリの `docs/` ディレクトリに配置・コミットする CI ワークフローの作成。
