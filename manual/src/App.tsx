@@ -4,17 +4,23 @@ import HomePage from './components/HomePage'
 import MarkdownViewer from './components/MarkdownViewer'
 import './App.css'
 
-function App() {
+function DocsLayout() {
   return (
     <div className="app-layout">
       <Sidebar />
       <main className="main-content">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/docs/*" element={<MarkdownViewer />} />
-        </Routes>
+        <MarkdownViewer />
       </main>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/docs/*" element={<DocsLayout />} />
+    </Routes>
   )
 }
 
