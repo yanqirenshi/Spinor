@@ -163,3 +163,19 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
 - [ ] **Fix Windows Native Build (network package)**
     - [ ] `network` パッケージの `HsNetworkConfig.h` 生成エラーの解消 (GHC 9.6 + MSYS2)。
     - [ ] 必要であれば CI (GitHub Actions) の Windows ランナーでの動作を修正。
+
+## 📖 Reference Manual (React CLHS-style Docs)
+React を用いて、CLHS ライクでモダンなリファレンスサイトを構築し、GitHub Actions で自動ビルド・デプロイする。
+
+- [ ] **Step 40: React Manual Site Setup**
+    - [ ] `manual/` ディレクトリに Vite + React (TS) の基盤を作成。
+    - [ ] 左サイドバー（ナビゲーション）と右メインコンテンツのレイアウト実装。
+    - [ ] `react-router-dom` によるルーティングの導入。
+    - [ ] Markdown を動的にフェッチしてレンダリングするコンポーネントの実装 (`react-markdown`)。
+- [ ] **Step 41: Content Architecture & DocGen Integration**
+    - [ ] Introduction, Syntax, Types, Control Flow などの静的ページ (MD) の枠組みを作成。
+    - [ ] `spinor docgen` の出力先を `manual/public/ref/` 等に連携させ、React アプリから動的に読み込める仕組みの構築。
+    - [ ] Master Index (A-Z, Category) の一覧表示画面の実装。
+    - [ ] LP (ランディングページ) と WASM REPL を新しいマニュアルサイトに統合。
+- [ ] **Step 42: GitHub Actions Integration**
+    - [ ] Push 時に `manual/` をビルドし、成果物をリポジトリの `docs/` ディレクトリに配置・コミットする CI ワークフローの作成。
