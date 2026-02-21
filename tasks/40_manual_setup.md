@@ -90,8 +90,26 @@ npm run dev
 
 ### 実装方針
 
-- （ここに実装の概要やアーキテクチャ上の判断を記述）
+- Vite の `react-ts` テンプレートで `manual/` ディレクトリにプロジェクトを生成し、仕様書通りの技術スタックを採用した。
+- `BrowserRouter` を `main.tsx` に配置し、`App.tsx` でルーティング定義と2カラムレイアウト (Sidebar + Main Content) を一元管理する構成とした。
+- `MarkdownViewer` コンポーネントは URL パラメータ `:slug` に基づいて `public/docs/` 配下の Markdown ファイルを `fetch` で取得し、`react-markdown` + `remark-gfm` でレンダリングする。
+- シンタックスハイライトは `highlight.js` を使用し、Markdown レンダリング後に `hljs.highlightElement()` で適用する方式とした。
+- CSS は CLHS スタイルを意識したシンプルな2カラムレイアウトとし、ダークモードにも対応した。
 
 ### 実装内容
 
-- （変更したファイル、追加したコンポーネント、直面した課題などを具体的に記述）
+- **新規作成ファイル:**
+  - `manual/` - Vite + React (TypeScript) プロジェクト全体 (`npm create vite@latest manual -- --template react-ts`)
+  - `manual/src/components/Sidebar.tsx` - ナビゲーション用サイドバー (Home, Introduction, Syntax, API Reference, Index, Sample へのリンク)
+  - `manual/src/components/HomePage.tsx` - ルート (`/`) 用のホームページコンポーネント
+  - `manual/src/components/MarkdownViewer.tsx` - `/docs/:slug` 用の Markdown 表示コンポーネント (fetch + react-markdown + highlight.js)
+  - `manual/public/docs/sample.md` - 動作確認用サンプルドキュメント
+- **変更ファイル:**
+  - `manual/src/main.tsx` - `BrowserRouter` でラップ
+  - `manual/src/App.tsx` - 2カラムレイアウト + `Routes` による `/` と `/docs/:slug` のルーティング
+  - `manual/src/App.css` - 2カラムレイアウト用 CSS (サイドバー 240px + メインコンテンツ flex)
+  - `manual/src/index.css` - `body` の `display: flex; place-items: center` を除去 (ドキュメントサイト用に修正)
+- **インストールした依存パッケージ:**
+  - `react-router-dom`, `react-markdown`, `remark-gfm`, `highlight.js` (dependencies)
+  - `@types/highlight.js` (devDependencies)
+- **検証:** `npm run build` (TypeScript コンパイル + Vite ビルド) がエラーなく完了することを確認済み。
