@@ -167,11 +167,11 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
 ## 📖 Reference Manual (React CLHS-style Docs)
 React を用いて、CLHS ライクでモダンなリファレンスサイトを構築し、GitHub Actions で自動ビルド・デプロイする。
 
-- [ ] **Step 40: React Manual Site Setup**
-    - [ ] `manual/` ディレクトリに Vite + React (TS) の基盤を作成。
-    - [ ] 左サイドバー（ナビゲーション）と右メインコンテンツのレイアウト実装。
-    - [ ] `react-router-dom` によるルーティングの導入。
-    - [ ] Markdown を動的にフェッチしてレンダリングするコンポーネントの実装 (`react-markdown`)。
+- [x] **Step 40: React Manual Site Setup**
+    - [x] `manual/` ディレクトリに Vite + React (TS) の基盤を作成。
+    - [x] 左サイドバー（ナビゲーション）と右メインコンテンツのレイアウト実装。
+    - [x] `react-router-dom` によるルーティングの導入。
+    - [x] Markdown を動的にフェッチしてレンダリングするコンポーネントの実装 (`react-markdown`)。
 - [ ] **Step 41: Content Architecture & DocGen Integration**
     - [ ] Introduction, Syntax, Types, Control Flow などの静的ページ (MD) の枠組みを作成。
     - [ ] `spinor docgen` の出力先を `manual/public/ref/` 等に連携させ、React アプリから動的に読み込める仕組みの構築。
