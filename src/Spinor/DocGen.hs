@@ -19,8 +19,9 @@ generateDocs :: IO ()
 generateDocs = do
   putStrLn "Generating documentation..."
 
-  -- docs/ref/ ディレクトリを作成
-  createDirectoryIfMissing True "docs/ref"
+  -- manual/public/ref/ および manual/public/docs/ ディレクトリを作成
+  createDirectoryIfMissing True "manual/public/ref"
+  createDirectoryIfMissing True "manual/public/docs"
 
   -- 各エントリの個別ファイルを生成
   let entries = allDocEntries
@@ -36,7 +37,7 @@ generateDocs = do
 generateEntryFile :: (Text, DocEntry) -> IO ()
 generateEntryFile (name, entry) = do
   let slug = docSlug entry
-      path = "docs/ref/" ++ T.unpack slug ++ ".md"
+      path = "manual/public/ref/" ++ T.unpack slug ++ ".md"
       content = renderEntry name entry
   TIO.writeFile path content
 
@@ -61,7 +62,7 @@ kindToText _                           = "Other"
 generateIndexFile :: [(Text, DocEntry)] -> IO ()
 generateIndexFile entries = do
   let content = renderIndex entries
-  TIO.writeFile "docs/reference.md" content
+  TIO.writeFile "manual/public/docs/api-index.md" content
 
 -- | インデックスを Markdown に変換
 renderIndex :: [(Text, DocEntry)] -> Text
@@ -109,4 +110,4 @@ renderCategory title entries =
   ++ [""]
   where
     renderLink (name, entry) =
-      "- [" <> name <> "](doc.html?src=ref/" <> docSlug entry <> ".md)"
+      "- [" <> name <> "](/docs/ref/" <> docSlug entry <> ")"

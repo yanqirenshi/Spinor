@@ -88,8 +88,31 @@ npm run dev
 
 ### 実装方針
 
-- （ここに実装の概要やアーキテクチャ上の判断を記述）
+- 仕様書 (`specs/41_content_integration.md`) に従い、DocGen の出力先を `manual/public/` 配下に変更し、React SPA のルーティングをワイルドカード方式に統一するアーキテクチャを採用した。
+- `manual/public/` を Vite の静的ファイル配信ルートとして活用し、`docs/` (静的コンテンツ + api-index) と `ref/` (DocGen 生成の API リファレンス) を分離する構造とした。
+- React Router のワイルドカードルート (`/docs/*`) を導入し、`/docs/introduction`、`/docs/ref/add` のようなネストしたパスを単一の `MarkdownViewer` コンポーネントで処理する。
 
 ### 実装内容
 
-- （変更したファイル、追加したコンポーネント、直面した課題などを具体的に記述）
+**変更したファイル:**
+
+1. **`src/Spinor/DocGen.hs`** — 出力ディレクトリを `docs/` → `manual/public/` に変更。インデックスファイルのパスを `docs/reference.md` → `manual/public/docs/api-index.md` に変更。リンク形式を `doc.html?src=ref/<slug>.md` → `/docs/ref/<slug>` に変更。
+2. **`manual/src/App.tsx`** — Route を `/docs/:slug` → `/docs/*` (ワイルドカードルート) に変更。
+3. **`manual/src/components/MarkdownViewer.tsx`** — `useParams` を `{ slug }` → `{ '*': path }` に変更。`fetch` URL を `/docs/${slug}.md` → `/${path}.md` に変更。依存配列も `[path]` に更新。
+4. **`manual/src/components/Sidebar.tsx`** — ナビゲーションリンクを仕様に合わせて `Home`, `Introduction`, `Syntax`, `API Reference` の 4 項目に整理。`API Reference` のリンク先を `/docs/api-index` に変更。
+5. **`cabal.project`** — WSL2 環境でのビルドエラー (Windows パスの `network` パッケージ設定) を修正。
+
+**追加したファイル:**
+
+6. **`manual/public/docs/introduction.md`** — Introduction ページのプレースホルダー。
+7. **`manual/public/docs/syntax.md`** — Syntax ページのプレースホルダー。
+
+**生成されたファイル (DocGen 実行結果):**
+
+- `manual/public/ref/` — 43 個の API リファレンス `.md` ファイル (add.md, sub.md, cons.md 等)
+- `manual/public/docs/api-index.md` — カテゴリ別にリンクが整理された API インデックス
+
+**確認結果:**
+
+- `cabal run spinor -- docgen` → 43 ファイル正常生成。`api-index.md` 内のリンクが `/docs/ref/<slug>` 形式であることを確認。
+- `npm run build` (manual/) → TypeScript コンパイル・Vite ビルドともに成功。

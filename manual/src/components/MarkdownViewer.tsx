@@ -6,20 +6,20 @@ import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
 
 export default function MarkdownViewer() {
-  const { slug } = useParams<{ slug: string }>()
+  const { '*': path } = useParams<{ '*': string }>()
   const [content, setContent] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!slug) return
+    if (!path) return
 
     setLoading(true)
     setError(null)
 
-    fetch(`/docs/${slug}.md`)
+    fetch(`/${path}.md`)
       .then((res) => {
-        if (!res.ok) throw new Error(`Document not found: ${slug}`)
+        if (!res.ok) throw new Error(`Document not found: ${path}`)
         return res.text()
       })
       .then((text) => {
@@ -30,7 +30,7 @@ export default function MarkdownViewer() {
         setError(err.message)
         setLoading(false)
       })
-  }, [slug])
+  }, [path])
 
   // Highlight code blocks after content renders
   useEffect(() => {

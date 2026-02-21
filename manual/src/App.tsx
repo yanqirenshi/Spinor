@@ -11,7 +11,7 @@ function App() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/docs/:slug" element={<MarkdownViewer />} />
+          <Route path="/docs/*" element={<MarkdownViewer />} />
         </Routes>
       </main>
     </div>

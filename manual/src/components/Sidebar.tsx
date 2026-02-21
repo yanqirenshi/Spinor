@@ -4,9 +4,7 @@ const sections = [
   { label: 'Home', to: '/' },
   { label: 'Introduction', to: '/docs/introduction' },
   { label: 'Syntax', to: '/docs/syntax' },
-  { label: 'API Reference', to: '/docs/api-reference' },
-  { label: 'Index', to: '/docs/index' },
-  { label: 'Sample', to: '/docs/sample' },
+  { label: 'API Reference', to: '/docs/api-index' },
 ]
 
 export default function Sidebar() {
