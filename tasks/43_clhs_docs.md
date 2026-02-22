@@ -34,3 +34,64 @@
 
 ### 実装内容
 (変更したファイルの一覧、新しく追加したドキュメントの概要など)
+
+---
+
+## 実装報告
+
+### 実装方針
+
+1. **DocEntry 型の拡張**
+   - CLHS スタイルに必要な全 8 フィールドを追加 (`docSyntax`, `docArgumentsAndValues`, `docExamples`, `docSideEffects`, `docAffectedBy`, `docExceptionalSituations`, `docSeeAlso`, `docNotes`)
+   - ヘルパー関数 `mkDoc` と `mkDocTBD` を導入し、エントリ定義の冗長性を削減
+   - `mkDocTBD` は TBD プレースホルダー付きのエントリを簡潔に定義できる
+
+2. **主要関数の詳細ドキュメント化**
+   - 特殊形式: `def`, `fn`, `if`, `let`, `cons` など 15 エントリに完全な説明・例を記述
+   - 算術・比較演算子: `+`, `-`, `*`, `%`, `=`, `<`, `>` に説明と例を記述
+   - リスト操作: `cons`, `car`, `cdr`, `list`, `null?`, `eq`, `equal` に詳細な説明
+
+3. **コアページの構成**
+   - `introduction.md`: インストール、クイックスタート、コマンド一覧、開発環境 (SLY/LSP) へのガイド
+   - `syntax.md`: アトム、リストと評価、定義、制御構造、ADT とパターンマッチの解説
+
+### 実装内容
+
+**変更ファイル:**
+
+| ファイル | 変更内容 |
+|:---------|:---------|
+| `src/Spinor/Lsp/Docs.hs` | `DocEntry` 型を 8 フィールド拡張、ヘルパー関数追加、全 43 エントリを更新 |
+| `src/Spinor/DocGen.hs` | `renderEntry` を CLHS フォーマット対応に改修、See Also リンク生成追加 |
+| `manual/public/docs/introduction.md` | インストール・クイックスタートガイドを記述 |
+| `manual/public/docs/syntax.md` | 言語仕様の概説を記述 |
+
+**生成される CLHS フォーマット:**
+
+```markdown
+# <関数名>
+
+**Kind:** Function | Special Form
+
+### Syntax:
+(関数呼び出し形式)
+
+### Arguments and Values:
+(引数と戻り値の説明)
+
+### Description:
+(関数の説明)
+
+### Examples:
+(使用例)
+
+### Side Effects:
+### Affected By:
+### Exceptional Situations:
+### See Also:
+### Notes:
+```
+
+**備考:**
+- ビルド時に `network` ライブラリの Windows 環境依存問題が発生したため、動作確認は環境修復後に実施予定
+- 文字列・I/O・並行処理関連の 15 エントリは `mkDocTBD` でプレースホルダー定義済み（後日詳細化可能）

@@ -19,9 +19,8 @@ generateDocs :: IO ()
 generateDocs = do
   putStrLn "Generating documentation..."
 
-  -- manual/public/docs/ および manual/public/docs/ref/ ディレクトリを作成
-  createDirectoryIfMissing True "manual/public/docs"
-  createDirectoryIfMissing True "manual/public/docs/ref"
+  -- docs/ref/ ディレクトリを作成
+  createDirectoryIfMissing True "docs/ref"
 
   -- 各エントリの個別ファイルを生成
   let entries = allDocEntries
@@ -37,20 +36,73 @@ generateDocs = do
 generateEntryFile :: (Text, DocEntry) -> IO ()
 generateEntryFile (name, entry) = do
   let slug = docSlug entry
-      path = "manual/public/docs/ref/" ++ T.unpack slug ++ ".md"
+      path = "docs/ref/" ++ T.unpack slug ++ ".md"
       content = renderEntry name entry
   TIO.writeFile path content
 
--- | 個別エントリを Markdown に変換
+-- | 個別エントリを CLHS スタイルの Markdown に変換
 renderEntry :: Text -> DocEntry -> Text
-renderEntry name entry = T.unlines
+renderEntry name entry = T.intercalate "\n" $ filter (not . T.null) $
   [ "# " <> name
   , ""
   , "**Kind:** " <> kindToText (docKind entry)
-  , "**Signature:** `" <> docSignature entry <> "`"
+  , ""
+  , "### Syntax:"
+  , ""
+  , "```lisp"
+  , docSyntax entry
+  , "```"
+  , ""
+  , "### Arguments and Values:"
+  , ""
+  , T.strip (docArgumentsAndValues entry)
+  , ""
+  , "### Description:"
   , ""
   , docDescription entry
+  , ""
+  , "### Examples:"
+  , ""
+  , T.strip (docExamples entry)
+  , ""
+  , "### Side Effects:"
+  , ""
+  , docSideEffects entry
+  , ""
+  , "### Affected By:"
+  , ""
+  , docAffectedBy entry
+  , ""
+  , "### Exceptional Situations:"
+  , ""
+  , docExceptionalSituations entry
+  , ""
   ]
+  ++ renderSeeAlso (docSeeAlso entry)
+  ++ renderNotes (docNotes entry)
+
+-- | See Also セクションをレンダリング
+renderSeeAlso :: [Text] -> [Text]
+renderSeeAlso [] = []
+renderSeeAlso slugs =
+  [ "### See Also:"
+  , ""
+  , T.intercalate ", " (map renderSlugLink slugs)
+  , ""
+  ]
+  where
+    renderSlugLink slug = "[" <> slug <> "](" <> slug <> ")"
+
+-- | Notes セクションをレンダリング
+renderNotes :: Text -> [Text]
+renderNotes notes
+  | T.null (T.strip notes) = []
+  | otherwise =
+      [ "### Notes:"
+      , ""
+      , T.strip notes
+      , ""
+      ]
 
 -- | CompletionItemKind を表示用テキストに変換
 kindToText :: CompletionItemKind -> Text
@@ -62,7 +114,7 @@ kindToText _                           = "Other"
 generateIndexFile :: [(Text, DocEntry)] -> IO ()
 generateIndexFile entries = do
   let content = renderIndex entries
-  TIO.writeFile "manual/public/docs/api-index.md" content
+  TIO.writeFile "docs/reference.md" content
 
 -- | インデックスを Markdown に変換
 renderIndex :: [(Text, DocEntry)] -> Text
@@ -91,8 +143,7 @@ renderIndex entries = T.unlines $
 
     sorted = sortBy (comparing fst) entries
 
-    isKeyword (DocEntry _ _ CompletionItemKind_Keyword _) = True
-    isKeyword _ = False
+    isKeyword entry = docKind entry == CompletionItemKind_Keyword
 
     isListOp name = name `elem` ["cons", "car", "cdr", "list", "null?", "empty?", "eq", "equal"]
     isStringOp name = "string" `T.isPrefixOf` name || name `elem` ["list->string", "substring"]
@@ -110,4 +161,4 @@ renderCategory title entries =
   ++ [""]
   where
     renderLink (name, entry) =
-      "- [" <> name <> "](ref/" <> docSlug entry <> ")"
+      "- [" <> name <> "](doc.html?src=ref/" <> docSlug entry <> ".md)"
