@@ -177,5 +177,11 @@ React を用いて、CLHS ライクでモダンなリファレンスサイトを
     - [x] `spinor docgen` の出力先を `manual/public/ref/` 等に連携させ、React アプリから動的に読み込める仕組みの構築。
     - [x] Master Index (A-Z, Category) の一覧表示画面の実装。
     - [x] LP (ランディングページ) と WASM REPL を新しいマニュアルサイトに統合。
-- [ ] **Step 42: GitHub Actions Integration**
-    - [ ] Push 時に `manual/` をビルドし、成果物をリポジトリの `docs/` ディレクトリに配置・コミットする CI ワークフローの作成。
+- [x] **Step 42: GitHub Actions Integration**
+    - [x] Push 時に `manual/` をビルドし、成果物をリポジトリの `docs/` ディレクトリに配置・コミットする CI ワークフローの作成。
+- [ ] **Step 43: CLHS Format Documentation & Core Pages**
+    - [ ] `Docs.hs` のデータモデルを拡張し、CLHS と同等のセクション (Syntax, Arguments, Description, Examples 等) を追加。
+    - [ ] `DocGen.hs` のジェネレータを改修し、各 Operator のページを CLHS フォーマットで出力。
+    - [ ] `docs/syntax.md` に Lisp 構文と Haskell セマンティクスの解説を執筆・反映。
+    - [ ] `docs/introduction.md` にインストール、セットアップ、利用方法のガイドを執筆・反映。
+
