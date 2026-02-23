@@ -159,13 +159,14 @@ Spinor の Dual Implementation を維持しつつ、科学技術計算の強力�
     - [x] **Interpreter:** `hmatrix` ライブラリを用いた BLAS/LAPACK バインディングの実装。
     - [x] **Primitives:** `m+`, `m*`, `transpose`, `inverse` の追加。
     - [x] **Compiler:** (将来タスク) C トランスパイル時に OpenBLAS などの外部ライブラリをリンクするビルドオプション (`spinor build --blas`) の追加。
-- [ ] **Step 46: OpenCL Foundation (GPGPU 基盤とカーネル構文)**
-    - [ ] **Data Model:** `Val` への `VCLContext`, `VCLBuffer`, `VCLKernel` の追加。
-    - [ ] **Primitives:** `cl-init`, `to-device`, `to-host`, `cl-compile` の実装。
-    - [ ] **Interpreter:** `OpenCL` パッケージによるプラットフォーム統合。
+- [x] **Step 46: OpenCL Foundation (GPGPU 基盤とカーネル構文)**
+    - [x] **Data Model:** `Val` への `VCLContext`, `VCLBuffer`, `VCLKernel` の追加。
+    - [x] **Primitives:** `cl-init`, `to-device`, `to-host`, `cl-compile` の実装。
+    - [x] **Interpreter:** `OpenCL` パッケージによるプラットフォーム統合。
 - [ ] **Step 47: OpenCL Execution Pipeline (GPGPU 実行レイヤー)**
-    - [ ] 定義したカーネルを GPU 側のワークグループにディスパッチして並列実行する関数 (`spawn-cl` 等) の実装。
-    - [ ] **Compiler:** C トランスパイル時に、OpenCL の C API (`clEnqueueNDRangeKernel` 等) を呼び出してカーネルを起動する C コードの生成。
+    - [ ] **FFI:** `clSetKernelArg`, `clEnqueueNDRangeKernel` の実装。
+    - [ ] **Primitives:** `cl-enqueue` (可変引数カーネル起動) の実装。
+    - [ ] **Compiler:** (将来タスク) C トランスパイル時に OpenCL API を呼び出す C コード生成。
 - [ ] **Step 48: OpenGL Visualization (ネイティブ可視化基盤)**
     - [ ] OpenGL と GLFW (または SDL2) を用いた、ウィンドウ生成とメイン描画ループの組み込み。
     - [ ] ポリゴン描画、シェーダーのコンパイル、バッファ操作を行うためのグラフィックス用プリミティブ関数の提供。
