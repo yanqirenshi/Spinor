@@ -52,7 +52,48 @@ REPL を使用して、以下の手順でベクトル加算が GPU で行える�
 実装完了後、**このファイル自体を編集して**、以下のセクションを末尾に追記してください。
 
 ### 実装方針
-(FFI でのポインタ操作の工夫や、可変引数の処理方法について)
+
+**可変長カーネル引数の処理:**
+- `primCLEnqueue` は固定 4 引数 (ctx, kernel, global-work-size, local-work-size) + 可変長カーネル引数を受け取る
+- パターンマッチで `(VCLContext ... : VCLKernel ... : gwsVal : lwsVal : kernelArgs)` と分割し、`kernelArgs` を再帰関数 `setKernelArgs` でインデックス 0 から順に処理
+
+**FFI でのポインタ操作:**
+- `VCLBuffer (mem :: Ptr ())` の場合: `Foreign.Marshal.Utils.with` で一時メモリに `mem` を格納し、その `Ptr (Ptr ())` を `castPtr` して `clSetKernelArg` に渡す。サイズは `sizeOf (undefined :: Ptr ())` = 8 バイト (64-bit)
+- `VInt n` の場合: `CInt` に変換して `with` で渡す。サイズは `sizeOf (undefined :: CInt)` = 4 バイト
+- `VFloat f` の場合: `CDouble` に変換して `with` で渡す。サイズは `sizeOf (undefined :: CDouble)` = 8 バイト
+
+**ワークサイズのリスト変換:**
+- Lisp のリスト (`VList [VInt ...]` または `VNil`) を `[CSize]` に変換するヘルパー `valListToSizes` を実装
+- `global-work-size` のリスト長が `work_dim` (1D/2D/3D) となる
+- `local-work-size` が空リスト (`VNil` / `'()`) の場合は `nullPtr` を渡してドライバ任せにする (Raw.hs のラッパーで対応済み)
+
+**同期実行:**
+- `clEnqueueNDRangeKernel` 後に `clFinish` を呼び出し、カーネル実行の完了を待機するブロッキング方式
 
 ### 実装内容
-(変更したファイルの一覧、追加した主要な関数の説明など)
+
+**変更ファイル一覧:**
+
+1. **src/Spinor/OpenCL/Raw.hs**
+   - `clSetKernelArg` の FFI 宣言 (`raw_clSetKernelArg`) とラッパー関数を追加
+   - `clEnqueueNDRangeKernel` の FFI 宣言 (`raw_clEnqueueNDRangeKernel`) とラッパー関数を追加
+   - ラッパーは `[CSize]` リストを `withArray` で C 配列に変換し、`local-work-size` が空の場合は `nullPtr` を渡す
+   - エクスポートリストに `clSetKernelArg`, `clEnqueueNDRangeKernel` を追加
+
+2. **src/Spinor/GPGPU.hs**
+   - `primCLEnqueue` (`cl-enqueue`): カーネル実行プリミティブの実装
+   - `setKernelArgs`: カーネル引数リストを再帰的に処理する IO 関数
+   - `setOneKernelArg`: 値の型に応じて `clSetKernelArg` を呼び出すディスパッチ関数
+   - `valListToSizes`: Lisp リスト → `[CSize]` 変換ヘルパー
+   - `gpgpuBindings` に `"cl-enqueue"` を追加
+   - インポート追加: `Foreign.C.Types`, `Foreign.Marshal.Utils`, `Foreign.Ptr`, `showVal`
+
+3. **src/Spinor/Lsp/Docs.hs**
+   - `cl-enqueue` の CLHS 形式ドキュメントを追加
+   - 引数の型マッピング (CLBuffer/Int/Float) とワークサイズのリスト形式を明記
+   - `cl-compile` の `docSeeAlso` に `cl-enqueue` を追加
+
+**動作確認 (WSL2 環境):**
+- `cabal build`: 警告なしでビルド成功
+- `cabal test`: 全 152 テストパス (0 failures)
+- ※OpenCL ランタイムテスト (REPL によるベクトル加算の手動検証) は GPU/CPU OpenCL ドライバがインストールされた環境で別途実施が必要

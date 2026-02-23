@@ -34,6 +34,9 @@ module Spinor.OpenCL.Raw
   , clBuildProgram
   , clGetProgramBuildLog
   , clCreateKernel
+    -- * カーネル引数 / 実行
+  , clSetKernelArg
+  , clEnqueueNDRangeKernel
     -- * リソース解放
   , clReleaseProgram
     -- * コンテキスト情報
@@ -131,6 +134,15 @@ foreign import ccall "clGetProgramBuildInfo"
 -- Kernel
 foreign import ccall "clCreateKernel"
   raw_clCreateKernel :: CLProgram -> CString -> Ptr CInt -> IO CLKernel
+
+-- Kernel args / execution
+foreign import ccall "clSetKernelArg"
+  raw_clSetKernelArg :: CLKernel -> CUInt -> CSize -> Ptr () -> IO CInt
+
+foreign import ccall "clEnqueueNDRangeKernel"
+  raw_clEnqueueNDRangeKernel :: CLCommandQueue -> CLKernel -> CUInt
+                             -> Ptr CSize -> Ptr CSize -> Ptr CSize
+                             -> CUInt -> Ptr () -> Ptr () -> IO CInt
 
 -- Release
 foreign import ccall "clReleaseProgram"
@@ -275,6 +287,30 @@ clCreateKernel prog name =
       if err /= 0
         then pure $ Left $ "clCreateKernel failed: " <> tshow err
         else pure $ Right kernel
+
+-- | カーネル引数を設定 (汎用: ポインタとサイズを直接指定)
+clSetKernelArg :: CLKernel -> Int -> CSize -> Ptr () -> IO (Either Text ())
+clSetKernelArg kernel argIndex argSize argPtr = do
+    err <- raw_clSetKernelArg kernel (fromIntegral argIndex) argSize argPtr
+    if err /= 0
+      then pure $ Left $ "clSetKernelArg failed (index=" <> tshow argIndex <> "): " <> tshow err
+      else pure $ Right ()
+
+-- | カーネルを実行キューに投入
+clEnqueueNDRangeKernel :: CLCommandQueue -> CLKernel -> [CSize] -> [CSize]
+                       -> IO (Either Text ())
+clEnqueueNDRangeKernel queue kernel globalWork localWork = do
+    let workDim = length globalWork
+    withArray globalWork $ \globalPtr -> do
+      let enqueue localPtr =
+            raw_clEnqueueNDRangeKernel queue kernel (fromIntegral workDim)
+              nullPtr globalPtr localPtr 0 nullPtr nullPtr
+      err <- if null localWork
+               then enqueue nullPtr
+               else withArray localWork $ \localPtr -> enqueue localPtr
+      if err /= 0
+        then pure $ Left $ "clEnqueueNDRangeKernel failed: " <> tshow err
+        else pure $ Right ()
 
 -- | プログラムを解放
 clReleaseProgram :: CLProgram -> IO ()

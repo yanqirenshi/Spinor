@@ -9,13 +9,15 @@ import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 import qualified Data.Vector.Storable as VS
 import Control.Exception (SomeException, try)
-import Foreign.Ptr (castPtr)
+import Foreign.Ptr (Ptr, castPtr)
+import Foreign.C.Types (CInt, CDouble, CSize)
 import Foreign.Marshal.Alloc (mallocBytes, free)
+import Foreign.Marshal.Utils (with)
 import Foreign.Storable (sizeOf, peekElemOff)
 import System.IO.Unsafe (unsafePerformIO)
 
 import qualified Spinor.OpenCL.Raw as CL
-import Spinor.Val (Val(..), Env)
+import Spinor.Val (Val(..), Env, showVal)
 
 -- | OpenCL 関連プリミティブの束縛
 gpgpuBindings :: Env
@@ -24,6 +26,7 @@ gpgpuBindings = Map.fromList
   , ("to-device",  VPrim "to-device"  primToDevice)
   , ("to-host",    VPrim "to-host"    primToHost)
   , ("cl-compile", VPrim "cl-compile" primCLCompile)
+  , ("cl-enqueue", VPrim "cl-enqueue" primCLEnqueue)
   ]
 
 -- ===========================================================================
@@ -160,9 +163,74 @@ primCLCompile [_, _, _]                 = Left "cl-compile: 第1引数に CLCont
 primCLCompile args = Left $ "cl-compile: 引数の数が不正です (期待: 3, 実際: "
                           <> tshow (length args) <> ")"
 
+-- | cl-enqueue: カーネルに引数を設定し、実行キューに投入する
+--   (cl-enqueue ctx kernel global-work-size local-work-size arg1 arg2 ...)
+primCLEnqueue :: [Val] -> Either Text Val
+primCLEnqueue (VCLContext _ctx queue : VCLKernel kernel _name : gwsVal : lwsVal : kernelArgs) =
+    case (valListToSizes gwsVal, valListToSizes lwsVal) of
+      (Left err, _) -> Left $ "cl-enqueue: global-work-size: " <> err
+      (_, Left err)  -> Left $ "cl-enqueue: local-work-size: " <> err
+      (Right [], _)  -> Left "cl-enqueue: global-work-size は空にできません"
+      (Right gws, Right lws) -> unsafeIOToEither $ do
+        setResult <- setKernelArgs kernel 0 kernelArgs
+        case setResult of
+          Left err -> pure $ Left err
+          Right () -> do
+            enqResult <- CL.clEnqueueNDRangeKernel queue kernel gws lws
+            case enqResult of
+              Left err -> pure $ Left $ "cl-enqueue: " <> err
+              Right () -> do
+                finResult <- CL.clFinish queue
+                case finResult of
+                  Left err -> pure $ Left $ "cl-enqueue: " <> err
+                  Right () -> pure $ Right $ VBool True
+primCLEnqueue (VCLContext{} : _ : _ : _ : _) =
+    Left "cl-enqueue: 第2引数に CLKernel が必要です"
+primCLEnqueue (_ : _ : _ : _ : _) =
+    Left "cl-enqueue: 第1引数に CLContext が必要です"
+primCLEnqueue args =
+    Left $ "cl-enqueue: 引数の数が不正です (最低4つ必要, 実際: "
+         <> tshow (length args) <> ")"
+
 -- ===========================================================================
 -- ヘルパー関数
 -- ===========================================================================
+
+-- | カーネル引数をインデックス順にセット
+setKernelArgs :: Ptr () -> Int -> [Val] -> IO (Either Text ())
+setKernelArgs _ _ [] = pure (Right ())
+setKernelArgs kernel idx (arg:rest) = do
+    result <- setOneKernelArg kernel idx arg
+    case result of
+      Left err -> pure (Left err)
+      Right () -> setKernelArgs kernel (idx + 1) rest
+
+-- | 1つのカーネル引数を型に応じてセット
+setOneKernelArg :: Ptr () -> Int -> Val -> IO (Either Text ())
+setOneKernelArg kernel idx (VCLBuffer mem _) =
+    with mem $ \memPtr ->
+      CL.clSetKernelArg kernel idx
+        (fromIntegral $ sizeOf (undefined :: Ptr ())) (castPtr memPtr)
+setOneKernelArg kernel idx (VInt n) =
+    with (fromIntegral n :: CInt) $ \intPtr ->
+      CL.clSetKernelArg kernel idx
+        (fromIntegral $ sizeOf (undefined :: CInt)) (castPtr intPtr)
+setOneKernelArg kernel idx (VFloat f) =
+    with (realToFrac f :: CDouble) $ \dblPtr ->
+      CL.clSetKernelArg kernel idx
+        (fromIntegral $ sizeOf (undefined :: CDouble)) (castPtr dblPtr)
+setOneKernelArg _ idx other =
+    pure $ Left $ "cl-enqueue: 引数 " <> tshow idx
+                <> " の型が不正です: " <> T.pack (showVal other)
+
+-- | Lisp リスト値を [CSize] に変換
+valListToSizes :: Val -> Either Text [CSize]
+valListToSizes VNil = Right []
+valListToSizes (VList vals) = mapM toSize vals
+  where
+    toSize (VInt n) = Right (fromIntegral n)
+    toSize v       = Left $ "整数が必要ですが " <> T.pack (showVal v) <> " が見つかりました"
+valListToSizes v = Left $ "リストが必要ですが " <> T.pack (showVal v) <> " が見つかりました"
 
 tshow :: Show a => a -> Text
 tshow = T.pack . show
