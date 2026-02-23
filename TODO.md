@@ -168,10 +168,9 @@ Spinor の Dual Implementation を維持しつつ、科学技術計算の強力�
     - [x] **Primitives:** `cl-enqueue` (可変引数カーネル起動) の実装。
     - [ ] **Compiler:** (将来タスク) C トランスパイル時に OpenCL API を呼び出す C コード生成。
 - [ ] **Step 48: OpenGL Visualization (ネイティブ可視化基盤)**
-    - [ ] OpenGL と GLFW (または SDL2) を用いた、ウィンドウ生成とメイン描画ループの組み込み。
-    - [ ] ポリゴン描画、シェーダーのコンパイル、バッファ操作を行うためのグラフィックス用プリミティブ関数の提供。
+    - [ ] **Setup:** `GLFW-b` と `OpenGL` によるウィンドウ・描画基盤の導入。
+    - [ ] **Primitives:** `gl-init`, `gl-clear`, `gl-draw-points`, `gl-swap-buffers` の実装。
     - [ ] **Interpreter:** Haskell の `gl`, `GLFW-b` 等を利用したインタラクティブな描画。
-    - [ ] **Compiler:** ネイティブビルド時の OpenGL/GLFW ライブラリリンク対応。
 - [ ] **Step 49: WebGL Target for WASM (ブラウザでの可視化)**
     - [ ] Emscripten が提供する OpenGL ES / WebGL のエミュレーション層を活用した WASM ビルド設定の拡張。
     - [ ] Spinor で書いた物理シミュレーション等の可視化コードが、変更なしでブラウザの Canvas 上 (WASM) で動く仕組みの確立。
