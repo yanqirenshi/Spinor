@@ -1082,6 +1082,11 @@ formatValForDisassembly (VData name fields) = T.unlines
     , "; Fields: " <> T.pack (show (length fields))
     ]
 formatValForDisassembly (VMVar _) = "; Mutable variable (MVar)"
+formatValForDisassembly (VFloat f) = "; Float value: " <> T.pack (show f)
+formatValForDisassembly (VMatrix rows cols _) = T.unlines
+    [ "; Matrix " <> T.pack (show rows) <> "x" <> T.pack (show cols)
+    , "; (row-major storage)"
+    ]
 
 --------------------------------------------------------------------------------
 -- Inspector Helpers
@@ -1159,6 +1164,11 @@ valContentText (VData name fields) = T.unlines $
     ("Constructor: " <> name) :
     map (\(i, v) -> "  [" <> T.pack (show i) <> "] " <> valTitle v) (zip [(0::Int)..] fields)
 valContentText (VMVar _) = "Mutable variable (MVar)"
+valContentText (VFloat f) = "Value: " <> T.pack (show f)
+valContentText (VMatrix rows cols _) = T.unlines
+    [ "Dimensions: " <> T.pack (show rows) <> " x " <> T.pack (show cols)
+    , "Type: Matrix (row-major)"
+    ]
 
 -- | 値のタイトルを取得
 valTitle :: Val -> Text
@@ -1174,6 +1184,8 @@ valTitle (VMacro args _ _) = "(macro (" <> T.intercalate " " args <> ") ...)"
 valTitle (VPrim name _) = "<primitive: " <> name <> ">"
 valTitle (VData name _) = "<" <> name <> ">"
 valTitle (VMVar _) = "<mvar>"
+valTitle (VFloat f) = T.pack (show f)
+valTitle (VMatrix rows cols _) = "<matrix " <> T.pack (show rows) <> "x" <> T.pack (show cols) <> ">"
 
 -- | 値の型名を取得
 valTypeName :: Val -> Text
@@ -1188,6 +1200,8 @@ valTypeName (VMacro _ _ _) = "Macro"
 valTypeName (VPrim _ _) = "Primitive"
 valTypeName (VData name _) = name
 valTypeName (VMVar _) = "MVar"
+valTypeName (VFloat _) = "Float"
+valTypeName (VMatrix _ _ _) = "Matrix"
 
 --------------------------------------------------------------------------------
 -- Macrostep Helpers

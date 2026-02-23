@@ -76,8 +76,16 @@ Haskell インタプリタに `Matrix` 型と基本プリミティブを実装�
 4. **src/Spinor/Lsp/Docs.hs**
    - `matrix`, `mdim`, `mref` の CLHS 形式ドキュメントを追加
    - Syntax, Arguments and Values, Examples, Exceptional Situations 等を記載
+   - `unlines` → `T.unlines` 修正 (全19箇所): `Text` 型フィールドに対して `Prelude.unlines` (String を返す) が使われていた型エラーを修正
 
-5. **test/Spinor/EvalSpec.hs**
+5. **src/Spinor/Server.hs**
+   - 以下4関数に `VFloat` と `VMatrix` のパターンマッチを追加:
+     - `formatValForDisassembly`: ディスアセンブリ表示対応
+     - `valContentText`: インスペクタのコンテンツ表示対応
+     - `valTitle`: 値のタイトル表示対応
+     - `valTypeName`: 型名表示対応 (`"Float"`, `"Matrix"`)
+
+6. **test/Spinor/EvalSpec.hs**
    - 行列操作のテストケースを追加:
      - 2x2 行列の生成確認
      - `mdim` による次元取得
@@ -86,6 +94,6 @@ Haskell インタプリタに `Matrix` 型と基本プリミティブを実装�
      - 範囲外アクセスエラー (行・列)
      - VInt → VFloat 変換確認
 
-**備考:**
-- `cabal test` は Windows 環境での `network` ライブラリビルドエラーにより実行不可 (`HsNetworkConfig.h` 不在)
-- 実装自体は spec に準拠しており、環境が整えばテストパスが期待される
+**動作確認 (WSL2 環境):**
+- `cabal build`: 警告なしでビルド成功
+- `cabal test`: 全141テストパス (0 failures)

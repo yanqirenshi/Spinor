@@ -10,6 +10,7 @@ module Spinor.Lsp.Docs
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
+import qualified Data.Text as T
 import Language.LSP.Protocol.Types (CompletionItemKind(..))
 
 data DocEntry = DocEntry
@@ -72,12 +73,12 @@ primitiveDocs = Map.fromList
       , docKind = CompletionItemKind_Keyword
       , docSlug = "def"
       , docSyntax = "(def name expr)"
-      , docArgumentsAndValues = unlines
+      , docArgumentsAndValues = T.unlines
           [ "- `name` -- 定義する変数名 (シンボル)"
           , "- `expr` -- 束縛する値を生成する式"
           , "- 戻り値: 束縛された値"
           ]
-      , docExamples = unlines
+      , docExamples = T.unlines
           [ "```lisp"
           , ";; 数値の定義"
           , "(def x 42)"
@@ -111,12 +112,12 @@ primitiveDocs = Map.fromList
       , docKind = CompletionItemKind_Keyword
       , docSlug = "fn"
       , docSyntax = "(fn (param1 param2 ...) body)"
-      , docArgumentsAndValues = unlines
+      , docArgumentsAndValues = T.unlines
           [ "- `params` -- 仮引数のリスト (シンボルのリスト)"
           , "- `body` -- 関数本体の式"
           , "- 戻り値: 関数オブジェクト"
           ]
-      , docExamples = unlines
+      , docExamples = T.unlines
           [ "```lisp"
           , ";; 基本的なラムダ"
           , "((fn (x) (* x 2)) 5)  ; => 10"
@@ -154,13 +155,13 @@ primitiveDocs = Map.fromList
       , docKind = CompletionItemKind_Keyword
       , docSlug = "if"
       , docSyntax = "(if condition then-expr else-expr)"
-      , docArgumentsAndValues = unlines
+      , docArgumentsAndValues = T.unlines
           [ "- `condition` -- 条件式"
           , "- `then-expr` -- 条件が真の場合に評価される式"
           , "- `else-expr` -- 条件が偽の場合に評価される式"
           , "- 戻り値: 評価された分岐の結果"
           ]
-      , docExamples = unlines
+      , docExamples = T.unlines
           [ "```lisp"
           , "(if (> 5 3) \"yes\" \"no\")  ; => \"yes\""
           , ""
@@ -182,12 +183,12 @@ primitiveDocs = Map.fromList
       , docKind = CompletionItemKind_Keyword
       , docSlug = "let"
       , docSyntax = "(let ((var1 val1) (var2 val2) ...) body)"
-      , docArgumentsAndValues = unlines
+      , docArgumentsAndValues = T.unlines
           [ "- `bindings` -- `(変数名 値)` のペアのリスト"
           , "- `body` -- 束縛のスコープ内で評価される式"
           , "- 戻り値: body の評価結果"
           ]
-      , docExamples = unlines
+      , docExamples = T.unlines
           [ "```lisp"
           , "(let ((x 10)"
           , "      (y 20))"
@@ -290,12 +291,12 @@ primitiveDocs = Map.fromList
       , docKind = CompletionItemKind_Function
       , docSlug = "add"
       , docSyntax = "(+ a b)"
-      , docArgumentsAndValues = unlines
+      , docArgumentsAndValues = T.unlines
           [ "- `a` -- 第一オペランド (整数)"
           , "- `b` -- 第二オペランド (整数)"
           , "- 戻り値: `a + b` の結果 (整数)"
           ]
-      , docExamples = unlines
+      , docExamples = T.unlines
           [ "```lisp"
           , "(+ 1 2)      ; => 3"
           , "(+ 10 -3)    ; => 7"
@@ -381,12 +382,12 @@ primitiveDocs = Map.fromList
       , docKind = CompletionItemKind_Function
       , docSlug = "cons"
       , docSyntax = "(cons x lst)"
-      , docArgumentsAndValues = unlines
+      , docArgumentsAndValues = T.unlines
           [ "- `x` -- リストの先頭に追加する値"
           , "- `lst` -- 既存のリスト"
           , "- 戻り値: `x` を先頭に持つ新しいリスト"
           ]
-      , docExamples = unlines
+      , docExamples = T.unlines
           [ "```lisp"
           , "(cons 1 '(2 3))     ; => (1 2 3)"
           , "(cons 'a nil)       ; => (a)"
@@ -506,13 +507,13 @@ primitiveDocs = Map.fromList
       , docKind = CompletionItemKind_Function
       , docSlug = "matrix"
       , docSyntax = "(matrix rows cols elements)"
-      , docArgumentsAndValues = unlines
+      , docArgumentsAndValues = T.unlines
           [ "- `rows` -- 行数 (正の整数)"
           , "- `cols` -- 列数 (正の整数)"
           , "- `elements` -- 要素のリスト (`Int` または `Float`)"
           , "- 戻り値: `rows × cols` の行列"
           ]
-      , docExamples = unlines
+      , docExamples = T.unlines
           [ "```lisp"
           , ";; 2x3 行列を生成"
           , "(matrix 2 3 '(1 2 3 4 5 6))"
@@ -525,7 +526,7 @@ primitiveDocs = Map.fromList
           ]
       , docSideEffects = "None."
       , docAffectedBy = "None."
-      , docExceptionalSituations = unlines
+      , docExceptionalSituations = T.unlines
           [ "- `rows * cols` と要素数が一致しない場合、エラーを返します。"
           , "- 要素に数値以外が含まれる場合、エラーを返します。"
           ]
@@ -539,11 +540,11 @@ primitiveDocs = Map.fromList
       , docKind = CompletionItemKind_Function
       , docSlug = "mdim"
       , docSyntax = "(mdim m)"
-      , docArgumentsAndValues = unlines
+      , docArgumentsAndValues = T.unlines
           [ "- `m` -- 行列"
           , "- 戻り値: `(rows cols)` の形式のリスト"
           ]
-      , docExamples = unlines
+      , docExamples = T.unlines
           [ "```lisp"
           , "(def m (matrix 3 4 '(1 2 3 4 5 6 7 8 9 10 11 12)))"
           , "(mdim m)  ; => (3 4)"
@@ -562,13 +563,13 @@ primitiveDocs = Map.fromList
       , docKind = CompletionItemKind_Function
       , docSlug = "mref"
       , docSyntax = "(mref m row col)"
-      , docArgumentsAndValues = unlines
+      , docArgumentsAndValues = T.unlines
           [ "- `m` -- 行列"
           , "- `row` -- 行インデックス (0-indexed)"
           , "- `col` -- 列インデックス (0-indexed)"
           , "- 戻り値: 指定位置の要素 (浮動小数点数)"
           ]
-      , docExamples = unlines
+      , docExamples = T.unlines
           [ "```lisp"
           , "(def m (matrix 2 3 '(1 2 3 4 5 6)))"
           , "(mref m 0 0)  ; => 1.0  ; 左上"
