@@ -93,7 +93,44 @@ REPL を使用して、以下の手順でベクトル加算が GPU で行える�
    - 引数の型マッピング (CLBuffer/Int/Float) とワークサイズのリスト形式を明記
    - `cl-compile` の `docSeeAlso` に `cl-enqueue` を追加
 
+4. **src/Spinor/Infer.hs**
+   - `baseTypeEnv` に行列・BLAS・OpenCL 関連プリミティブの型シグネチャを追加
+   - REPL の型推論ステップで「未定義のシンボル」エラーとなっていた問題を解消
+   - 文字列操作 (`string-append` 等)、等価性 (`eq`, `equal`)、行列 (`matrix`, `mdim`, `mref`)、BLAS (`m+`, `m*`, `transpose`, `inverse`)、OpenCL (`cl-init`, `to-device`, `to-host`, `cl-compile`, `cl-enqueue`) の型を登録
+
 **動作確認 (WSL2 環境):**
 - `cabal build`: 警告なしでビルド成功
 - `cabal test`: 全 152 テストパス (0 failures)
-- ※OpenCL ランタイムテスト (REPL によるベクトル加算の手動検証) は GPU/CPU OpenCL ドライバがインストールされた環境で別途実施が必要
+- OpenCL ランタイムテスト: `pocl-opencl-icd` (CPU OpenCL) を使用し、REPL 上でベクトル加算の End-to-End 検証に成功
+
+**REPL 検証ログ:**
+```
+spinor> (def ctx (cl-init))
+:: CLContext
+<CLContext>
+spinor> (def m1 (matrix 1 4 '(1 2 3 4)))
+:: Matrix
+#m((1.0 2.0 3.0 4.0))
+spinor> (def m2 (matrix 1 4 '(10 20 30 40)))
+:: Matrix
+#m((10.0 20.0 30.0 40.0))
+spinor> (def b1 (to-device ctx m1))
+:: CLBuffer
+<CLBuffer:size=4>
+spinor> (def b2 (to-device ctx m2))
+:: CLBuffer
+<CLBuffer:size=4>
+spinor> (def b3 (to-device ctx m1))
+:: CLBuffer
+<CLBuffer:size=4>
+spinor> (def knl (cl-compile ctx "__kernel void add(__global double* a, __global double* b, __global double* c) { int i = get_global_id(0); c[i] = a[i] + b[i]; }" "add"))
+:: CLKernel
+<CLKernel:add>
+spinor> (cl-enqueue ctx knl '(4) '() b1 b2 b3)
+:: t1
+#t
+spinor> (to-host ctx b3 1 4)
+:: Matrix
+#m((11.0 22.0 33.0 44.0))
+```
+各要素が `(1+10)=11, (2+20)=22, (3+30)=33, (4+40)=44` と正しく加算されている。
