@@ -153,12 +153,12 @@ Spinor の Dual Implementation を維持しつつ、科学技術計算の強力�
 
 - [x] **Step 44: Matrix/Tensor Type Foundation (行列・テンソル型の基盤)**
     - [x] 行列や多次元配列を表す新しい内部データ型 (`Tensor` / `Matrix`) の定義。
-    - [ ] Lisp構文での行列リテラル表現の設計 (例: `#m((1 2) (3 4))` や `(matrix 2 2 '(1 2 3 4))`)。
+    - [x] Lisp構文での行列リテラル表現の設計 (例: `#m((1 2) (3 4))` や `(matrix 2 2 '(1 2 3 4))`)。
     - [x] 行列の生成、要素アクセス (`mref`)、次元取得 (`mdim`) などの基本プリミティブの実装。
-- [ ] **Step 45: BLAS/LAPACK Integration (行列演算の高速化)**
-    - [ ] **Interpreter:** `hmatrix` ライブラリを用いた BLAS/LAPACK バインディングの実装。
-    - [ ] **Primitives:** `m+`, `m*`, `transpose`, `inverse` の追加。
-    - [ ] **Compiler:** (将来タスク) C トランスパイル時に OpenBLAS などの外部ライブラリをリンクするビルドオプション (`spinor build --blas`) の追加。
+- [x] **Step 45: BLAS/LAPACK Integration (行列演算の高速化)**
+    - [x] **Interpreter:** `hmatrix` ライブラリを用いた BLAS/LAPACK バインディングの実装。
+    - [x] **Primitives:** `m+`, `m*`, `transpose`, `inverse` の追加。
+    - [x] **Compiler:** (将来タスク) C トランスパイル時に OpenBLAS などの外部ライブラリをリンクするビルドオプション (`spinor build --blas`) の追加。
 - [ ] **Step 46: OpenCL Foundation (GPGPU 基盤とカーネル構文)**
     - [ ] Spinor 言語内で GPU カーネルを記述するための特殊形式・マクロ (`defkernel`) の設計。
     - [ ] ホストメモリ (CPU) とデバイスメモリ (GPU) 間のデータ転送プリミティブ (`to-device`, `to-host`) の実装。
