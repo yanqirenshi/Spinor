@@ -32,7 +32,8 @@ library
     lsp        >= 2.4  && < 3,
     lens       >= 5.0  && < 6,
     co-log-core >= 0.3 && < 1,
-    stm        >= 2.5  && < 3
+    stm        >= 2.5  && < 3,
+    vector     >= 0.12 && < 1
   default-language: Haskell2010
   ghc-options:      -Wall
 

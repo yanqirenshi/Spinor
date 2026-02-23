@@ -496,6 +496,92 @@ primitiveDocs = Map.fromList
   , ("new-mvar", mkDocTBD "() -> MVar" "新しい MVar を作成します。" CompletionItemKind_Function "new-mvar")
   , ("take-mvar", mkDocTBD "(MVar) -> Val" "MVar から値を取り出します (ブロッキング)。" CompletionItemKind_Function "take-mvar")
   , ("put-mvar", mkDocTBD "(MVar, Val) -> Bool" "MVar に値を格納します (ブロッキング)。" CompletionItemKind_Function "put-mvar")
+
+  -- ========================================
+  -- 行列操作 (Matrix Operations)
+  -- ========================================
+  , ("matrix", DocEntry
+      { docSignature = "(Int, Int, [Number]) -> Matrix"
+      , docDescription = "行列を生成します。行数・列数と要素のフラットリストから行優先 (row-major) で構築します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "matrix"
+      , docSyntax = "(matrix rows cols elements)"
+      , docArgumentsAndValues = unlines
+          [ "- `rows` -- 行数 (正の整数)"
+          , "- `cols` -- 列数 (正の整数)"
+          , "- `elements` -- 要素のリスト (`Int` または `Float`)"
+          , "- 戻り値: `rows × cols` の行列"
+          ]
+      , docExamples = unlines
+          [ "```lisp"
+          , ";; 2x3 行列を生成"
+          , "(matrix 2 3 '(1 2 3 4 5 6))"
+          , "; => #m((1.0 2.0 3.0) (4.0 5.0 6.0))"
+          , ""
+          , ";; 単位行列"
+          , "(matrix 2 2 '(1 0 0 1))"
+          , "; => #m((1.0 0.0) (0.0 1.0))"
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = unlines
+          [ "- `rows * cols` と要素数が一致しない場合、エラーを返します。"
+          , "- 要素に数値以外が含まれる場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["mdim", "mref"]
+      , docNotes = "内部的には `Data.Vector.Storable` を使用し、将来的な BLAS/LAPACK 連携を想定しています。"
+      })
+
+  , ("mdim", DocEntry
+      { docSignature = "(Matrix) -> (Int Int)"
+      , docDescription = "行列の次元 (行数, 列数) をリストとして返します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "mdim"
+      , docSyntax = "(mdim m)"
+      , docArgumentsAndValues = unlines
+          [ "- `m` -- 行列"
+          , "- 戻り値: `(rows cols)` の形式のリスト"
+          ]
+      , docExamples = unlines
+          [ "```lisp"
+          , "(def m (matrix 3 4 '(1 2 3 4 5 6 7 8 9 10 11 12)))"
+          , "(mdim m)  ; => (3 4)"
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "引数が行列でない場合、エラーを返します。"
+      , docSeeAlso = ["matrix", "mref"]
+      , docNotes = ""
+      })
+
+  , ("mref", DocEntry
+      { docSignature = "(Matrix, Int, Int) -> Float"
+      , docDescription = "行列の指定位置の要素を取得します。インデックスは 0-indexed です。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "mref"
+      , docSyntax = "(mref m row col)"
+      , docArgumentsAndValues = unlines
+          [ "- `m` -- 行列"
+          , "- `row` -- 行インデックス (0-indexed)"
+          , "- `col` -- 列インデックス (0-indexed)"
+          , "- 戻り値: 指定位置の要素 (浮動小数点数)"
+          ]
+      , docExamples = unlines
+          [ "```lisp"
+          , "(def m (matrix 2 3 '(1 2 3 4 5 6)))"
+          , "(mref m 0 0)  ; => 1.0  ; 左上"
+          , "(mref m 0 2)  ; => 3.0  ; 1行目の最後"
+          , "(mref m 1 1)  ; => 5.0  ; 2行目の中央"
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "インデックスが範囲外の場合、エラーを返します。"
+      , docSeeAlso = ["matrix", "mdim"]
+      , docNotes = ""
+      })
   ]
 
 lookupDoc :: Text -> Maybe DocEntry

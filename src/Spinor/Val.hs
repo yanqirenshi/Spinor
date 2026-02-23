@@ -10,6 +10,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 import Control.Concurrent.MVar (MVar)
+import qualified Data.Vector.Storable as VS
 
 import Spinor.Syntax (Expr)
 
@@ -22,6 +23,7 @@ type Env = Map.Map Text Val
 --   Expr (構文) と Val (値) を分離することで、評価前後の区別を型レベルで保証する。
 data Val
   = VInt  Integer                              -- 整数値
+  | VFloat Double                              -- 浮動小数点数
   | VBool Bool                                 -- 真偽値
   | VPrim Text ([Val] -> Either Text Val)      -- プリミティブ関数 (名前, 実装)
   | VFunc  [Text] Expr Env                     -- ユーザー定義関数 (引数名, 本体, クロージャ環境)
@@ -32,11 +34,13 @@ data Val
   | VStr  Text                                 -- 文字列
   | VData Text [Val]                           -- データコンストラクタ (名前, フィールド値)
   | VMVar (MVar Val)                           -- 同期変数 (MVar)
+  | VMatrix Int Int (VS.Vector Double)         -- 行列 (行数, 列数, データ)
 
 -- | テスト用の構造的等値比較
 --   VPrim, VFunc, VMacro, VMVar は関数/参照を含むため常に不等
 instance Eq Val where
   VInt  a   == VInt  b   = a == b
+  VFloat a  == VFloat b  = a == b
   VBool a   == VBool b   = a == b
   VStr  a   == VStr  b   = a == b
   VSym  a   == VSym  b   = a == b
@@ -44,6 +48,7 @@ instance Eq Val where
   VData n1 vs1 == VData n2 vs2 = n1 == n2 && vs1 == vs2
   VNil      == VNil      = True
   VMVar _   == VMVar _   = False  -- MVar は参照のため常に不等
+  VMatrix r1 c1 v1 == VMatrix r2 c2 v2 = r1 == r2 && c1 == c2 && v1 == v2
   _         == _         = False
 
 instance Show Val where
@@ -52,6 +57,7 @@ instance Show Val where
 -- | Val の表示用関数
 showVal :: Val -> String
 showVal (VInt n)       = show n
+showVal (VFloat f)     = show f
 showVal (VBool True)   = "#t"
 showVal (VBool False)  = "#f"
 showVal (VPrim name _) = "<primitive:" ++ show name ++ ">"
@@ -64,3 +70,6 @@ showVal (VStr s)       = show s
 showVal (VData name []) = T.unpack name
 showVal (VData name vs) = "(" ++ T.unpack name ++ " " ++ unwords (map showVal vs) ++ ")"
 showVal (VMVar _)       = "<mvar>"
+showVal (VMatrix rows cols vec) = "#m(" ++ unwords (map showRow [0..rows-1]) ++ ")"
+  where
+    showRow r = "(" ++ unwords [show (vec VS.! (r * cols + c)) | c <- [0..cols-1]] ++ ")"

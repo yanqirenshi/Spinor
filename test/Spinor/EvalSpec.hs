@@ -164,3 +164,48 @@ spec = describe "Spinor.Eval (Evaluator)" $ do
     it "ネストしたパターン: (MyCons x xs) マッチ" $ do
       result <- evalMulti "(data MyList (MyCons a (MyList a)) (MyNil))\n(match (MyCons 1 (MyCons 2 MyNil)) ((MyCons x xs) x) (MyNil 0))"
       result `shouldBe` Right (VInt 1)
+
+  describe "行列操作 (Matrix)" $ do
+    it "matrix で 2x2 行列を生成" $ do
+      result <- evalStr "(matrix 2 2 '(1 2 3 4))"
+      case result of
+        Right (VMatrix 2 2 _) -> pure ()  -- 型が正しければOK
+        _ -> expectationFailure "2x2 行列が生成されるべき"
+
+    it "mdim で行列の次元を取得" $ do
+      result <- evalStr "(mdim (matrix 3 4 '(1 2 3 4 5 6 7 8 9 10 11 12)))"
+      result `shouldBe` Right (VList [VInt 3, VInt 4])
+
+    it "mref で要素を取得 (0,0)" $ do
+      result <- evalStr "(mref (matrix 2 2 '(1 2 3 4)) 0 0)"
+      result `shouldBe` Right (VFloat 1.0)
+
+    it "mref で要素を取得 (1,1)" $ do
+      result <- evalStr "(mref (matrix 2 2 '(1 2 3 4)) 1 1)"
+      result `shouldBe` Right (VFloat 4.0)
+
+    it "mref で要素を取得 (0,1)" $ do
+      result <- evalStr "(mref (matrix 2 3 '(1 2 3 4 5 6)) 0 2)"
+      result `shouldBe` Right (VFloat 3.0)
+
+    it "matrix で要素数不一致はエラー" $ do
+      result <- evalStr "(matrix 2 2 '(1 2 3))"
+      case result of
+        Left _ -> pure ()  -- エラーが発生すればOK
+        Right _ -> expectationFailure "要素数不一致でエラーになるべき"
+
+    it "mref で範囲外アクセスはエラー (行)" $ do
+      result <- evalStr "(mref (matrix 2 2 '(1 2 3 4)) 5 0)"
+      case result of
+        Left _ -> pure ()
+        Right _ -> expectationFailure "範囲外アクセスでエラーになるべき"
+
+    it "mref で範囲外アクセスはエラー (列)" $ do
+      result <- evalStr "(mref (matrix 2 2 '(1 2 3 4)) 0 5)"
+      case result of
+        Left _ -> pure ()
+        Right _ -> expectationFailure "範囲外アクセスでエラーになるべき"
+
+    it "matrix は VInt を VFloat に変換" $ do
+      result <- evalStr "(mref (matrix 1 1 '(42)) 0 0)"
+      result `shouldBe` Right (VFloat 42.0)

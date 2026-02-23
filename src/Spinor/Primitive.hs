@@ -7,6 +7,7 @@ module Spinor.Primitive
 import Data.Text (Text, pack)
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
+import qualified Data.Vector.Storable as VS
 
 import Spinor.Val (Val(..), Env)
 
@@ -35,6 +36,10 @@ primitiveBindings = Map.fromList
   , ("string=?",      VPrim "string=?"      primStringEq)
   , ("string->list",  VPrim "string->list"  primStringToList)
   , ("list->string",  VPrim "list->string"  primListToString)
+  -- 行列操作
+  , ("matrix", VPrim "matrix" primMatrix)
+  , ("mdim",   VPrim "mdim"   primMdim)
+  , ("mref",   VPrim "mref"   primMref)
   ]
 
 -- | 整数の二項演算をラップするヘルパー
@@ -165,3 +170,45 @@ primListToString args  = Left $ "list->string: 引数の数が不正です (期�
 
 tshow :: Show a => a -> Text
 tshow = pack . show
+
+-- ===========================================================================
+-- 行列操作プリミティブ
+-- ===========================================================================
+
+-- | matrix: 行列を生成する
+--   (matrix rows cols elements) -> VMatrix
+--   elements は VInt または VFloat のリスト (VInt は Double に変換)
+primMatrix :: [Val] -> Either Text Val
+primMatrix [VInt rows, VInt cols, VList elements]
+    | rows <= 0 || cols <= 0 = Left "matrix: 行数・列数は正の整数である必要があります"
+    | expectedLen /= actualLen = Left $ "matrix: 要素数が不正です (期待: "
+                                      <> tshow expectedLen <> ", 実際: "
+                                      <> tshow actualLen <> ")"
+    | otherwise = case traverse toDouble elements of
+        Just doubles -> Right $ VMatrix (fromIntegral rows) (fromIntegral cols) (VS.fromList doubles)
+        Nothing -> Left "matrix: 全ての要素は数値 (Int または Float) である必要があります"
+  where
+    expectedLen = fromIntegral (rows * cols) :: Int
+    actualLen = length elements
+    toDouble (VInt n)   = Just (fromIntegral n :: Double)
+    toDouble (VFloat f) = Just f
+    toDouble _          = Nothing
+primMatrix [_, _, _] = Left "matrix: (Int, Int, List) が必要です"
+primMatrix args = Left $ "matrix: 引数の数が不正です (期待: 3, 実際: " <> tshow (length args) <> ")"
+
+-- | mdim: 行列の次元を返す
+--   (mdim m) -> (rows cols)
+primMdim :: [Val] -> Either Text Val
+primMdim [VMatrix rows cols _] = Right $ VList [VInt (fromIntegral rows), VInt (fromIntegral cols)]
+primMdim [_] = Left "mdim: 行列が必要です"
+primMdim args = Left $ "mdim: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"
+
+-- | mref: 行列の要素を参照する (0-indexed)
+--   (mref m r c) -> Double
+primMref :: [Val] -> Either Text Val
+primMref [VMatrix rows cols vec, VInt r, VInt c]
+    | r < 0 || r >= fromIntegral rows = Left $ "mref: 行インデックスが範囲外です (0-" <> tshow (rows - 1) <> ")"
+    | c < 0 || c >= fromIntegral cols = Left $ "mref: 列インデックスが範囲外です (0-" <> tshow (cols - 1) <> ")"
+    | otherwise = Right $ VFloat (vec VS.! (fromIntegral r * cols + fromIntegral c))
+primMref [_, _, _] = Left "mref: (Matrix, Int, Int) が必要です"
+primMref args = Left $ "mref: 引数の数が不正です (期待: 3, 実際: " <> tshow (length args) <> ")"
