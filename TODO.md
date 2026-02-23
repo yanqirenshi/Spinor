@@ -160,9 +160,9 @@ Spinor の Dual Implementation を維持しつつ、科学技術計算の強力�
     - [x] **Primitives:** `m+`, `m*`, `transpose`, `inverse` の追加。
     - [x] **Compiler:** (将来タスク) C トランスパイル時に OpenBLAS などの外部ライブラリをリンクするビルドオプション (`spinor build --blas`) の追加。
 - [ ] **Step 46: OpenCL Foundation (GPGPU 基盤とカーネル構文)**
-    - [ ] Spinor 言語内で GPU カーネルを記述するための特殊形式・マクロ (`defkernel`) の設計。
-    - [ ] ホストメモリ (CPU) とデバイスメモリ (GPU) 間のデータ転送プリミティブ (`to-device`, `to-host`) の実装。
-    - [ ] **Interpreter:** Haskell の OpenCL バインディング (`OpenCL` パッケージ等) のプラットフォーム統合。
+    - [ ] **Data Model:** `Val` への `VCLContext`, `VCLBuffer`, `VCLKernel` の追加。
+    - [ ] **Primitives:** `cl-init`, `to-device`, `to-host`, `cl-compile` の実装。
+    - [ ] **Interpreter:** `OpenCL` パッケージによるプラットフォーム統合。
 - [ ] **Step 47: OpenCL Execution Pipeline (GPGPU 実行レイヤー)**
     - [ ] 定義したカーネルを GPU 側のワークグループにディスパッチして並列実行する関数 (`spawn-cl` 等) の実装。
     - [ ] **Compiler:** C トランスパイル時に、OpenCL の C API (`clEnqueueNDRangeKernel` 等) を呼び出してカーネルを起動する C コードの生成。
