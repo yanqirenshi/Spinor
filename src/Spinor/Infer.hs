@@ -482,4 +482,10 @@ baseTypeEnv = Map.fromList
   , ("to-host",    Scheme [] (TArr (TCon "CLContext") (TArr (TCon "CLBuffer") (TArr TInt (TArr TInt (TCon "Matrix"))))))
   , ("cl-compile", Scheme [] (TArr (TCon "CLContext") (TArr TStr (TArr TStr (TCon "CLKernel")))))
   , ("cl-enqueue", Scheme ["a"] (TArr (TCon "CLContext") (TArr (TCon "CLKernel") (TArr (TList TInt) (TArr (TList TInt) (TVar "a"))))))
+    -- OpenGL / GLFW
+  , ("gl-init",                Scheme [] (TArr TInt (TArr TInt (TArr TStr (TCon "Window")))))
+  , ("gl-window-should-close", Scheme [] (TArr (TCon "Window") TBool))
+  , ("gl-swap-buffers",        Scheme [] (TArr (TCon "Window") (TCon "Nil")))
+  , ("gl-clear",               Scheme [] (TCon "Nil"))
+  , ("gl-draw-points",         Scheme [] (TArr (TCon "Matrix") (TCon "Nil")))
   ]

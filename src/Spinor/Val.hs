@@ -12,6 +12,7 @@ import qualified Data.Map.Strict as Map
 import Control.Concurrent.MVar (MVar)
 import qualified Data.Vector.Storable as VS
 import Foreign.Ptr (Ptr)
+import qualified Graphics.UI.GLFW as GLFW
 
 import Spinor.Syntax (Expr)
 
@@ -39,6 +40,7 @@ data Val
   | VCLContext (Ptr ()) (Ptr ())               -- OpenCL コンテキスト (Context, CommandQueue)
   | VCLBuffer  (Ptr ()) Int                    -- OpenCL バッファ (Mem, 要素数)
   | VCLKernel  (Ptr ()) Text                   -- OpenCL カーネル (Kernel, カーネル名)
+  | VWindow    GLFW.Window                     -- GLFW ウィンドウハンドル
 
 -- | テスト用の構造的等値比較
 --   VPrim, VFunc, VMacro, VMVar は関数/参照を含むため常に不等
@@ -56,6 +58,7 @@ instance Eq Val where
   VCLContext c1 q1 == VCLContext c2 q2 = c1 == c2 && q1 == q2
   VCLBuffer m1 s1  == VCLBuffer m2 s2  = m1 == m2 && s1 == s2
   VCLKernel k1 n1  == VCLKernel k2 n2  = k1 == k2 && n1 == n2
+  VWindow w1       == VWindow w2       = w1 == w2
   _         == _         = False
 
 instance Show Val where
@@ -83,3 +86,4 @@ showVal (VMatrix rows cols vec) = "#m(" ++ unwords (map showRow [0..rows-1]) ++ 
 showVal (VCLContext _ _)  = "<CLContext>"
 showVal (VCLBuffer _ n)   = "<CLBuffer:size=" ++ show n ++ ">"
 showVal (VCLKernel _ name) = "<CLKernel:" ++ T.unpack name ++ ">"
+showVal (VWindow _)        = "<Window>"

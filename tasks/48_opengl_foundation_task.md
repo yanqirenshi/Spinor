@@ -49,7 +49,64 @@ REPL またはファイルで以下のコードを実行し、ウィンドウが
 実装完了後、**このファイル自体を編集して**、以下のセクションを末尾に追記してください。
 
 ### 実装方針
-(GLFW の初期化手順や、VMatrix から頂点データへの変換効率化について)
+
+**GLFW 初期化手順:**
+- `primGLInit` で `GLFW.init` → `GLFW.createWindow` → `GLFW.makeContextCurrent` の順に実行
+- GLFW の初期化失敗時は `GLFW.terminate` を呼ばず即座にエラーを返す
+- ウィンドウ作成失敗時は `GLFW.terminate` で後始末してからエラーを返す
+
+**VMatrix から頂点データへの変換:**
+- `VMatrix` の `Data.Vector.Storable` を直接インデックスアクセスし、各行を `Vertex2 x y` (Nx2) または `Vertex3 x y z` (Nx3) に変換
+- `renderPrimitive Points` ブロック内で `mapM_` による行ループで頂点を順次描画
+- 新たなメモリ確保は不要で、元の Vector からの読み出しのみ
+
+**IO と純粋関数の橋渡し:**
+- OpenCL プリミティブと同様に `unsafePerformIO` + `try` で IO アクションを `Either Text Val` に変換
+- GLFW/OpenGL の各操作は IO モナド内で実行
+
+**型環境の更新:**
+- Task 47 での教訓を活かし、`baseTypeEnv` に OpenGL プリミティブの型シグネチャも同時に追加
+- REPL で `gl-init` 等が型推論エラーにならないよう対応済み
 
 ### 実装内容
-(変更したファイルの一覧、追加した主要な関数の説明など)
+
+**変更ファイル一覧:**
+
+1. **spinor.cabal**
+   - `GLFW-b >= 3.3 && < 4` と `OpenGL >= 3.0 && < 4` を `build-depends` に追加
+   - `Spinor.GL` を `exposed-modules` に追加
+
+2. **src/Spinor/Val.hs**
+   - `VWindow GLFW.Window` を `Val` 型に追加
+   - `import qualified Graphics.UI.GLFW as GLFW` を追加
+   - `showVal (VWindow _) = "<Window>"` を追加
+   - `Eq` インスタンスに `VWindow w1 == VWindow w2 = w1 == w2` を追加 (GLFW.Window は Eq インスタンスを持つ)
+
+3. **src/Spinor/GL.hs** (新規作成)
+   - `glBindings`: OpenGL プリミティブの環境辞書
+   - `primGLInit` (`gl-init`): GLFW 初期化 + ウィンドウ作成 + OpenGL コンテキスト設定
+   - `primGLWindowShouldClose` (`gl-window-should-close`): ウィンドウ閉じフラグの確認
+   - `primGLSwapBuffers` (`gl-swap-buffers`): バッファスワップ + イベントポーリング
+   - `primGLClear` (`gl-clear`): カラーバッファのクリア
+   - `primGLDrawPoints` (`gl-draw-points`): Nx2/Nx3 行列から GL_POINTS 描画
+
+4. **src/Spinor/Primitive.hs**
+   - `Spinor.GL (glBindings)` をインポートし、`Map.unions [corePrimitives, gpgpuBindings, glBindings]` で統合
+
+5. **src/Spinor/Server.hs**
+   - `formatValForDisassembly`, `valContentText`, `valTitle`, `valTypeName` に `VWindow` のパターンマッチを追加
+
+6. **src/Spinor/Infer.hs**
+   - `baseTypeEnv` に `gl-init`, `gl-window-should-close`, `gl-swap-buffers`, `gl-clear`, `gl-draw-points` の型シグネチャを追加
+
+7. **src/Spinor/Lsp/Docs.hs**
+   - 5 つの OpenGL プリミティブ (`gl-init`, `gl-window-should-close`, `gl-swap-buffers`, `gl-clear`, `gl-draw-points`) の CLHS 形式ドキュメントを追加
+
+**システム依存関係 (WSL2/Linux):**
+- `libglfw3-dev`, `libgl1-mesa-dev` (事前インストール済み)
+- `libxxf86vm-dev`, `libxrandr-dev`, `libxinerama-dev`, `libxcursor-dev`, `libxi-dev` (bindings-GLFW のビルドに必要)
+
+**動作確認 (WSL2 環境):**
+- `cabal build`: 警告なしでビルド成功
+- `cabal test`: 全 152 テストパス (0 failures)
+- ※OpenGL ランタイムテスト (ウィンドウ表示・点描画) は X11/Wayland ディスプレイ環境で別途実施が必要

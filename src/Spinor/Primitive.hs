@@ -14,10 +14,11 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import Spinor.Val (Val(..), Env)
 import Spinor.GPGPU (gpgpuBindings)
+import Spinor.GL (glBindings)
 
 -- | 初期環境: プリミティブ関数を束縛した Env
 primitiveBindings :: Env
-primitiveBindings = Map.union corePrimitives gpgpuBindings
+primitiveBindings = Map.unions [corePrimitives, gpgpuBindings, glBindings]
 
 corePrimitives :: Env
 corePrimitives = Map.fromList

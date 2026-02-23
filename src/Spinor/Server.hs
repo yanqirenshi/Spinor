@@ -1090,6 +1090,7 @@ formatValForDisassembly (VMatrix rows cols _) = T.unlines
 formatValForDisassembly (VCLContext _ _) = "; OpenCL Context"
 formatValForDisassembly (VCLBuffer _ n) = "; OpenCL Buffer (size=" <> T.pack (show n) <> ")"
 formatValForDisassembly (VCLKernel _ name) = "; OpenCL Kernel: " <> name
+formatValForDisassembly (VWindow _) = "; GLFW Window"
 
 --------------------------------------------------------------------------------
 -- Inspector Helpers
@@ -1175,6 +1176,7 @@ valContentText (VMatrix rows cols _) = T.unlines
 valContentText (VCLContext _ _) = "Type: OpenCL Context"
 valContentText (VCLBuffer _ n) = "Size: " <> T.pack (show n) <> " elements"
 valContentText (VCLKernel _ name) = "Kernel: " <> name
+valContentText (VWindow _) = "Type: GLFW Window"
 
 -- | 値のタイトルを取得
 valTitle :: Val -> Text
@@ -1195,6 +1197,7 @@ valTitle (VMatrix rows cols _) = "<matrix " <> T.pack (show rows) <> "x" <> T.pa
 valTitle (VCLContext _ _) = "<CLContext>"
 valTitle (VCLBuffer _ n) = "<CLBuffer:size=" <> T.pack (show n) <> ">"
 valTitle (VCLKernel _ name) = "<CLKernel:" <> name <> ">"
+valTitle (VWindow _) = "<Window>"
 
 -- | 値の型名を取得
 valTypeName :: Val -> Text
@@ -1214,6 +1217,7 @@ valTypeName (VMatrix _ _ _) = "Matrix"
 valTypeName (VCLContext _ _) = "CLContext"
 valTypeName (VCLBuffer _ _) = "CLBuffer"
 valTypeName (VCLKernel _ _) = "CLKernel"
+valTypeName (VWindow _) = "Window"
 
 --------------------------------------------------------------------------------
 -- Macrostep Helpers

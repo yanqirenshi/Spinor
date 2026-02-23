@@ -865,6 +865,136 @@ primitiveDocs = Map.fromList
       , docSeeAlso = ["cl-init", "cl-compile", "to-device", "to-host"]
       , docNotes = "現在はブロッキング実行のみ対応しています。"
       })
+
+  -- ========================================
+  -- OpenGL / GLFW (Visualization)
+  -- ========================================
+  , ("gl-init", DocEntry
+      { docSignature = "(Int, Int, String) -> Window"
+      , docDescription = "GLFW を初期化し、指定されたサイズとタイトルでウィンドウを作成します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "gl-init"
+      , docSyntax = "(gl-init width height title)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `width` -- ウィンドウの幅 (ピクセル)"
+          , "- `height` -- ウィンドウの高さ (ピクセル)"
+          , "- `title` -- ウィンドウのタイトル (文字列)"
+          , "- 戻り値: GLFW ウィンドウハンドル (`Window`)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(def win (gl-init 640 480 \"My Window\"))"
+          , "win  ; => <Window>"
+          , "```"
+          ]
+      , docSideEffects = "GLFW を初期化し、OpenGL コンテキスト付きのウィンドウを作成します。"
+      , docAffectedBy = "ディスプレイ環境に依存します。"
+      , docExceptionalSituations = T.unlines
+          [ "- GLFW の初期化に失敗した場合、エラーを返します。"
+          , "- ウィンドウの作成に失敗した場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["gl-window-should-close", "gl-swap-buffers", "gl-clear", "gl-draw-points"]
+      , docNotes = ""
+      })
+
+  , ("gl-window-should-close", DocEntry
+      { docSignature = "(Window) -> Bool"
+      , docDescription = "ウィンドウの閉じるボタンが押されたか、または終了フラグがセットされているかを確認します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "gl-window-should-close"
+      , docSyntax = "(gl-window-should-close win)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `win` -- GLFW ウィンドウ"
+          , "- 戻り値: 閉じるべきなら `#t`、そうでなければ `#f`"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(if (not (gl-window-should-close win))"
+          , "    (begin (gl-clear) (gl-swap-buffers win))"
+          , "    (print \"done\"))"
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "ユーザーのウィンドウ操作 (閉じるボタン) に依存します。"
+      , docExceptionalSituations = "引数が Window でない場合、エラーを返します。"
+      , docSeeAlso = ["gl-init", "gl-swap-buffers"]
+      , docNotes = ""
+      })
+
+  , ("gl-swap-buffers", DocEntry
+      { docSignature = "(Window) -> Nil"
+      , docDescription = "フロントバッファとバックバッファを入れ替え、描画内容を画面に反映させます。同時に GLFW のイベントをポーリングします。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "gl-swap-buffers"
+      , docSyntax = "(gl-swap-buffers win)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `win` -- GLFW ウィンドウ"
+          , "- 戻り値: `nil`"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(gl-clear)"
+          , "(gl-draw-points pts)"
+          , "(gl-swap-buffers win)"
+          , "```"
+          ]
+      , docSideEffects = "バッファスワップとイベントポーリングを行います。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "引数が Window でない場合、エラーを返します。"
+      , docSeeAlso = ["gl-init", "gl-clear", "gl-draw-points"]
+      , docNotes = ""
+      })
+
+  , ("gl-clear", DocEntry
+      { docSignature = "() -> Nil"
+      , docDescription = "カラーバッファをクリアします (デフォルトは黒)。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "gl-clear"
+      , docSyntax = "(gl-clear)"
+      , docArgumentsAndValues = T.unlines
+          [ "- 引数なし"
+          , "- 戻り値: `nil`"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(gl-clear)  ; 画面を黒でクリア"
+          , "```"
+          ]
+      , docSideEffects = "OpenGL のカラーバッファをクリアします。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "None."
+      , docSeeAlso = ["gl-draw-points", "gl-swap-buffers"]
+      , docNotes = ""
+      })
+
+  , ("gl-draw-points", DocEntry
+      { docSignature = "(Matrix) -> Nil"
+      , docDescription = "Nx2 または Nx3 の行列を受け取り、各行を頂点座標として画面上に点 (GL_POINTS) を描画します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "gl-draw-points"
+      , docSyntax = "(gl-draw-points matrix)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `matrix` -- 頂点座標の行列 (Nx2 または Nx3)"
+          , "    - Nx2: 各行が `(x y)` の 2D 座標"
+          , "    - Nx3: 各行が `(x y z)` の 3D 座標"
+          , "- 戻り値: `nil`"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; 3点を描画"
+          , "(def pts (matrix 3 2 '(0.0 0.0  0.5 0.5  -0.5 -0.5)))"
+          , "(gl-draw-points pts)"
+          , "```"
+          ]
+      , docSideEffects = "OpenGL の固定機能パイプラインで点を描画します。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = T.unlines
+          [ "- 引数が Matrix でない場合、エラーを返します。"
+          , "- 列数が 2 または 3 でない場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["gl-clear", "gl-swap-buffers", "matrix"]
+      , docNotes = "座標系は OpenGL 標準の正規化デバイス座標系 (-1.0 ～ 1.0) です。"
+      })
   ]
 
 lookupDoc :: Text -> Maybe DocEntry
