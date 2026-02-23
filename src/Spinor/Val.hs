@@ -11,6 +11,7 @@ import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 import Control.Concurrent.MVar (MVar)
 import qualified Data.Vector.Storable as VS
+import Foreign.Ptr (Ptr)
 
 import Spinor.Syntax (Expr)
 
@@ -35,6 +36,9 @@ data Val
   | VData Text [Val]                           -- データコンストラクタ (名前, フィールド値)
   | VMVar (MVar Val)                           -- 同期変数 (MVar)
   | VMatrix Int Int (VS.Vector Double)         -- 行列 (行数, 列数, データ)
+  | VCLContext (Ptr ()) (Ptr ())               -- OpenCL コンテキスト (Context, CommandQueue)
+  | VCLBuffer  (Ptr ()) Int                    -- OpenCL バッファ (Mem, 要素数)
+  | VCLKernel  (Ptr ()) Text                   -- OpenCL カーネル (Kernel, カーネル名)
 
 -- | テスト用の構造的等値比較
 --   VPrim, VFunc, VMacro, VMVar は関数/参照を含むため常に不等
@@ -49,6 +53,9 @@ instance Eq Val where
   VNil      == VNil      = True
   VMVar _   == VMVar _   = False  -- MVar は参照のため常に不等
   VMatrix r1 c1 v1 == VMatrix r2 c2 v2 = r1 == r2 && c1 == c2 && v1 == v2
+  VCLContext c1 q1 == VCLContext c2 q2 = c1 == c2 && q1 == q2
+  VCLBuffer m1 s1  == VCLBuffer m2 s2  = m1 == m2 && s1 == s2
+  VCLKernel k1 n1  == VCLKernel k2 n2  = k1 == k2 && n1 == n2
   _         == _         = False
 
 instance Show Val where
@@ -73,3 +80,6 @@ showVal (VMVar _)       = "<mvar>"
 showVal (VMatrix rows cols vec) = "#m(" ++ unwords (map showRow [0..rows-1]) ++ ")"
   where
     showRow r = "(" ++ unwords [show (vec VS.! (r * cols + c)) | c <- [0..cols-1]] ++ ")"
+showVal (VCLContext _ _)  = "<CLContext>"
+showVal (VCLBuffer _ n)   = "<CLBuffer:size=" ++ show n ++ ">"
+showVal (VCLKernel _ name) = "<CLKernel:" ++ T.unpack name ++ ">"

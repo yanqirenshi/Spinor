@@ -695,6 +695,127 @@ primitiveDocs = Map.fromList
       , docSeeAlso = ["m*", "transpose", "matrix"]
       , docNotes = "内部的に hmatrix (LAPACK) を使用しています。"
       })
+
+  -- ========================================
+  -- OpenCL / GPGPU
+  -- ========================================
+  , ("cl-init", DocEntry
+      { docSignature = "() -> CLContext"
+      , docDescription = "OpenCL プラットフォームとデバイスをスキャンし、コンテキストとコマンドキューを初期化します。GPU を優先し、なければ CPU にフォールバックします。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "cl-init"
+      , docSyntax = "(cl-init)"
+      , docArgumentsAndValues = T.unlines
+          [ "- 引数なし"
+          , "- 戻り値: OpenCL コンテキスト (`CLContext`)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(def ctx (cl-init))"
+          , "ctx  ; => <CLContext>"
+          , "```"
+          ]
+      , docSideEffects = "OpenCL プラットフォームの初期化を行います。"
+      , docAffectedBy = "システムにインストールされた OpenCL ドライバとデバイスに依存します。"
+      , docExceptionalSituations = T.unlines
+          [ "- OpenCL プラットフォームが見つからない場合、エラーを返します。"
+          , "- 利用可能なデバイス (GPU/CPU) が見つからない場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["to-device", "to-host", "cl-compile"]
+      , docNotes = "Haskell の OpenCL パッケージ (`Control.Parallel.OpenCL`) を使用しています。"
+      })
+
+  , ("to-device", DocEntry
+      { docSignature = "(CLContext, Matrix) -> CLBuffer"
+      , docDescription = "行列データを GPU 側のバッファに転送します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "to-device"
+      , docSyntax = "(to-device ctx matrix)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `ctx` -- OpenCL コンテキスト"
+          , "- `matrix` -- CPU 側の行列データ (`VMatrix`)"
+          , "- 戻り値: GPU バッファ (`CLBuffer`)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(def ctx (cl-init))"
+          , "(def m (matrix 2 2 '(1 2 3 4)))"
+          , "(def buf (to-device ctx m))  ; => <CLBuffer:size=4>"
+          , "```"
+          ]
+      , docSideEffects = "GPU メモリを確保し、データを転送します。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = T.unlines
+          [ "- 第1引数が CLContext でない場合、エラーを返します。"
+          , "- 第2引数が Matrix でない場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["to-host", "cl-init", "matrix"]
+      , docNotes = ""
+      })
+
+  , ("to-host", DocEntry
+      { docSignature = "(CLContext, CLBuffer, Int, Int) -> Matrix"
+      , docDescription = "GPU バッファのデータを CPU に読み戻し、指定された次元の行列を生成します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "to-host"
+      , docSyntax = "(to-host ctx buffer rows cols)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `ctx` -- OpenCL コンテキスト"
+          , "- `buffer` -- GPU バッファ (`CLBuffer`)"
+          , "- `rows` -- 行数"
+          , "- `cols` -- 列数"
+          , "- 戻り値: CPU 側の行列 (`Matrix`)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(def ctx (cl-init))"
+          , "(def m (matrix 2 2 '(1 2 3 4)))"
+          , "(def buf (to-device ctx m))"
+          , "(to-host ctx buf 2 2)  ; => #m((1.0 2.0) (3.0 4.0))"
+          , "```"
+          ]
+      , docSideEffects = "GPU からデータを読み戻します。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = T.unlines
+          [ "- バッファサイズと指定された次元 (`rows * cols`) が不一致の場合、エラーを返します。"
+          , "- 第1引数が CLContext でない場合、エラーを返します。"
+          , "- 第2引数が CLBuffer でない場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["to-device", "cl-init", "matrix"]
+      , docNotes = ""
+      })
+
+  , ("cl-compile", DocEntry
+      { docSignature = "(CLContext, String, String) -> CLKernel"
+      , docDescription = "OpenCL C のソースコードをコンパイルし、指定されたカーネル関数へのハンドルを取得します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "cl-compile"
+      , docSyntax = "(cl-compile ctx source kernel-name)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `ctx` -- OpenCL コンテキスト"
+          , "- `source` -- OpenCL C ソースコード (文字列)"
+          , "- `kernel-name` -- エントリポイントとなるカーネル関数名 (文字列)"
+          , "- 戻り値: コンパイル済みカーネル (`CLKernel`)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(def ctx (cl-init))"
+          , "(def k (cl-compile ctx"
+          , "  \"__kernel void add(__global double* a, __global double* b, __global double* c, int n) { int i = get_global_id(0); if (i < n) c[i] = a[i] + b[i]; }\""
+          , "  \"add\"))"
+          , "k  ; => <CLKernel:add>"
+          , "```"
+          ]
+      , docSideEffects = "OpenCL プログラムのコンパイルを行います。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = T.unlines
+          [ "- ソースコードのコンパイルに失敗した場合、ビルドログ付きのエラーを返します。"
+          , "- 指定されたカーネル名が見つからない場合、エラーを返します。"
+          , "- 第1引数が CLContext でない場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["cl-init", "to-device", "to-host"]
+      , docNotes = "コンパイルエラー時はビルドログが含まれます。"
+      })
   ]
 
 lookupDoc :: Text -> Maybe DocEntry

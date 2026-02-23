@@ -36,7 +36,65 @@ OpenCL はハードウェア依存のため、以下の REPL 操作で手動検�
 実装完了後、**このファイル自体を編集して**、以下のセクションを末尾に追記してください。
 
 ### 実装方針
-(OpenCL デバイス選択のロジックや、コンパイルエラーのトラップ方法について)
+
+**Hackage の `OpenCL` パッケージの不採用:**
+- Hackage 上の `OpenCL` パッケージ (1.0.3.4) は GHC 9.6.6 と互換性がなく、`Control.Parallel.OpenCL.Memory` モジュールでコンパイルエラー (`Operator applied to too few arguments: !`) が発生する
+- そのため、`extra-libraries: OpenCL` で OpenCL C ライブラリを直接リンクし、`Spinor.OpenCL.Raw` モジュールで必要な FFI バインディングを自前で実装する方針とした
+
+**FFI バインディング設計:**
+- `Spinor.OpenCL.Raw` モジュールに、OpenCL C API の最小限のバインディングを定義
+- 低レベルの `foreign import ccall` と、エラーハンドリング込みの Haskell ラッパー関数を分離
+- すべてのラッパー関数が `IO (Either Text ...)` を返す設計とし、OpenCL のエラーコードを Spinor のランタイムエラーに変換
+
+**デバイス選択ロジック:**
+- `cl-init` は最初のプラットフォームを使用
+- GPU (`CL_DEVICE_TYPE_GPU`) を優先的に探索し、見つからなければ CPU (`CL_DEVICE_TYPE_CPU`) にフォールバック
+- デバイスが見つからない場合は明確なエラーメッセージを返す
+
+**コンパイルエラーのトラップ:**
+- `cl-compile` で `clBuildProgram` が失敗した場合、`clGetProgramBuildInfo` (CL_PROGRAM_BUILD_LOG = 0x1183) でビルドログを取得
+- 取得したビルドログをエラーメッセージに含めて返す
+
+**IO と純粋関数の橋渡し:**
+- プリミティブ関数は `[Val] -> Either Text Val` のシグネチャを持つため、`unsafePerformIO` で IO アクションをラップ
+- `try` で例外をキャッチし、Left に変換
 
 ### 実装内容
-(変更したファイルの一覧、追加した主要な関数の説明など)
+
+**変更ファイル一覧:**
+
+1. **spinor.cabal**
+   - `extra-libraries: OpenCL` を追加 (直接 C ライブラリをリンク)
+   - `Spinor.GPGPU` と `Spinor.OpenCL.Raw` を `exposed-modules` に追加
+
+2. **src/Spinor/OpenCL/Raw.hs** (新規作成)
+   - OpenCL C API への最小限の FFI バインディング
+   - 型定義: `CLPlatformID`, `CLDeviceID`, `CLContext`, `CLCommandQueue`, `CLMem`, `CLProgram`, `CLKernel` (すべて `Ptr ()`)
+   - ラッパー関数: `clGetPlatformIDs`, `clGetDeviceIDs`, `clCreateContext`, `clCreateCommandQueue`, `clCreateBuffer`, `clEnqueueWriteBuffer`, `clEnqueueReadBuffer`, `clFinish`, `clCreateProgramWithSource`, `clBuildProgram`, `clGetProgramBuildLog`, `clCreateKernel`, `clReleaseProgram`, `clGetContextDevices`
+
+3. **src/Spinor/GPGPU.hs** (新規作成)
+   - `gpgpuBindings`: OpenCL プリミティブの環境辞書
+   - `primCLInit` (`cl-init`): プラットフォーム/デバイス探索、コンテキスト/キュー初期化
+   - `primToDevice` (`to-device`): VMatrix → GPU バッファ転送
+   - `primToHost` (`to-host`): GPU バッファ → VMatrix 読み戻し (サイズ検証付き)
+   - `primCLCompile` (`cl-compile`): ソースコンパイル + カーネル取得 (ビルドログ付きエラー)
+
+4. **src/Spinor/Val.hs**
+   - `VCLContext (Ptr ()) (Ptr ())` 追加 (Context, CommandQueue)
+   - `VCLBuffer (Ptr ()) Int` 追加 (Mem, 要素数)
+   - `VCLKernel (Ptr ()) Text` 追加 (Kernel, カーネル名)
+   - `showVal`, `Eq` インスタンスを拡張
+
+5. **src/Spinor/Primitive.hs**
+   - `Spinor.GPGPU.gpgpuBindings` をインポートし、`Map.union` で統合
+
+6. **src/Spinor/Server.hs**
+   - `formatValForDisassembly`, `valContentText`, `valTitle`, `valTypeName` に `VCLContext`, `VCLBuffer`, `VCLKernel` のパターンマッチを追加
+
+7. **src/Spinor/Lsp/Docs.hs**
+   - `cl-init`, `to-device`, `to-host`, `cl-compile` の CLHS 形式ドキュメントを追加
+
+**動作確認 (WSL2 環境):**
+- `cabal build`: 警告なしでビルド成功
+- `cabal test`: 全152テストパス (0 failures)
+- ※OpenCL ランタイムテスト (REPL による手動検証) は GPU/CPU OpenCL ドライバがインストールされた環境で別途実施が必要

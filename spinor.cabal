@@ -19,6 +19,8 @@ library
     Spinor.DocGen
     Spinor.Lsp.Docs
     Spinor.Lsp.Server
+    Spinor.GPGPU
+    Spinor.OpenCL.Raw
   build-depends:
     base       >= 4.14 && < 5,
     containers >= 0.6  && < 1,
@@ -35,6 +37,7 @@ library
     stm        >= 2.5  && < 3,
     vector     >= 0.12 && < 1,
     hmatrix    >= 0.20 && < 1
+  extra-libraries:  OpenCL
   default-language: Haskell2010
   ghc-options:      -Wall
 
