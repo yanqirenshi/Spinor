@@ -35,6 +35,8 @@ compileProgram exprs =
         , "#include <stdbool.h>"
         , "#include \"spinor.h\""
         , ""
+        , glIncludes
+        , glHelpers
         , funDefs
         , "int main(void) {"
         , mainStmts
@@ -190,6 +192,18 @@ compileExpr (EList [ESym "append-file", path, content]) =
 compileExpr (EList [ESym "file-exists?", path]) =
     "sp_file_exists(" <> compileExpr path <> ")"
 
+-- OpenGL プリミティブ
+compileExpr (EList [ESym "gl-init", w, h, title]) =
+    "sp_gl_init(" <> compileExpr w <> ", " <> compileExpr h <> ", " <> compileExpr title <> ")"
+compileExpr (EList [ESym "gl-clear"]) =
+    "sp_gl_clear()"
+compileExpr (EList [ESym "gl-draw-points", m]) =
+    "sp_gl_draw_points(" <> compileExpr m <> ")"
+compileExpr (EList [ESym "gl-swap-buffers", win]) =
+    "sp_gl_swap_buffers(" <> compileExpr win <> ")"
+compileExpr (EList [ESym "gl-window-should-close", win]) =
+    "sp_gl_window_should_close(" <> compileExpr win <> ")"
+
 -- 変数参照 (引数など)
 compileExpr (ESym s) = mangle s
 
@@ -202,10 +216,93 @@ compileExpr (EList (ESym fname : args))
   where
     primitives = ["+", "-", "*", "/", "=", "<", ">", "<=", ">=", "if", "defun",
                   "string-append", "string-length", "substring", "string=?",
-                  "read-file", "write-file", "append-file", "file-exists?"]
+                  "read-file", "write-file", "append-file", "file-exists?",
+                  "gl-init", "gl-clear", "gl-draw-points",
+                  "gl-swap-buffers", "gl-window-should-close"]
 
 -- 未実装のパターン
 compileExpr other = "sp_make_nil() /* TODO: " <> T.pack (show other) <> " */"
+
+-- ===========================================================================
+-- OpenGL / WebGL (WASM) 対応
+-- ===========================================================================
+
+-- | #ifdef __EMSCRIPTEN__ による条件分岐インクルード
+glIncludes :: CCode
+glIncludes = T.unlines
+    [ "#ifdef __EMSCRIPTEN__"
+    , "#include <SDL2/SDL.h>"
+    , "#include <GLES2/gl2.h>"
+    , "#else"
+    , "#include <GLFW/glfw3.h>"
+    , "#include <GL/gl.h>"
+    , "#endif"
+    ]
+
+-- | OpenGL ヘルパー関数 (ネイティブ/WASM 両対応)
+glHelpers :: CCode
+glHelpers = T.unlines
+    [ "/* --- OpenGL helpers (native / WASM) --- */"
+    , "#ifdef __EMSCRIPTEN__"
+    , "static SDL_Window*   _sp_gl_window  = NULL;"
+    , "static SDL_GLContext  _sp_gl_context = NULL;"
+    , "#else"
+    , "static GLFWwindow*   _sp_gl_window  = NULL;"
+    , "#endif"
+    , ""
+    , "SpObject* sp_gl_init(SpObject* w, SpObject* h, SpObject* title) {"
+    , "#ifdef __EMSCRIPTEN__"
+    , "    SDL_Init(SDL_INIT_VIDEO);"
+    , "    _sp_gl_window = SDL_CreateWindow(title->value.str,"
+    , "        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,"
+    , "        (int)w->value.integer, (int)h->value.integer, SDL_WINDOW_OPENGL);"
+    , "    _sp_gl_context = SDL_GL_CreateContext(_sp_gl_window);"
+    , "#else"
+    , "    glfwInit();"
+    , "    _sp_gl_window = glfwCreateWindow((int)w->value.integer,"
+    , "        (int)h->value.integer, title->value.str, NULL, NULL);"
+    , "    glfwMakeContextCurrent(_sp_gl_window);"
+    , "#endif"
+    , "    return sp_make_bool(true);"
+    , "}"
+    , ""
+    , "SpObject* sp_gl_clear(void) {"
+    , "    glClear(GL_COLOR_BUFFER_BIT);"
+    , "    return sp_make_nil();"
+    , "}"
+    , ""
+    , "SpObject* sp_gl_swap_buffers(SpObject* win) {"
+    , "    (void)win;"
+    , "#ifdef __EMSCRIPTEN__"
+    , "    SDL_GL_SwapWindow(_sp_gl_window);"
+    , "#else"
+    , "    glfwSwapBuffers(_sp_gl_window);"
+    , "    glfwPollEvents();"
+    , "#endif"
+    , "    return sp_make_nil();"
+    , "}"
+    , ""
+    , "SpObject* sp_gl_window_should_close(SpObject* win) {"
+    , "    (void)win;"
+    , "#ifdef __EMSCRIPTEN__"
+    , "    SDL_Event event;"
+    , "    while (SDL_PollEvent(&event)) {"
+    , "        if (event.type == SDL_QUIT) return sp_make_bool(true);"
+    , "    }"
+    , "    return sp_make_bool(false);"
+    , "#else"
+    , "    return sp_make_bool(glfwWindowShouldClose(_sp_gl_window));"
+    , "#endif"
+    , "}"
+    , ""
+    , "SpObject* sp_gl_draw_points(SpObject* data) {"
+    , "    (void)data;"
+    , "    glBegin(GL_POINTS);"
+    , "    /* TODO: extract vertex data from SpObject matrix */"
+    , "    glEnd();"
+    , "    return sp_make_nil();"
+    , "}"
+    ]
 
 -- | C 文字列リテラルのエスケープ
 escapeC :: Text -> Text

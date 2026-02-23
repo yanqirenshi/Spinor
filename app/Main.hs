@@ -48,6 +48,7 @@ helpMessage = unlines
   , "  (default)              Start the interactive REPL"
   , "  <file>                 Execute a Spinor file"
   , "  build <file>           Compile to native binary (via C + GCC)"
+  , "  build <file> --wasm   Compile to WASM (via C + Emscripten)"
   , "  compile <file>         Transpile to C source code only"
   , "  server [--port <n>]    Start Swank server for SLY/SLIME (default: 4005)"
   , "  lsp                    Start LSP server (for editor integration)"
@@ -77,7 +78,9 @@ main = do
     ["--version"]       -> putStrLn $ "spinor " ++ version
     ["-v"]              -> putStrLn $ "spinor " ++ version
     ["compile", file]   -> compileMode file
-    ["build", file]     -> buildMode file
+    ["build", file]              -> buildMode file
+    ["build", file, "--wasm"]    -> buildWasmMode file
+    ["build", "--wasm", file]    -> buildWasmMode file
     ("server" : rest)   -> serverMode rest
     ["lsp"]             -> lspMode
     ["docgen"]          -> generateDocs
@@ -199,6 +202,67 @@ findGcc = do
     findFirst candidates
   where
     findFirst [] = pure "gcc"  -- フォールバック
+    findFirst (c:cs) = do
+      exists <- doesFileExist c
+      if exists then pure c else findFirst cs
+
+-- | WASM ビルドモード: .spin ファイルから Emscripten で WASM を生成
+buildWasmMode :: FilePath -> IO ()
+buildWasmMode file = do
+  -- 1. パス設定
+  let baseName = takeBaseName file
+      cFile = replaceExtension file ".c"
+      outFile = baseName <> ".html"
+      runtimeSrc = "runtime/spinor.c"
+
+  -- 2. Cコード生成
+  putStrLn $ "Compiling " <> file <> " to " <> cFile <> " (WASM target)..."
+  content <- readFileUtf8 file
+  case parseFile content of
+    Left err -> do
+      putStrLn $ "Parse error: " ++ err
+      exitFailure
+    Right exprs -> do
+      let cCode = compileProgram exprs
+      TIO.writeFile cFile cCode
+
+      -- 3. emcc 呼び出し
+      emccPath <- findEmcc
+      putStrLn $ "Building " <> outFile <> " with " <> emccPath <> "..."
+      let emccFlags = [ "-Iruntime"
+                      , "-s", "USE_SDL=2"
+                      , "-s", "LEGACY_GL_EMULATION=1"
+                      , "-o", outFile
+                      , cFile
+                      , runtimeSrc
+                      ]
+      (exitCode, out, err) <- readProcessWithExitCode emccPath emccFlags ""
+      case exitCode of
+        ExitSuccess -> do
+          -- 4. クリーンアップと完了メッセージ
+          doesFileExist cFile >>= \exists ->
+            if exists then removeFile cFile else pure ()
+          putStrLn $ "WASM build successful. Output: " <> outFile
+          exitSuccess
+        _ -> do
+          putStrLn "WASM build failed. Emscripten output:"
+          putStrLn out
+          putStrLn err
+          exitFailure
+
+-- | emcc (Emscripten) を探す
+findEmcc :: IO FilePath
+findEmcc = do
+    let candidates =
+          [ "emcc"  -- PATH にあればこれを使う
+          , "/usr/lib/emscripten/emcc"
+          , "/usr/local/bin/emcc"
+          ]
+    findFirst candidates
+  where
+    findFirst [] = do
+      putStrLn "Warning: emcc not found in PATH. Using 'emcc' as fallback."
+      pure "emcc"
     findFirst (c:cs) = do
       exists <- doesFileExist c
       if exists then pure c else findFirst cs
