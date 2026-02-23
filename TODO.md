@@ -163,9 +163,9 @@ Spinor の Dual Implementation を維持しつつ、科学技術計算の強力�
     - [x] **Data Model:** `Val` への `VCLContext`, `VCLBuffer`, `VCLKernel` の追加。
     - [x] **Primitives:** `cl-init`, `to-device`, `to-host`, `cl-compile` の実装。
     - [x] **Interpreter:** `OpenCL` パッケージによるプラットフォーム統合。
-- [ ] **Step 47: OpenCL Execution Pipeline (GPGPU 実行レイヤー)**
-    - [ ] **FFI:** `clSetKernelArg`, `clEnqueueNDRangeKernel` の実装。
-    - [ ] **Primitives:** `cl-enqueue` (可変引数カーネル起動) の実装。
+- [x] **Step 47: OpenCL Execution Pipeline (GPGPU 実行レイヤー)**
+    - [x] **FFI:** `clSetKernelArg`, `clEnqueueNDRangeKernel` の実装。
+    - [x] **Primitives:** `cl-enqueue` (可変引数カーネル起動) の実装。
     - [ ] **Compiler:** (将来タスク) C トランスパイル時に OpenCL API を呼び出す C コード生成。
 - [ ] **Step 48: OpenGL Visualization (ネイティブ可視化基盤)**
     - [ ] OpenGL と GLFW (または SDL2) を用いた、ウィンドウ生成とメイン描画ループの組み込み。
