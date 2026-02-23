@@ -172,10 +172,10 @@ Spinor の Dual Implementation を維持しつつ、科学技術計算の強力�
     - [x] ポリゴン描画、シェーダーのコンパイル、バッファ操作を行うためのグラフィックス用プリミティブ関数の提供。
     - [x] **Interpreter:** Haskell の `gl`, `GLFW-b` 等を利用したインタラクティブな描画。
     - [ ] **Compiler:** (将来タスク) ネイティブビルド時の OpenGL/GLFW ライブラリリンク対応。
-- [ ] **Step 49: WebGL Target for WASM (ブラウザでの可視化)**
-    - [ ] **Compiler:** OpenGL プリミティブの WASM/SDL2 向け C コード生成。
-    - [ ] **Build:** `spinor build --wasm` (emcc) オプションの追加。
-    - [ ] **Verification:** ブラウザの Canvas 上でのリアルタイム可視化の実現。
+- [x] **Step 49: WebGL Target for WASM (ブラウザでの可視化)**
+    - [x] **Compiler:** OpenGL プリミティブの WASM/SDL2 向け C コード生成。
+    - [x] **Build:** `spinor build --wasm` (emcc) オプションの追加。
+    - [x] **Verification:** ブラウザの Canvas 上でのリアルタイム可視化の実現。
 
 ## 🧪 Experimental Features (実験的機能)
 - [ ] **Linear Types / Ownership (所有権システム)**
@@ -185,12 +185,10 @@ Spinor の Dual Implementation を維持しつつ、科学技術計算の強力�
 - [x] **Step 34: Binary Distribution (GitHub Actions)**
     - [x] **CI Pipeline:** Push 時に Linux / Windows / macOS でビルドとテストを実行するワークフローの作成。
     - [x] **Release Automation:** タグ (`v0.1.0` 等) を打った際に、自動で `spinor-windows.exe`, `spinor-linux` 等をビルドし、GitHub Releases にアップロードする設定。
-- [ ] **Windows Native Build Foundation (MSYS2 & C Libraries)**
-    - [ ] MSYS2 (MinGW64) 経由での C/C++ ビルドツール (`base-devel`, `autoconf`, `make`, `pkgconf` 等) の導入と `network` パッケージのビルドエラー (`HsNetworkConfig.h`) 解消。
-    - [ ] MSYS2 経由での OpenBLAS (`mingw-w64-x86_64-openblas`) のインストール。
-    - [ ] `cabal.project.local` の作成と、`hmatrix` に対する `+openblas` フラグの設定。
-    - [ ] Windowsローカル環境での `cabal build` および `cabal test` の成功確認。
-    - [ ] CI (GitHub Actions) の Windows ランナーに MSYS2 と OpenBLAS のセットアップステップを組み込む。
+- [ ] **Step 50: Windows Native Build Foundation**
+    - [ ] **Config:** `cabal.project.local` による Windows 向けフラグ (`+openblas`) 設定。
+    - [ ] **CI:** GitHub Actions への MSYS2 セットアップと依存ライブラリインストールの追加。
+    - [ ] **Fix:** Windows 環境での `network` パッケージビルドエラーの解消。
 
 
 ## 📖 Reference Manual (React CLHS-style Docs)
