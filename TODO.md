@@ -147,10 +147,33 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
 - [ ] **テストフレームワーク**
 - [ ] **JSON Support**
 
-## 🔬 HPC & Science (科学技術計算と可視化)
-- [ ] **Matrix Operations (BLAS/LAPACK Integration)**
-- [ ] **GPGPU Support (OpenCL)**
-- [ ] **Visualization (OpenGL)**
+### 🔬 HPC & Science (科学技術計算と可視化)
+
+Spinor の Dual Implementation を維持しつつ、科学技術計算の強力なバックエンド（BLAS/OpenCL/OpenGL）を統合する。
+
+- [x] **Step 44: Matrix/Tensor Type Foundation (行列・テンソル型の基盤)**
+    - [x] 行列や多次元配列を表す新しい内部データ型 (`Tensor` / `Matrix`) の定義。
+    - [ ] Lisp構文での行列リテラル表現の設計 (例: `#m((1 2) (3 4))` や `(matrix 2 2 '(1 2 3 4))`)。
+    - [x] 行列の生成、要素アクセス (`mref`)、次元取得 (`mdim`) などの基本プリミティブの実装。
+- [ ] **Step 45: BLAS/LAPACK Integration (行列演算の高速化)**
+    - [ ] 高速な行列積 (`m*`)、転置 (`transpose`)、逆行列 (`inverse`) などの数学関数プリミティブの追加。
+    - [ ] **Interpreter:** Haskell の `hmatrix` ライブラリ等を利用した BLAS/LAPACK バインディングの実装。
+    - [ ] **Compiler:** C トランスパイル時に OpenBLAS などの外部ライブラリをリンクするビルドオプション (`spinor build --blas`) の追加。
+- [ ] **Step 46: OpenCL Foundation (GPGPU 基盤とカーネル構文)**
+    - [ ] Spinor 言語内で GPU カーネルを記述するための特殊形式・マクロ (`defkernel`) の設計。
+    - [ ] ホストメモリ (CPU) とデバイスメモリ (GPU) 間のデータ転送プリミティブ (`to-device`, `to-host`) の実装。
+    - [ ] **Interpreter:** Haskell の OpenCL バインディング (`OpenCL` パッケージ等) のプラットフォーム統合。
+- [ ] **Step 47: OpenCL Execution Pipeline (GPGPU 実行レイヤー)**
+    - [ ] 定義したカーネルを GPU 側のワークグループにディスパッチして並列実行する関数 (`spawn-cl` 等) の実装。
+    - [ ] **Compiler:** C トランスパイル時に、OpenCL の C API (`clEnqueueNDRangeKernel` 等) を呼び出してカーネルを起動する C コードの生成。
+- [ ] **Step 48: OpenGL Visualization (ネイティブ可視化基盤)**
+    - [ ] OpenGL と GLFW (または SDL2) を用いた、ウィンドウ生成とメイン描画ループの組み込み。
+    - [ ] ポリゴン描画、シェーダーのコンパイル、バッファ操作を行うためのグラフィックス用プリミティブ関数の提供。
+    - [ ] **Interpreter:** Haskell の `gl`, `GLFW-b` 等を利用したインタラクティブな描画。
+    - [ ] **Compiler:** ネイティブビルド時の OpenGL/GLFW ライブラリリンク対応。
+- [ ] **Step 49: WebGL Target for WASM (ブラウザでの可視化)**
+    - [ ] Emscripten が提供する OpenGL ES / WebGL のエミュレーション層を活用した WASM ビルド設定の拡張。
+    - [ ] Spinor で書いた物理シミュレーション等の可視化コードが、変更なしでブラウザの Canvas 上 (WASM) で動く仕組みの確立。
 
 ## 🧪 Experimental Features (実験的機能)
 - [ ] **Linear Types / Ownership (所有権システム)**
