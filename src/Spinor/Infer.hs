@@ -457,4 +457,29 @@ baseTypeEnv = Map.fromList
   , ("empty?", Scheme ["a"] (TArr (TList (TVar "a")) TBool))
     -- 出力
   , ("print",  Scheme ["a"] (TArr (TVar "a") (TVar "a")))
+    -- 文字列操作
+  , ("string-append", Scheme [] (TArr TStr (TArr TStr TStr)))
+  , ("string-length", Scheme [] (TArr TStr TInt))
+  , ("substring",     Scheme [] (TArr TStr (TArr TInt (TArr TInt TStr))))
+  , ("string=?",      Scheme [] (TArr TStr (TArr TStr TBool)))
+  , ("string->list",  Scheme [] (TArr TStr (TList TStr)))
+  , ("list->string",  Scheme [] (TArr (TList TStr) TStr))
+    -- 等価性
+  , ("eq",    Scheme ["a"] (TArr (TVar "a") (TArr (TVar "a") TBool)))
+  , ("equal", Scheme ["a"] (TArr (TVar "a") (TArr (TVar "a") TBool)))
+    -- 行列操作
+  , ("matrix",    Scheme [] (TArr TInt (TArr TInt (TArr (TList TInt) (TCon "Matrix")))))
+  , ("mdim",      Scheme [] (TArr (TCon "Matrix") (TList TInt)))
+  , ("mref",      Scheme [] (TArr (TCon "Matrix") (TArr TInt (TArr TInt (TCon "Float")))))
+    -- BLAS/LAPACK
+  , ("m+",        Scheme [] (TArr (TCon "Matrix") (TArr (TCon "Matrix") (TCon "Matrix"))))
+  , ("m*",        Scheme [] (TArr (TCon "Matrix") (TArr (TCon "Matrix") (TCon "Matrix"))))
+  , ("transpose", Scheme [] (TArr (TCon "Matrix") (TCon "Matrix")))
+  , ("inverse",   Scheme [] (TArr (TCon "Matrix") (TCon "Matrix")))
+    -- OpenCL / GPGPU
+  , ("cl-init",    Scheme [] (TCon "CLContext"))
+  , ("to-device",  Scheme [] (TArr (TCon "CLContext") (TArr (TCon "Matrix") (TCon "CLBuffer"))))
+  , ("to-host",    Scheme [] (TArr (TCon "CLContext") (TArr (TCon "CLBuffer") (TArr TInt (TArr TInt (TCon "Matrix"))))))
+  , ("cl-compile", Scheme [] (TArr (TCon "CLContext") (TArr TStr (TArr TStr (TCon "CLKernel")))))
+  , ("cl-enqueue", Scheme ["a"] (TArr (TCon "CLContext") (TArr (TCon "CLKernel") (TArr (TList TInt) (TArr (TList TInt) (TVar "a"))))))
   ]
