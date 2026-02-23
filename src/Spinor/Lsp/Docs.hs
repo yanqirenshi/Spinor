@@ -583,6 +583,118 @@ primitiveDocs = Map.fromList
       , docSeeAlso = ["matrix", "mdim"]
       , docNotes = ""
       })
+
+  -- ========================================
+  -- BLAS/LAPACK 行列演算 (Matrix Arithmetic)
+  -- ========================================
+  , ("m+", DocEntry
+      { docSignature = "(Matrix, Matrix) -> Matrix"
+      , docDescription = "2つの行列の要素ごとの加算を行います。BLAS を利用した高速演算です。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "m-add"
+      , docSyntax = "(m+ a b)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `a` -- 第一行列"
+          , "- `b` -- 第二行列"
+          , "- 戻り値: 要素ごとの和を持つ新しい行列"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(def a (matrix 2 2 '(1 2 3 4)))"
+          , "(def b (matrix 2 2 '(5 6 7 8)))"
+          , "(m+ a b)  ; => #m((6.0 8.0) (10.0 12.0))"
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = T.unlines
+          [ "- 引数が行列でない場合、エラーを返します。"
+          , "- 2つの行列の次元が一致しない場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["m*", "matrix"]
+      , docNotes = "内部的に hmatrix (BLAS) を使用しています。"
+      })
+
+  , ("m*", DocEntry
+      { docSignature = "(Matrix, Matrix) -> Matrix"
+      , docDescription = "行列積を計算します。BLAS を利用した高速演算です。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "m-mul"
+      , docSyntax = "(m* a b)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `a` -- 左行列 (m×k)"
+          , "- `b` -- 右行列 (k×n)"
+          , "- 戻り値: 行列積 (m×n)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(def a (matrix 2 3 '(1 2 3 4 5 6)))"
+          , "(def b (matrix 3 2 '(7 8 9 10 11 12)))"
+          , "(m* a b)  ; => #m((58.0 64.0) (139.0 154.0))"
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = T.unlines
+          [ "- 引数が行列でない場合、エラーを返します。"
+          , "- 左行列の列数と右行列の行数が一致しない場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["m+", "transpose", "inverse"]
+      , docNotes = "内部的に hmatrix (BLAS/dgemm) を使用しています。"
+      })
+
+  , ("transpose", DocEntry
+      { docSignature = "(Matrix) -> Matrix"
+      , docDescription = "行列の転置を返します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "transpose"
+      , docSyntax = "(transpose m)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `m` -- 行列 (m×n)"
+          , "- 戻り値: 転置行列 (n×m)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(def m (matrix 2 3 '(1 2 3 4 5 6)))"
+          , "(transpose m)  ; => #m((1.0 4.0) (2.0 5.0) (3.0 6.0))"
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "引数が行列でない場合、エラーを返します。"
+      , docSeeAlso = ["m*", "inverse", "matrix"]
+      , docNotes = ""
+      })
+
+  , ("inverse", DocEntry
+      { docSignature = "(Matrix) -> Matrix"
+      , docDescription = "正方行列の逆行列を計算します。LAPACK を利用した高速演算です。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "inverse"
+      , docSyntax = "(inverse m)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `m` -- 正方行列 (n×n)"
+          , "- 戻り値: 逆行列 (n×n)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; 単位行列の逆行列は単位行列"
+          , "(inverse (matrix 2 2 '(1 0 0 1)))  ; => #m((1.0 0.0) (0.0 1.0))"
+          , ""
+          , "(inverse (matrix 2 2 '(1 2 3 4)))"
+          , "; => #m((-2.0 1.0) (1.5 -0.5))"
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = T.unlines
+          [ "- 引数が行列でない場合、エラーを返します。"
+          , "- 行列が正方でない場合、エラーを返します。"
+          , "- 行列が特異 (singular) な場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["m*", "transpose", "matrix"]
+      , docNotes = "内部的に hmatrix (LAPACK) を使用しています。"
+      })
   ]
 
 lookupDoc :: Text -> Maybe DocEntry

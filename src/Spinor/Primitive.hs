@@ -8,6 +8,9 @@ import Data.Text (Text, pack)
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 import qualified Data.Vector.Storable as VS
+import qualified Numeric.LinearAlgebra as LA
+import Control.Exception (SomeException, try, evaluate)
+import System.IO.Unsafe (unsafePerformIO)
 
 import Spinor.Val (Val(..), Env)
 
@@ -37,9 +40,13 @@ primitiveBindings = Map.fromList
   , ("string->list",  VPrim "string->list"  primStringToList)
   , ("list->string",  VPrim "list->string"  primListToString)
   -- 行列操作
-  , ("matrix", VPrim "matrix" primMatrix)
-  , ("mdim",   VPrim "mdim"   primMdim)
-  , ("mref",   VPrim "mref"   primMref)
+  , ("matrix",    VPrim "matrix"    primMatrix)
+  , ("mdim",      VPrim "mdim"     primMdim)
+  , ("mref",      VPrim "mref"     primMref)
+  , ("m+",        VPrim "m+"       primMAdd)
+  , ("m*",        VPrim "m*"       primMMul)
+  , ("transpose", VPrim "transpose" primMTranspose)
+  , ("inverse",   VPrim "inverse"  primMInverse)
   ]
 
 -- | 整数の二項演算をラップするヘルパー
@@ -212,3 +219,64 @@ primMref [VMatrix rows cols vec, VInt r, VInt c]
     | otherwise = Right $ VFloat (vec VS.! (fromIntegral r * cols + fromIntegral c))
 primMref [_, _, _] = Left "mref: (Matrix, Int, Int) が必要です"
 primMref args = Left $ "mref: 引数の数が不正です (期待: 3, 実際: " <> tshow (length args) <> ")"
+
+-- ===========================================================================
+-- hmatrix 連携 (BLAS/LAPACK)
+-- ===========================================================================
+
+-- | VMatrix → hmatrix の Matrix Double へ変換
+toLA :: Int -> Int -> VS.Vector Double -> LA.Matrix Double
+toLA r c vec = (r LA.>< c) (VS.toList vec)
+
+-- | hmatrix の Matrix Double → VMatrix の構成要素へ変換
+fromLA :: LA.Matrix Double -> Val
+fromLA m = VMatrix (LA.rows m) (LA.cols m) (LA.flatten m)
+
+-- | m+: 行列の要素ごとの加算
+--   (m+ a b) -> Matrix
+--   a と b の行数・列数が完全に一致している必要がある
+primMAdd :: [Val] -> Either Text Val
+primMAdd [VMatrix r1 c1 v1, VMatrix r2 c2 v2]
+    | r1 /= r2 || c1 /= c2 = Left $ "m+: 行列の次元が一致しません ("
+                                   <> tshow r1 <> "x" <> tshow c1 <> " vs "
+                                   <> tshow r2 <> "x" <> tshow c2 <> ")"
+    | otherwise = Right $ fromLA (toLA r1 c1 v1 + toLA r2 c2 v2)
+primMAdd [_, _] = Left "m+: 両方の引数に行列が必要です"
+primMAdd args = Left $ "m+: 引数の数が不正です (期待: 2, 実際: " <> tshow (length args) <> ")"
+
+-- | m*: 行列積
+--   (m* a b) -> Matrix
+--   a の列数と b の行数が一致している必要がある
+primMMul :: [Val] -> Either Text Val
+primMMul [VMatrix r1 c1 v1, VMatrix r2 c2 v2]
+    | c1 /= r2 = Left $ "m*: 行列積の次元が不正です (左の列数 "
+                       <> tshow c1 <> " ≠ 右の行数 " <> tshow r2 <> ")"
+    | otherwise = Right $ fromLA (toLA r1 c1 v1 LA.<> toLA r2 c2 v2)
+primMMul [_, _] = Left "m*: 両方の引数に行列が必要です"
+primMMul args = Left $ "m*: 引数の数が不正です (期待: 2, 実際: " <> tshow (length args) <> ")"
+
+-- | transpose: 行列の転置
+--   (transpose m) -> Matrix
+primMTranspose :: [Val] -> Either Text Val
+primMTranspose [VMatrix r c vec] = Right $ fromLA (LA.tr (toLA r c vec))
+primMTranspose [_] = Left "transpose: 行列が必要です"
+primMTranspose args = Left $ "transpose: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"
+
+-- | inverse: 正方行列の逆行列
+--   (inverse m) -> Matrix
+--   行列が正方でない場合、または特異行列の場合はエラー
+primMInverse :: [Val] -> Either Text Val
+primMInverse [VMatrix r c vec]
+    | r /= c = Left $ "inverse: 正方行列が必要です (" <> tshow r <> "x" <> tshow c <> ")"
+    | otherwise = case tryInv (toLA r c vec) of
+        Right result -> Right (fromLA result)
+        Left msg     -> Left msg
+  where
+    tryInv :: LA.Matrix Double -> Either Text (LA.Matrix Double)
+    tryInv m = unsafePerformIO $ do
+        result <- try (evaluate (LA.inv m)) :: IO (Either SomeException (LA.Matrix Double))
+        pure $ case result of
+            Right invM -> Right invM
+            Left _     -> Left "inverse: 特異行列のため逆行列を計算できません"
+primMInverse [_] = Left "inverse: 行列が必要です"
+primMInverse args = Left $ "inverse: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"

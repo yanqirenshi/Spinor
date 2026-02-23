@@ -209,3 +209,85 @@ spec = describe "Spinor.Eval (Evaluator)" $ do
     it "matrix は VInt を VFloat に変換" $ do
       result <- evalStr "(mref (matrix 1 1 '(42)) 0 0)"
       result `shouldBe` Right (VFloat 42.0)
+
+  describe "BLAS/LAPACK 行列演算" $ do
+    it "m+ で 2x2 行列の加算" $ do
+      result <- evalStr "(mref (m+ (matrix 2 2 '(1 2 3 4)) (matrix 2 2 '(5 6 7 8))) 0 0)"
+      result `shouldBe` Right (VFloat 6.0)
+
+    it "m+ の全要素が正しい" $ do
+      r00 <- evalStr "(mref (m+ (matrix 2 2 '(1 2 3 4)) (matrix 2 2 '(10 20 30 40))) 0 0)"
+      r01 <- evalStr "(mref (m+ (matrix 2 2 '(1 2 3 4)) (matrix 2 2 '(10 20 30 40))) 0 1)"
+      r10 <- evalStr "(mref (m+ (matrix 2 2 '(1 2 3 4)) (matrix 2 2 '(10 20 30 40))) 1 0)"
+      r11 <- evalStr "(mref (m+ (matrix 2 2 '(1 2 3 4)) (matrix 2 2 '(10 20 30 40))) 1 1)"
+      r00 `shouldBe` Right (VFloat 11.0)
+      r01 `shouldBe` Right (VFloat 22.0)
+      r10 `shouldBe` Right (VFloat 33.0)
+      r11 `shouldBe` Right (VFloat 44.0)
+
+    it "m+ で次元不一致はエラー" $ do
+      result <- evalStr "(m+ (matrix 2 2 '(1 2 3 4)) (matrix 2 3 '(1 2 3 4 5 6)))"
+      case result of
+        Left _ -> pure ()
+        Right _ -> expectationFailure "次元不一致でエラーになるべき"
+
+    it "m* で 2x2 行列の積" $ do
+      -- [[1,2],[3,4]] * [[5,6],[7,8]] = [[19,22],[43,50]]
+      r00 <- evalStr "(mref (m* (matrix 2 2 '(1 2 3 4)) (matrix 2 2 '(5 6 7 8))) 0 0)"
+      r01 <- evalStr "(mref (m* (matrix 2 2 '(1 2 3 4)) (matrix 2 2 '(5 6 7 8))) 0 1)"
+      r10 <- evalStr "(mref (m* (matrix 2 2 '(1 2 3 4)) (matrix 2 2 '(5 6 7 8))) 1 0)"
+      r11 <- evalStr "(mref (m* (matrix 2 2 '(1 2 3 4)) (matrix 2 2 '(5 6 7 8))) 1 1)"
+      r00 `shouldBe` Right (VFloat 19.0)
+      r01 `shouldBe` Right (VFloat 22.0)
+      r10 `shouldBe` Right (VFloat 43.0)
+      r11 `shouldBe` Right (VFloat 50.0)
+
+    it "m* で 2x3 と 3x2 の行列積" $ do
+      -- [[1,2,3],[4,5,6]] * [[7,8],[9,10],[11,12]] = [[58,64],[139,154]]
+      r00 <- evalStr "(mref (m* (matrix 2 3 '(1 2 3 4 5 6)) (matrix 3 2 '(7 8 9 10 11 12))) 0 0)"
+      r11 <- evalStr "(mref (m* (matrix 2 3 '(1 2 3 4 5 6)) (matrix 3 2 '(7 8 9 10 11 12))) 1 1)"
+      r00 `shouldBe` Right (VFloat 58.0)
+      r11 `shouldBe` Right (VFloat 154.0)
+
+    it "m* で次元不一致はエラー" $ do
+      result <- evalStr "(m* (matrix 2 2 '(1 2 3 4)) (matrix 3 2 '(1 2 3 4 5 6)))"
+      case result of
+        Left _ -> pure ()
+        Right _ -> expectationFailure "次元不一致でエラーになるべき"
+
+    it "m* の結果の次元が正しい" $ do
+      result <- evalStr "(mdim (m* (matrix 2 3 '(1 2 3 4 5 6)) (matrix 3 2 '(7 8 9 10 11 12))))"
+      result `shouldBe` Right (VList [VInt 2, VInt 2])
+
+    it "transpose で 2x3 行列の転置" $ do
+      -- [[1,2,3],[4,5,6]] -> [[1,4],[2,5],[3,6]]
+      dim <- evalStr "(mdim (transpose (matrix 2 3 '(1 2 3 4 5 6))))"
+      dim `shouldBe` Right (VList [VInt 3, VInt 2])
+      r00 <- evalStr "(mref (transpose (matrix 2 3 '(1 2 3 4 5 6))) 0 0)"
+      r10 <- evalStr "(mref (transpose (matrix 2 3 '(1 2 3 4 5 6))) 1 0)"
+      r01 <- evalStr "(mref (transpose (matrix 2 3 '(1 2 3 4 5 6))) 0 1)"
+      r00 `shouldBe` Right (VFloat 1.0)
+      r10 `shouldBe` Right (VFloat 2.0)
+      r01 `shouldBe` Right (VFloat 4.0)
+
+    it "inverse で単位行列の逆行列は単位行列" $ do
+      r00 <- evalStr "(mref (inverse (matrix 2 2 '(1 0 0 1))) 0 0)"
+      r01 <- evalStr "(mref (inverse (matrix 2 2 '(1 0 0 1))) 0 1)"
+      r10 <- evalStr "(mref (inverse (matrix 2 2 '(1 0 0 1))) 1 0)"
+      r11 <- evalStr "(mref (inverse (matrix 2 2 '(1 0 0 1))) 1 1)"
+      r00 `shouldBe` Right (VFloat 1.0)
+      r01 `shouldBe` Right (VFloat 0.0)
+      r10 `shouldBe` Right (VFloat 0.0)
+      r11 `shouldBe` Right (VFloat 1.0)
+
+    it "inverse で非正方行列はエラー" $ do
+      result <- evalStr "(inverse (matrix 2 3 '(1 2 3 4 5 6)))"
+      case result of
+        Left _ -> pure ()
+        Right _ -> expectationFailure "非正方行列でエラーになるべき"
+
+    it "inverse で特異行列はエラー" $ do
+      result <- evalStr "(inverse (matrix 2 2 '(1 2 2 4)))"
+      case result of
+        Left _ -> pure ()
+        Right _ -> expectationFailure "特異行列でエラーになるべき"
