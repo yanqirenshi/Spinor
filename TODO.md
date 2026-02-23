@@ -183,9 +183,13 @@ Spinor の Dual Implementation を維持しつつ、科学技術計算の強力�
 - [x] **Step 34: Binary Distribution (GitHub Actions)**
     - [x] **CI Pipeline:** Push 時に Linux / Windows / macOS でビルドとテストを実行するワークフローの作成。
     - [x] **Release Automation:** タグ (`v0.1.0` 等) を打った際に、自動で `spinor-windows.exe`, `spinor-linux` 等をビルドし、GitHub Releases にアップロードする設定。
-- [ ] **Fix Windows Native Build (network package)**
-    - [ ] `network` パッケージの `HsNetworkConfig.h` 生成エラーの解消 (GHC 9.6 + MSYS2)。
-    - [ ] 必要であれば CI (GitHub Actions) の Windows ランナーでの動作を修正。
+- [ ] **Windows Native Build Foundation (MSYS2 & C Libraries)**
+    - [ ] MSYS2 (MinGW64) 経由での C/C++ ビルドツール (`base-devel`, `autoconf`, `make`, `pkgconf` 等) の導入と `network` パッケージのビルドエラー (`HsNetworkConfig.h`) 解消。
+    - [ ] MSYS2 経由での OpenBLAS (`mingw-w64-x86_64-openblas`) のインストール。
+    - [ ] `cabal.project.local` の作成と、`hmatrix` に対する `+openblas` フラグの設定。
+    - [ ] Windowsローカル環境での `cabal build` および `cabal test` の成功確認。
+    - [ ] CI (GitHub Actions) の Windows ランナーに MSYS2 と OpenBLAS のセットアップステップを組み込む。
+
 
 ## 📖 Reference Manual (React CLHS-style Docs)
 React を用いて、CLHS ライクでモダンなリファレンスサイトを構築し、GitHub Actions で自動ビルド・デプロイする。
