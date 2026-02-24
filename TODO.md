@@ -54,6 +54,13 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [x] `dolist`, `dotimes`: 反復マクロ。
     - [x] `progn`: (begin のエイリアスまたはマクロとして整備)。
     - [x] `error`: エラー送出プリミティブ。
+- [ ] **Step 24-B: パッケージ操作系マクロの拡充 (Package Utilities)**
+    - [ ] Common Lisp の `defpackage`, `in-package`, `use-package`, `shadowing-import` 等に相当する、柔軟で動的なシンボル・名前空間管理機能の設計と実装。
+    - [ ] Step 19 の静的なモジュールシステムと連携し、REPL 上での動的なパッケージ切り替えや、シンボルの衝突回避 (シャドウイング) をサポートするアーキテクチャの構築。
+- [ ] **Step 24-C: Error Handling & Condition System (エラー捕捉と条件システム)**
+    - [ ] `handler-case` や `ignore-errors` など、送出されたエラーを捕捉して処理を継続する機能の実装。
+    - [ ] `unwind-protect`: エラー発生時にも必ず実行されるクリーンアップ処理（ファイルクローズやメモリ解放など）を保証する構文の追加。
+    - [ ] (将来タスク) Common Lisp 特有の強力なコンディションシステム (`handler-bind`, `restart-case` 等) の概念を取り入れ、Haskell カーネル上でどう実現するかの設計とプロトタイプ作成。
 
 ## 📚 DevExp & Documentation (普及のための環境整備)
 ユーザーが迷わず使えるためのドキュメントとツール群。
@@ -208,10 +215,13 @@ React を用いて、CLHS ライクでモダンなリファレンスサイトを
 - [x] **Step 42: GitHub Actions Integration**
     - [x] Push 時に `manual/` をビルドし、成果物をリポジトリの `docs/` ディレクトリに配置・コミットする CI ワークフローの作成。
 - [ ] **Step 43: CLHS Format Documentation & Core Pages**
-    - [ ] `Docs.hs` のデータモデルを拡張し、CLHS と同等のセクション (Syntax, Arguments, Description, Examples 等) を追加。
-    - [ ] `DocGen.hs` のジェネレータを改修し、各 Operator のページを CLHS フォーマットで出力。
-    - [ ] `docs/syntax.md` に Lisp 構文と Haskell セマンティクスの解説を執筆・反映。
-    - [ ] `docs/introduction.md` にインストール、セットアップ、利用方法のガイドを執筆・反映。
+    - [x] `Docs.hs` のデータモデル拡張 (済)。
+    - [ ] `DocGen.hs` による CLHS 形式 Markdown 出力の改修。
+    - [ ] `docs/syntax.md` と `docs/introduction.md` の作成。
+- [ ] **Step 43-B: Build & Environment Guide (ビルド手順の文書化)**
+    - [ ] `docs/build.md` を新規作成（または `introduction.md` に統合）し、環境構築手順を詳細に記載する。
+    - [ ] **WSL2 環境:** 必要なシステムパッケージ (`libglfw3-dev`, `libgl1-mesa-dev`, `pocl-opencl-icd` 等) のインストールコマンドと `cabal build` 手順の記載。
+    - [ ] **Windows 11 環境:** MSYS2 の導入、`pacman` による C ライブラリ (`openblas`, `glfw` 等) のインストール、および `cabal test` 実行時に必要な DLL コピー手順の明記。
 
 ## 🌌 The Ultimate Dream (究極の目標: Lispマシンの創生)
 Spinor を単なるアプリケーションレベルの処理系から、ハードウェアと直接対話する「Lispマシン（OS / ハードウェア）」へと昇華させる。
@@ -230,15 +240,21 @@ Spinor を単なるアプリケーションレベルの処理系から、ハー�
 ## 🤖 AI-Native DevEnv (AI協調開発環境とプロジェクト雛形)
 Claude Code などの AI エージェントが、Spinor プロジェクトを自律的に理解・開発・テストできるためのエコシステムを構築する。
 
-- [ ] **Step 51: Project Template & `claude.md` (AI 用コンテキストの定義)**
+- [ ] **Step 54: Project Template & `claude.md` (AI 用コンテキストの定義)**
     - [ ] `spinor init` コマンドを拡張し、新規プロジェクト作成時に `.spin` ファイルの雛形と同時に `claude.md` を自動生成する機能を追加。
     - [ ] `claude.md` 内に、Spinor の言語仕様、ビルド方法、型システムの特徴を AI 向けに簡潔に記述する。
-- [ ] **Step 52: Claude Code Skills Integration (カスタムスキルの整備)**
+- [ ] **Step 55: Claude Code Skills Integration (カスタムスキルの整備)**
     - [ ] Claude Code が Spinor のコードベースを操作・検証しやすいように、CLI (`spinor check`, `spinor fmt` 等) の出力を AI がパースしやすい形式 (JSON 等) で出力するオプションを追加。
     - [ ] プロジェクト固有のスクリプトとして、Claude Code がテストを回してエラーを自己修正するためのループ基盤を整備。
-- [ ] **Step 53: Spinor MCP Server (Model Context Protocol 統合)**
+- [ ] **Step 56: Spinor MCP Server (Model Context Protocol 統合)**
     - [ ] Spinor 処理系を MCP サーバーとして起動するモード (`spinor mcp`) を実装する。
     - [ ] Claude Code が MCP 経由で、Spinor の型環境 (Type Environment) のクエリ、マクロ展開の結果、REPL での評価結果を直接取得できるようにし、AI のハルシネーション（嘘のコード生成）を防ぐ。
-- [ ] **Step 54: Agent Teams Workflow (自律型マルチエージェント開発基盤)**
+- [ ] **Step 57: Agent Teams Workflow (自律型マルチエージェント開発基盤)**
     - [ ] Claude Code の「Agent Teams」機能を活用し、Team Lead と複数の Teammate が並列で開発を進められる共有タスクリスト（ファイルベースのキュー）の運用ルールを確立する。
     - [ ] ファイルロックや Mailbox メッセージングを利用し、エージェント同士が互いのコードを自律的にレビュー・修正し合える Spinor 独自のワークフロー基盤を構築する。
+- [ ] **Step 58: Emacs Package Spin-off (spinor-mode の独立リポジトリ化)**
+    - [ ] `spinor-mode.el` を現在の言語コアリポジトリから切り離し、専用の GitHub リポジトリ (`spinor-mode` 等) を作成・移行する。
+    - [ ] MELPA 等への公式パッケージ登録を見据え、ソースコードのヘッダコメント (`Package-Requires`, `Version` 等) を Emacs Lisp の標準フォーマットに従って整備する。
+    - [ ] リポジトリの `README.md` を作成し、`use-package` を用いたインストール方法や、LSP (`spinor lsp`)・SLY (`spinor server`) との連携設定の具体例を執筆する。
+    - [ ] GitHub Actions を設定し、複数バージョンの Emacs でのバイトコンパイルテストや `package-lint`, `checkdoc` による静的解析を自動化する CI を構築する。
+
