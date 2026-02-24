@@ -1,41 +1,19 @@
 # cdr
-
-**Kind:** Function
-
+**Kind:** Function  
+**Signature:** `([a]) -> [a]`
 ### Syntax:
-
 ```lisp
 (cdr lst)
 ```
-
 ### Arguments and Values:
-
-- `lst` -- å¯¾è±¡ã®ãƒªã‚¹ãƒˆ
-- æˆ»ã‚Šå€¤: å…ˆé ­ã‚’é™¤ã„ãŸãƒªã‚¹ãƒˆ
-
+- `lst` -- ‘ÎÛ‚ÌƒŠƒXƒg
+- –ß‚è’l: æ“ª‚ðœ‚¢‚½ƒŠƒXƒg
 ### Description:
-
-ãƒªã‚¹ãƒˆã®å…ˆé ­ä»¥å¤– (tail) ã‚’è¿”ã—ã¾ã™ã€‚
-
+ƒŠƒXƒg‚Ìæ“ªˆÈŠO (tail) ‚ð•Ô‚µ‚Ü‚·B
 ### Examples:
-
 ```lisp
 (cdr '(1 2 3))  ; => (2 3)
 (cdr '(a))      ; => nil
 ```
-
-### Side Effects:
-
-None.
-
-### Affected By:
-
-None.
-
-### Exceptional Situations:
-
-None.
-
 ### See Also:
-
 [car](car), [cons](cons)

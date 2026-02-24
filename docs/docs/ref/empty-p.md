@@ -1,6 +1,18 @@
 # empty?
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(a) -> Bool`
-
-null? ã®ã‚¨ã‚¤ãƒªã‚¢ã‚¹ã€‚
+### Syntax:
+```lisp
+(empty? x)
+```
+### Arguments and Values:
+- `x` -- ”»’è‚·‚é’l
+- –ß‚è’l: ‹ó‚È‚ç `t`
+### Description:
+`null?` ‚ÌƒGƒCƒŠƒAƒXB
+### Examples:
+```lisp
+(empty? nil)  ; => t
+```
+### See Also:
+[null-p](null-p)

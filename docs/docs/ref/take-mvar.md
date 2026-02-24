@@ -1,6 +1,13 @@
 # take-mvar
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(MVar) -> Val`
-
-MVar ã‹ã‚‰å€¤ã‚’å–ã‚Šå‡ºã—ã¾ã™ (ãƒ–ãƒ­ãƒƒã‚­ãƒ³ã‚°)ã€‚
+### Syntax:
+```lisp
+TBD
+```
+### Arguments and Values:
+TBD
+### Description:
+MVar ‚©‚ç’l‚ğæ‚èo‚µ‚Ü‚· (ƒuƒƒbƒLƒ“ƒO)B
+### Examples:
+TBD

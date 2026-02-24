@@ -1,6 +1,13 @@
 # file-exists?
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(String) -> Bool`
-
-繝輔ぃ繧､繝ｫ縺悟ｭ伜惠縺吶ｋ縺九ｒ蛻､螳壹＠縺ｾ縺吶�
+### Syntax:
+```lisp
+TBD
+```
+### Arguments and Values:
+TBD
+### Description:
+ファイルが存在するかを判定します。
+### Examples:
+TBD

@@ -1,6 +1,13 @@
 # write-file
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(String, String) -> Bool`
-
-ãƒ•ã‚¡ã‚¤ãƒ«ã«æ–‡å­—åˆ—ã‚’æ›¸ãè¾¼ã¿ã¾ã™ (ä¸Šæ›¸ã)ã€‚
+### Syntax:
+```lisp
+TBD
+```
+### Arguments and Values:
+TBD
+### Description:
+ƒtƒ@ƒCƒ‹‚É•¶š—ñ‚ğ‘‚«‚İ‚Ü‚· (ã‘‚«)B
+### Examples:
+TBD

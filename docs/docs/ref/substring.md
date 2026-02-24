@@ -1,6 +1,13 @@
 # substring
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(String, Int, Int) -> String`
-
-éƒ¨åˆ†æ–‡å­—åˆ—ã‚’å–å¾—ã—ã¾ã™ã€‚(start, end) ã¯ 0-indexedã€‚
+### Syntax:
+```lisp
+TBD
+```
+### Arguments and Values:
+TBD
+### Description:
+•”•ª•¶š—ñ‚ğæ“¾‚µ‚Ü‚·B(start, end) ‚Í 0-indexedB
+### Examples:
+TBD

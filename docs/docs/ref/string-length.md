@@ -1,6 +1,13 @@
 # string-length
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(String) -> Int`
-
-æ–‡å­—åˆ—ã®é•·ã• (æ–‡å­—æ•°) ã‚’è¿”ã—ã¾ã™ã€‚
+### Syntax:
+```lisp
+TBD
+```
+### Arguments and Values:
+TBD
+### Description:
+•¶š—ñ‚Ì’·‚³ (•¶š”) ‚ğ•Ô‚µ‚Ü‚·B
+### Examples:
+TBD

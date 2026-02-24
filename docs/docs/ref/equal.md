@@ -1,6 +1,19 @@
 # equal
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(a, a) -> Bool`
-
-2ã¤ã®å€¤ãŒæ§‹é€ çš„ã«ç­‰ã—ã„ã‹ã‚’åˆ¤å®šã—ã¾ã™ã€‚
+### Syntax:
+```lisp
+(equal a b)
+```
+### Arguments and Values:
+- `a`, `b` -- ”äŠr‚·‚é’l
+- –ß‚è’l: \‘¢“I‚É“™‚µ‚¯‚ê‚Î `t`
+### Description:
+2‚Â‚Ì’l‚ª\‘¢“I‚É“™‚µ‚¢‚©‚ð”»’è‚µ‚Ü‚·BƒŠƒXƒg‚àÄ‹A“I‚É”äŠr‚µ‚Ü‚·B
+### Examples:
+```lisp
+(equal '(1 2) '(1 2))  ; => t
+(equal '(1 2) '(1 3))  ; => nil
+```
+### See Also:
+[eq](eq), [eq-op](eq-op)

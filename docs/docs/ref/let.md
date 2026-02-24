@@ -1,52 +1,28 @@
 # let
-
-**Kind:** Special Form
-
+**Kind:** Special Form  
+**Signature:** `(Bindings, Body) -> Val`
 ### Syntax:
-
 ```lisp
 (let ((var1 val1) (var2 val2) ...) body)
 ```
-
 ### Arguments and Values:
-
-- `bindings` -- `(å¤‰æ•°å å€¤)` ã®ãƒšã‚¢ã®ãƒªã‚¹ãƒˆ
-- `body` -- æŸç¸›ã®ã‚¹ã‚³ãƒ¼ãƒ—å†…ã§è©•ä¾¡ã•ã‚Œã‚‹å¼
-- æˆ»ã‚Šå€¤: body ã®è©•ä¾¡çµæœ
-
+- `bindings` -- `(•Ï”–¼ ’l)` ‚ÌƒyƒA‚ÌƒŠƒXƒg
+- `body` -- ‘©”›‚ÌƒXƒR[ƒv“à‚Å•]‰¿‚³‚ê‚é®
+- –ß‚è’l: body ‚Ì•]‰¿Œ‹‰Ê
 ### Description:
-
-ãƒ­ãƒ¼ã‚«ãƒ«å¤‰æ•°ã‚’å°å…¥ã—ã€ãã®ç’°å¢ƒã§ `body` ã‚’è©•ä¾¡ã—ã¾ã™ã€‚æŸç¸›ã¯é€æ¬¡çš„ã«è¡Œã‚ã‚Œã¾ã™ (let*)ã€‚
-
+ƒ[ƒJƒ‹•Ï”‚ğ“±“ü‚µA‚»‚ÌŠÂ‹«‚Å `body` ‚ğ•]‰¿‚µ‚Ü‚·B‘©”›‚Í’€Ÿ“I‚És‚í‚ê‚Ü‚· (let*)B
 ### Examples:
-
 ```lisp
 (let ((x 10)
       (y 20))
   (+ x y))  ; => 30
 
-;; é€æ¬¡æŸç¸› (å‰ã®å¤‰æ•°ã‚’å‚ç…§å¯èƒ½)
+;; ’€Ÿ‘©”› (‘O‚Ì•Ï”‚ğQÆ‰Â”\)
 (let ((x 5)
       (y (* x 2)))
   y)  ; => 10
 ```
-
-### Side Effects:
-
-None.
-
-### Affected By:
-
-None.
-
-### Exceptional Situations:
-
-None.
-
 ### See Also:
-
 [def](def), [fn](fn)
-
 ### Notes:
-
-Spinor ã® `let` ã¯ Common Lisp ã® `let*` ã¨åŒã˜æ„å‘³è«–ã§ã™ã€‚
+Spinor ‚Ì `let` ‚Í Common Lisp ‚Ì `let*` ‚Æ“¯‚¶ˆÓ–¡˜_‚Å‚·B

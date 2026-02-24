@@ -1,6 +1,13 @@
 # string=?
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(String, String) -> Bool`
-
-2ã¤ã®æ–‡å­—åˆ—ãŒç­‰ã—ã„ã‹ã‚’åˆ¤å®šã—ã¾ã™ã€‚
+### Syntax:
+```lisp
+TBD
+```
+### Arguments and Values:
+TBD
+### Description:
+2‚Â‚Ì•¶š—ñ‚ª“™‚µ‚¢‚©‚ğ”»’è‚µ‚Ü‚·B
+### Examples:
+TBD

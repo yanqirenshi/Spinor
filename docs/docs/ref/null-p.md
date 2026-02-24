@@ -1,6 +1,20 @@
 # null?
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(a) -> Bool`
-
-繝ｪ繧ｹ繝医′遨ｺ縺九←縺�縺九ｒ蛻､螳壹＠縺ｾ縺吶�
+### Syntax:
+```lisp
+(null? x)
+```
+### Arguments and Values:
+- `x` -- 判定する値
+- 戻り値: `nil` なら `t`、それ以外は `nil`
+### Description:
+引数が空リスト (nil) かどうかを判定します。
+### Examples:
+```lisp
+(null? nil)       ; => t
+(null? '())       ; => t
+(null? '(1 2))    ; => nil
+```
+### See Also:
+[empty-p](empty-p), [cons](cons)

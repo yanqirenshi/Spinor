@@ -1,47 +1,23 @@
 # cons
-
-**Kind:** Function
-
+**Kind:** Function  
+**Signature:** `(a, [a]) -> [a]`
 ### Syntax:
-
 ```lisp
 (cons x lst)
 ```
-
 ### Arguments and Values:
-
-- `x` -- ãƒªã‚¹ãƒˆã®å…ˆé ­ã«è¿½åŠ ã™ã‚‹å€¤
-- `lst` -- æ—¢å­˜ã®ãƒªã‚¹ãƒˆ
-- æˆ»ã‚Šå€¤: `x` ã‚’å…ˆé ­ã«æŒã¤æ–°ã—ã„ãƒªã‚¹ãƒˆ
-
+- `x` -- ƒŠƒXƒg‚Ìæ“ª‚É’Ç‰Á‚·‚é’l
+- `lst` -- Šù‘¶‚ÌƒŠƒXƒg
+- –ß‚è’l: `x` ‚ğæ“ª‚É‚ÂV‚µ‚¢ƒŠƒXƒg
 ### Description:
-
-å€¤ã‚’ãƒªã‚¹ãƒˆã®å…ˆé ­ã«è¿½åŠ ã—ã€æ–°ã—ã„ãƒªã‚¹ãƒˆã‚’è¿”ã—ã¾ã™ã€‚Lisp ã®åŸºæœ¬çš„ãªãƒªã‚¹ãƒˆæ§‹ç¯‰é–¢æ•°ã§ã™ã€‚
-
+’l‚ğƒŠƒXƒg‚Ìæ“ª‚É’Ç‰Á‚µAV‚µ‚¢ƒŠƒXƒg‚ğ•Ô‚µ‚Ü‚·BLisp ‚ÌŠî–{“I‚ÈƒŠƒXƒg\’zŠÖ”‚Å‚·B
 ### Examples:
-
 ```lisp
 (cons 1 '(2 3))     ; => (1 2 3)
 (cons 'a nil)       ; => (a)
 (cons 1 (cons 2 (cons 3 nil)))  ; => (1 2 3)
 ```
-
-### Side Effects:
-
-None.
-
-### Affected By:
-
-None.
-
-### Exceptional Situations:
-
-None.
-
 ### See Also:
-
 [car](car), [cdr](cdr), [list](list)
-
 ### Notes:
-
-`cons` ã¯ "construct" ã®ç•¥ã§ã™ã€‚
+`cons` ‚Í "construct" ‚Ì—ª‚Å‚·B

@@ -1,6 +1,13 @@
 # put-mvar
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(MVar, Val) -> Bool`
-
-MVar ã«å€¤ã‚’æ ¼ç´ã—ã¾ã™ (ãƒ–ãƒ­ãƒƒã‚­ãƒ³ã‚°)ã€‚
+### Syntax:
+```lisp
+TBD
+```
+### Arguments and Values:
+TBD
+### Description:
+MVar ‚É’l‚ğŠi”[‚µ‚Ü‚· (ƒuƒƒbƒLƒ“ƒO)B
+### Examples:
+TBD
