@@ -1,26 +1,18 @@
 # if
-
-**Kind:** Special Form
-
+**Kind:** Special Form  
+**Signature:** `(Bool, Then, Else) -> Val`
 ### Syntax:
-
 ```lisp
 (if condition then-expr else-expr)
 ```
-
 ### Arguments and Values:
-
-- `condition` -- æ¡ä»¶å¼
-- `then-expr` -- æ¡ä»¶ãŒçœŸã®å ´åˆã«è©•ä¾¡ã•ã‚Œã‚‹å¼
-- `else-expr` -- æ¡ä»¶ãŒå½ã®å ´åˆã«è©•ä¾¡ã•ã‚Œã‚‹å¼
-- æˆ»ã‚Šå€¤: è©•ä¾¡ã•ã‚ŒãŸåˆ†å²ã®çµæœ
-
+- `condition` -- ğŒ®
+- `then-expr` -- ğŒ‚ª^‚Ìê‡‚É•]‰¿‚³‚ê‚é®
+- `else-expr` -- ğŒ‚ª‹U‚Ìê‡‚É•]‰¿‚³‚ê‚é®
+- –ß‚è’l: •]‰¿‚³‚ê‚½•ªŠò‚ÌŒ‹‰Ê
 ### Description:
-
-æ¡ä»¶åˆ†å²ã‚’è¡Œã„ã¾ã™ã€‚`condition` ãŒçœŸ (nil ä»¥å¤–) ãªã‚‰ `then-expr` ã‚’ã€å½ (nil) ãªã‚‰ `else-expr` ã‚’è©•ä¾¡ã—ã¾ã™ã€‚
-
+ğŒ•ªŠò‚ğs‚¢‚Ü‚·B`condition` ‚ª^ (nil ˆÈŠO) ‚È‚ç `then-expr` ‚ğA‹U (nil) ‚È‚ç `else-expr` ‚ğ•]‰¿‚µ‚Ü‚·B
 ### Examples:
-
 ```lisp
 (if (> 5 3) "yes" "no")  ; => "yes"
 
@@ -28,23 +20,7 @@
   (if (< n 0) (- 0 n) n)))
 (abs -5)  ; => 5
 ```
-
-### Side Effects:
-
-None.
-
-### Affected By:
-
-None.
-
-### Exceptional Situations:
-
-None.
-
 ### See Also:
-
 [match](match), [begin](begin)
-
 ### Notes:
-
-Spinor ã§ã¯ `nil` ã®ã¿ãŒå½ã¨ã—ã¦æ‰±ã‚ã‚Œã¾ã™ã€‚`0` ã‚„ç©ºãƒªã‚¹ãƒˆã¯çœŸã§ã™ã€‚
+Spinor ‚Å‚Í `nil` ‚Ì‚İ‚ª‹U‚Æ‚µ‚Äˆµ‚í‚ê‚Ü‚·B`0` ‚â‹óƒŠƒXƒg‚Í^‚Å‚·B

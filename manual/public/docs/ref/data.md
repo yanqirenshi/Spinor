@@ -1,42 +1,20 @@
 # data
-
-**Kind:** Special Form
-
+**Kind:** Special Form  
+**Signature:** `(TypeName, Constructors...) -> ()`
 ### Syntax:
-
 ```lisp
 (data TypeName (Ctor1 field1 ...) (Ctor2 field2 ...) ...)
 ```
-
 ### Arguments and Values:
-
-- `TypeName` -- å‹ã®åå‰
-- `Ctors` -- ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿å®šç¾©ã®ãƒªã‚¹ãƒˆ
-- æˆ»ã‚Šå€¤: ()
-
+- `TypeName` -- Œ^‚Ì–¼‘O
+- `Ctors` -- ƒRƒ“ƒXƒgƒ‰ƒNƒ^’è‹`‚ÌƒŠƒXƒg
+- –ß‚è’l: ()
 ### Description:
-
-ä»£æ•°çš„ãƒ‡ãƒ¼ã‚¿å‹ (ADT) ã‚’å®šç¾©ã—ã¾ã™ã€‚
-
+‘ã”“Iƒf[ƒ^Œ^ (ADT) ‚ğ’è‹`‚µ‚Ü‚·B
 ### Examples:
-
 ```lisp
 (data Maybe (Just val) Nothing)
 (data Tree (Leaf val) (Node left right))
 ```
-
-### Side Effects:
-
-None.
-
-### Affected By:
-
-None.
-
-### Exceptional Situations:
-
-None.
-
 ### See Also:
-
 [match](match)

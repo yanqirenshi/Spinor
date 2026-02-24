@@ -1,6 +1,13 @@
 # string-append
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(String...) -> String`
-
-è¤‡æ•°ã®æ–‡å­—åˆ—ã‚’é€£çµã—ã¾ã™ã€‚
+### Syntax:
+```lisp
+TBD
+```
+### Arguments and Values:
+TBD
+### Description:
+•¡”‚Ì•¶š—ñ‚ğ˜AŒ‹‚µ‚Ü‚·B
+### Examples:
+TBD

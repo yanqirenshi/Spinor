@@ -45,7 +45,8 @@ renderEntry :: Text -> DocEntry -> Text
 renderEntry name entry = T.intercalate "\n" $ filter (not . T.null) $
   [ "# " <> name
   , ""
-  , "**Kind:** " <> kindToText (docKind entry)
+  , "**Kind:** " <> kindToText (docKind entry) <> "  "
+  , "**Signature:** `" <> docSignature entry <> "`"
   , ""
   , "### Syntax:"
   , ""
@@ -65,21 +66,24 @@ renderEntry name entry = T.intercalate "\n" $ filter (not . T.null) $
   , ""
   , T.strip (docExamples entry)
   , ""
-  , "### Side Effects:"
-  , ""
-  , docSideEffects entry
-  , ""
-  , "### Affected By:"
-  , ""
-  , docAffectedBy entry
-  , ""
-  , "### Exceptional Situations:"
-  , ""
-  , docExceptionalSituations entry
-  , ""
   ]
+  ++ renderOptionalSection "Side Effects" (docSideEffects entry)
+  ++ renderOptionalSection "Affected By" (docAffectedBy entry)
+  ++ renderOptionalSection "Exceptional Situations" (docExceptionalSituations entry)
   ++ renderSeeAlso (docSeeAlso entry)
   ++ renderNotes (docNotes entry)
+
+-- | 値が "None." 以外の場合のみセクションを出力
+renderOptionalSection :: Text -> Text -> [Text]
+renderOptionalSection _ "None." = []
+renderOptionalSection title content
+  | T.null (T.strip content) = []
+  | otherwise =
+      [ "### " <> title <> ":"
+      , ""
+      , T.strip content
+      , ""
+      ]
 
 -- | See Also セクションをレンダリング
 renderSeeAlso :: [Text] -> [Text]

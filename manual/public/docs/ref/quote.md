@@ -1,41 +1,19 @@
 # quote
-
-**Kind:** Special Form
-
+**Kind:** Special Form  
+**Signature:** `(Expr) -> Val`
 ### Syntax:
-
 ```lisp
-(quote expr)  ; ã¾ãŸã¯ 'expr
+(quote expr)  ; ‚Ü‚½‚Í 'expr
 ```
-
 ### Arguments and Values:
-
-- `expr` -- ã‚¯ã‚ªãƒ¼ãƒˆã™ã‚‹å¼
-- æˆ»ã‚Šå€¤: è©•ä¾¡ã•ã‚Œã¦ã„ãªã„å¼ãã®ã‚‚ã®
-
+- `expr` -- ƒNƒI[ƒg‚·‚éŽ®
+- –ß‚è’l: •]‰¿‚³‚ê‚Ä‚¢‚È‚¢Ž®‚»‚Ì‚à‚Ì
 ### Description:
-
-å¼ã‚’è©•ä¾¡ã›ãšã«ãã®ã¾ã¾ãƒ‡ãƒ¼ã‚¿ã¨ã—ã¦è¿”ã—ã¾ã™ã€‚
-
+Ž®‚ð•]‰¿‚¹‚¸‚É‚»‚Ì‚Ü‚Üƒf[ƒ^‚Æ‚µ‚Ä•Ô‚µ‚Ü‚·B
 ### Examples:
-
 ```lisp
 (quote (+ 1 2))  ; => (+ 1 2)
 '(a b c)         ; => (a b c)
 ```
-
-### Side Effects:
-
-None.
-
-### Affected By:
-
-None.
-
-### Exceptional Situations:
-
-None.
-
 ### See Also:
-
 [list](list), [mac](mac)

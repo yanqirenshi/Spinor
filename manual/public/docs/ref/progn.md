@@ -1,6 +1,18 @@
 # progn
-
-**Kind:** Special Form
+**Kind:** Special Form  
 **Signature:** `(Expr...) -> Val`
-
-begin ã®ã‚¨ã‚¤ãƒªã‚¢ã‚¹ã€‚
+### Syntax:
+```lisp
+(progn expr1 expr2 ... exprN)
+```
+### Arguments and Values:
+- `exprs` -- •]‰¿‚·‚éŽ®‚ÌƒV[ƒPƒ“ƒX
+- –ß‚è’l: ÅŒã‚ÌŽ®‚Ì•]‰¿Œ‹‰Ê
+### Description:
+`begin` ‚ÌƒGƒCƒŠƒAƒXBCommon Lisp ƒXƒ^ƒCƒ‹B
+### Examples:
+```lisp
+(progn (setq x 1) (setq x (+ x 1)) x)  ; => 2
+```
+### See Also:
+[begin](begin)

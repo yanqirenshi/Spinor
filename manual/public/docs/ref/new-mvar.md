@@ -1,6 +1,13 @@
 # new-mvar
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `() -> MVar`
-
-æ–°ã—ã„ MVar ã‚’ä½œæˆã—ã¾ã™ã€‚
+### Syntax:
+```lisp
+TBD
+```
+### Arguments and Values:
+TBD
+### Description:
+V‚µ‚¢ MVar ‚ğì¬‚µ‚Ü‚·B
+### Examples:
+TBD

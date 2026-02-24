@@ -1,6 +1,20 @@
 # *
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(Int, Int) -> Int`
-
-2縺､縺ｮ謨ｴ謨ｰ繧剃ｹ礼ｮ励＠縺ｾ縺吶�
+### Syntax:
+```lisp
+(* a b)
+```
+### Arguments and Values:
+- `a` -- 第一オペランド
+- `b` -- 第二オペランド
+- 戻り値: `a * b`
+### Description:
+2つの整数を乗算します。
+### Examples:
+```lisp
+(* 3 4)   ; => 12
+(* 7 0)   ; => 0
+```
+### See Also:
+[add](add), [sub](sub)

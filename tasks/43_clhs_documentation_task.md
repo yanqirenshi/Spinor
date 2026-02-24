@@ -27,7 +27,44 @@
 実装完了後、**このファイル自体を編集して**、以下のセクションを末尾に追記してください。
 
 ### 実装方針
-(CLHS フォーマットの再現で工夫した点や、解説ページの執筆意図など)
+
+**DocGen.hs の改修:**
+- CLHS 仕様に準拠し、`**Signature:**` フィールドを基本情報セクションに追加
+- 条件付きセクション出力: `docSideEffects`, `docAffectedBy`, `docExceptionalSituations` は値が `"None."` の場合は出力しない (`renderOptionalSection` 関数を追加)
+- See Also は既存のリンク生成ロジックを維持
+
+**コアページの改善:**
+- `introduction.md` は既に包括的な内容を持っていたため、大きな変更なし
+- `syntax.md` に **型システム** セクションを追加 (Hindley-Milner 型推論、基本型、型表示、多相性の解説)
 
 ### 実装内容
-(変更したファイルの一覧、追加したドキュメントの概要など)
+
+**変更ファイル:**
+
+1. **src/Spinor/DocGen.hs**
+   - `renderEntry` 関数: Signature フィールドを追加
+   - `renderOptionalSection` 関数: 条件付きセクション出力 ("None." 以外のみ)
+
+2. **manual/public/docs/syntax.md**
+   - 型システムセクションを追加 (型推論、基本型テーブル、多相性の解説)
+
+**生成確認:**
+
+```
+$ cabal run spinor -- docgen
+Generating documentation...
+Generated 60 reference files.
+Documentation generated successfully.
+```
+
+**出力フォーマット例 (`ref/add.md`):**
+- Title: `# +`
+- Kind/Signature: 基本情報
+- Syntax/Arguments/Description/Examples: 必須セクション
+- Exceptional Situations: 条件付き表示 (内容あり)
+- See Also: リンク付きリスト
+
+**出力フォーマット例 (`ref/def.md`):**
+- Side Effects: 条件付き表示 (内容あり)
+- Notes: 条件付き表示 (内容あり)
+- Affected By/Exceptional Situations: 非表示 ("None." のため)

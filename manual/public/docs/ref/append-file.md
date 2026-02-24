@@ -1,6 +1,13 @@
 # append-file
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(String, String) -> Bool`
-
-ファイルに文字列を追記します。
+### Syntax:
+```lisp
+TBD
+```
+### Arguments and Values:
+TBD
+### Description:
+�t�@�C���ɕ������ǋL���܂��B
+### Examples:
+TBD

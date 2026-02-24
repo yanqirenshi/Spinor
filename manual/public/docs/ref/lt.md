@@ -1,6 +1,19 @@
 # <
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(Int, Int) -> Bool`
-
-å·¦è¾ºãŒå³è¾ºã‚ˆã‚Šå°ã•ã„ã‹ã‚’åˆ¤å®šã—ã¾ã™ã€‚
+### Syntax:
+```lisp
+(< a b)
+```
+### Arguments and Values:
+- `a`, `b` -- ”äŠr‚·‚é®”
+- –ß‚è’l: `a < b` ‚È‚ç `t`
+### Description:
+¶•Ó‚ª‰E•Ó‚æ‚è¬‚³‚¢‚©‚ğ”»’è‚µ‚Ü‚·B
+### Examples:
+```lisp
+(< 1 2)  ; => t
+(< 5 3)  ; => nil
+```
+### See Also:
+[gt](gt), [eq-op](eq-op)

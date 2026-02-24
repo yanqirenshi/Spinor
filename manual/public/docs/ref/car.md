@@ -1,41 +1,19 @@
 # car
-
-**Kind:** Function
-
+**Kind:** Function  
+**Signature:** `([a]) -> a`
 ### Syntax:
-
 ```lisp
 (car lst)
 ```
-
 ### Arguments and Values:
-
-- `lst` -- å¯¾è±¡ã®ãƒªã‚¹ãƒˆ
-- æˆ»ã‚Šå€¤: ãƒªã‚¹ãƒˆã®æœ€åˆã®è¦ç´ 
-
+- `lst` -- ‘ÎÛ‚ÌƒŠƒXƒg
+- –ß‚è’l: ƒŠƒXƒg‚ÌÅ‰‚Ì—v‘f
 ### Description:
-
-ãƒªã‚¹ãƒˆã®å…ˆé ­è¦ç´  (head) ã‚’è¿”ã—ã¾ã™ã€‚
-
+ƒŠƒXƒg‚Ìæ“ª—v‘f (head) ‚ð•Ô‚µ‚Ü‚·B
 ### Examples:
-
 ```lisp
 (car '(1 2 3))  ; => 1
 (car '(a))      ; => a
 ```
-
-### Side Effects:
-
-None.
-
-### Affected By:
-
-None.
-
-### Exceptional Situations:
-
-None.
-
 ### See Also:
-
 [cdr](cdr), [cons](cons)

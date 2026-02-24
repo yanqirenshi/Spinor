@@ -1,6 +1,13 @@
 # string->list
-
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(String) -> [String]`
-
-æ–‡å­—åˆ—ã‚’1æ–‡å­—ãšã¤ã®ãƒªã‚¹ãƒˆã«å¤‰æ›ã—ã¾ã™ã€‚
+### Syntax:
+```lisp
+TBD
+```
+### Arguments and Values:
+TBD
+### Description:
+•¶š—ñ‚ğ1•¶š‚¸‚Â‚ÌƒŠƒXƒg‚É•ÏŠ·‚µ‚Ü‚·B
+### Examples:
+TBD

@@ -1,25 +1,17 @@
 # match
-
-**Kind:** Special Form
-
+**Kind:** Special Form  
+**Signature:** `(Expr, Branches...) -> Val`
 ### Syntax:
-
 ```lisp
 (match expr (pattern1 body1) (pattern2 body2) ...)
 ```
-
 ### Arguments and Values:
-
-- `expr` -- ãƒãƒƒãƒå¯¾è±¡ã®å¼
-- `patterns` -- ãƒ‘ã‚¿ãƒ¼ãƒ³ã¨æœ¬ä½“ã®ãƒšã‚¢
-- æˆ»ã‚Šå€¤: ãƒãƒƒãƒã—ãŸåˆ†å²ã®æœ¬ä½“ã®è©•ä¾¡çµæœ
-
+- `expr` -- ƒ}ƒbƒ`‘ÎÛ‚Ì®
+- `patterns` -- ƒpƒ^[ƒ“‚Æ–{‘Ì‚ÌƒyƒA
+- –ß‚è’l: ƒ}ƒbƒ`‚µ‚½•ªŠò‚Ì–{‘Ì‚Ì•]‰¿Œ‹‰Ê
 ### Description:
-
-ãƒ‘ã‚¿ãƒ¼ãƒ³ãƒãƒƒãƒã‚’è¡Œã„ã¾ã™ã€‚å¼ã®å€¤ã«æœ€åˆã«ãƒãƒƒãƒã™ã‚‹ãƒ‘ã‚¿ãƒ¼ãƒ³ã®æœ¬ä½“ã‚’è©•ä¾¡ã—ã¾ã™ã€‚
-
+ƒpƒ^[ƒ“ƒ}ƒbƒ`‚ğs‚¢‚Ü‚·B®‚Ì’l‚ÉÅ‰‚Éƒ}ƒbƒ`‚·‚éƒpƒ^[ƒ“‚Ì–{‘Ì‚ğ•]‰¿‚µ‚Ü‚·B
 ### Examples:
-
 ```lisp
 (data Maybe (Just val) Nothing)
 
@@ -28,19 +20,5 @@
     ((cons x _) (Just x))
     (nil Nothing))))
 ```
-
-### Side Effects:
-
-None.
-
-### Affected By:
-
-None.
-
-### Exceptional Situations:
-
-None.
-
 ### See Also:
-
 [if](if), [data](data)

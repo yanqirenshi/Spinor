@@ -1,42 +1,20 @@
 # list
-
-**Kind:** Function
-
+**Kind:** Function  
+**Signature:** `(a...) -> [a]`
 ### Syntax:
-
 ```lisp
 (list elem1 elem2 ...)
 ```
-
 ### Arguments and Values:
-
-- `elems` -- ãƒªã‚¹ãƒˆã®è¦ç´ 
-- æˆ»ã‚Šå€¤: å¼•æ•°ã‚’å«ã‚€ãƒªã‚¹ãƒˆ
-
+- `elems` -- ƒŠƒXƒg‚Ì—v‘f
+- –ß‚è’l: ˆø”‚ðŠÜ‚ÞƒŠƒXƒg
 ### Description:
-
-å¼•æ•°ã‚’ãƒªã‚¹ãƒˆã«ã¾ã¨ã‚ã¾ã™ã€‚
-
+ˆø”‚ðƒŠƒXƒg‚É‚Ü‚Æ‚ß‚Ü‚·B
 ### Examples:
-
 ```lisp
 (list 1 2 3)      ; => (1 2 3)
 (list 'a 'b)      ; => (a b)
 (list)            ; => nil
 ```
-
-### Side Effects:
-
-None.
-
-### Affected By:
-
-None.
-
-### Exceptional Situations:
-
-None.
-
 ### See Also:
-
 [cons](cons), [quote](quote)
