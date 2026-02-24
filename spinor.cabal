@@ -65,6 +65,7 @@ test-suite spinor-test
   other-modules:
     Spinor.ParserSpec
     Spinor.EvalSpec
+    Spinor.ServerSpec
   build-depends:
     base           >= 4.14 && < 5,
     hspec          >= 2.7  && < 3,

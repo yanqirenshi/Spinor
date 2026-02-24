@@ -26,6 +26,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Windows: MSYS2 環境のセットアップ (network, hmatrix のビルドに必要)
+      - name: Setup MSYS2
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          path-type: inherit
+          update: true
+          install: >-
+            mingw-w64-x86_64-openblas
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-glfw
+            base-devel
+            autoconf
+            automake
+
       - uses: haskell-actions/setup@v2
         with:
           ghc-version: '9.6.3'

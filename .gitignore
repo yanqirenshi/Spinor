@@ -1,4 +1,4 @@
 dist-newstyle*/
 *.o
 *.hi
-*~
+*~cabal.project.local
