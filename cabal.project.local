@@ -1,0 +1,16 @@
+-- Windows (MSYS2/MinGW64) 環境用の設定
+-- hmatrix が MSYS2 の OpenBLAS を利用するよう +openblas フラグを有効化
+-- OpenCL, GLFW 等の C ライブラリパスも指定
+
+package hmatrix
+  flags: +openblas
+  extra-lib-dirs: C:\msys64\mingw64\lib
+  extra-include-dirs: C:\msys64\mingw64\include
+
+package OpenCL
+  extra-lib-dirs: C:\msys64\mingw64\lib
+  extra-include-dirs: C:\msys64\mingw64\include
+
+package bindings-GLFW
+  extra-lib-dirs: C:\msys64\mingw64\lib
+  extra-include-dirs: C:\msys64\mingw64\include

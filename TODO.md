@@ -185,11 +185,12 @@ Spinor の Dual Implementation を維持しつつ、科学技術計算の強力�
 - [x] **Step 34: Binary Distribution (GitHub Actions)**
     - [x] **CI Pipeline:** Push 時に Linux / Windows / macOS でビルドとテストを実行するワークフローの作成。
     - [x] **Release Automation:** タグ (`v0.1.0` 等) を打った際に、自動で `spinor-windows.exe`, `spinor-linux` 等をビルドし、GitHub Releases にアップロードする設定。
-- [ ] **Step 50: Windows Native Build Foundation**
-    - [ ] **Config:** `cabal.project.local` による Windows 向けフラグ (`+openblas`) 設定。
-    - [ ] **CI:** GitHub Actions への MSYS2 セットアップと依存ライブラリインストールの追加。
-    - [ ] **Fix:** Windows 環境での `network` パッケージビルドエラーの解消。
-
+- [x] **Windows Native Build Foundation (MSYS2 & C Libraries)**
+    - [x] MSYS2 (MinGW64) 経由での C/C++ ビルドツール (`base-devel`, `autoconf`, `make`, `pkgconf` 等) の導入と `network` パッケージのビルドエラー (`HsNetworkConfig.h`) 解消。
+    - [x] MSYS2 経由での OpenBLAS (`mingw-w64-x86_64-openblas`) のインストール。
+    - [x] `cabal.project.local` の作成と、`hmatrix` に対する `+openblas` フラグの設定。
+    - [x] Windowsローカル環境での `cabal build` および `cabal test` の成功確認。
+    - [x] CI (GitHub Actions) の Windows ランナーに MSYS2 と OpenBLAS のセットアップステップを組み込む。
 
 ## 📖 Reference Manual (React CLHS-style Docs)
 React を用いて、CLHS ライクでモダンなリファレンスサイトを構築し、GitHub Actions で自動ビルド・デプロイする。
@@ -212,3 +213,32 @@ React を用いて、CLHS ライクでモダンなリファレンスサイトを
     - [ ] `docs/syntax.md` に Lisp 構文と Haskell セマンティクスの解説を執筆・反映。
     - [ ] `docs/introduction.md` にインストール、セットアップ、利用方法のガイドを執筆・反映。
 
+## 🌌 The Ultimate Dream (究極の目標: Lispマシンの創生)
+Spinor を単なるアプリケーションレベルの処理系から、ハードウェアと直接対話する「Lispマシン（OS / ハードウェア）」へと昇華させる。
+
+- [ ] **Step 51: Lisp Machine Architecture Study (概念理解とアーキテクチャ調査)**
+    - [ ] 歴史的なLispマシン (MIT CADR, Symbolics, LMI) のアーキテクチャ設計を調査・整理する。
+    - [ ] 現代のアプローチ（Unikernel, FPGA, RISC-V）において、Lispマシンをどのように再構築できるか技術的な実現可能性を検討する。
+    - [ ] 調査結果を `docs/lisp_machine_vision.md` としてドキュメント化し、Spinor の最終形態のビジョンを定義する。
+- [ ] **Step 52: Spinor OS / Unikernel Concept (ベアメタル実行への挑戦)**
+    - [ ] Linux などの巨大なホスト OS に依存せず、Spinor の C ランタイム (トランスパイル出力) を軽量な Unikernel 形式（例: MirageOSの概念）でビルドする実験を行う。
+    - [ ] ブートローダから直接 Spinor の REPL を起動できる最小構成の「Spinor OS」のプロトタイプを作成する。
+- [ ] **Step 53: Hardware Representation (ハードウェア直接実行)**
+    - [ ] Spinor の AST または中間表現を、C や LLVM ではなく、ハードウェア記述言語 (HDL) や FPGA の論理回路にマッピングするコンパイラ・バックエンドの構想を練る。
+    - [ ] ガベージコレクションやリスト処理をハードウェアレベルで支援する仕組みの設計。
+
+## 🤖 AI-Native DevEnv (AI協調開発環境とプロジェクト雛形)
+Claude Code などの AI エージェントが、Spinor プロジェクトを自律的に理解・開発・テストできるためのエコシステムを構築する。
+
+- [ ] **Step 51: Project Template & `claude.md` (AI 用コンテキストの定義)**
+    - [ ] `spinor init` コマンドを拡張し、新規プロジェクト作成時に `.spin` ファイルの雛形と同時に `claude.md` を自動生成する機能を追加。
+    - [ ] `claude.md` 内に、Spinor の言語仕様、ビルド方法、型システムの特徴を AI 向けに簡潔に記述する。
+- [ ] **Step 52: Claude Code Skills Integration (カスタムスキルの整備)**
+    - [ ] Claude Code が Spinor のコードベースを操作・検証しやすいように、CLI (`spinor check`, `spinor fmt` 等) の出力を AI がパースしやすい形式 (JSON 等) で出力するオプションを追加。
+    - [ ] プロジェクト固有のスクリプトとして、Claude Code がテストを回してエラーを自己修正するためのループ基盤を整備。
+- [ ] **Step 53: Spinor MCP Server (Model Context Protocol 統合)**
+    - [ ] Spinor 処理系を MCP サーバーとして起動するモード (`spinor mcp`) を実装する。
+    - [ ] Claude Code が MCP 経由で、Spinor の型環境 (Type Environment) のクエリ、マクロ展開の結果、REPL での評価結果を直接取得できるようにし、AI のハルシネーション（嘘のコード生成）を防ぐ。
+- [ ] **Step 54: Agent Teams Workflow (自律型マルチエージェント開発基盤)**
+    - [ ] Claude Code の「Agent Teams」機能を活用し、Team Lead と複数の Teammate が並列で開発を進められる共有タスクリスト（ファイルベースのキュー）の運用ルールを確立する。
+    - [ ] ファイルロックや Mailbox メッセージングを利用し、エージェント同士が互いのコードを自律的にレビュー・修正し合える Spinor 独自のワークフロー基盤を構築する。
