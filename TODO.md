@@ -69,9 +69,10 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [ ] 全プリミティブ・標準ライブラリ関数を網羅したリファレンスの作成。
     - [ ] 型シグネチャ、使用例、エッジケースの挙動を記載。
     - [ ] Web上で閲覧可能な形式 (HTML/Markdown) への出力。
-- [ ] **エラーメッセージの改善**
-    - [ ] ソース位置情報の追跡 (ファイル名, 行, 列)。
-    - [ ] 初学者に優しい型エラーメッセージ。
+- [ ] **Step 59: Error Reporting & Source Tracking**
+    - [ ] **AST:** `Expr` への `SourceSpan` フィールド追加。
+    - [ ] **Parser:** パース時の位置情報キャプチャの実装。
+    - [ ] **Reporter:** `Infer` / `Eval` での正確なエラー位置指摘。
 - [x] **Step 29: SLY / SLIME Support (TCP Socket Integration)**
     - [x] **Dependency:** `package.yaml` に `network` パッケージを追加。
     - [x] **Socket Server:** 指定ポートで待ち受け、接続を受け入れる `spinor server` コマンドの実装。
@@ -214,10 +215,11 @@ React を用いて、CLHS ライクでモダンなリファレンスサイトを
     - [x] LP (ランディングページ) と WASM REPL を新しいマニュアルサイトに統合。
 - [x] **Step 42: GitHub Actions Integration**
     - [x] Push 時に `manual/` をビルドし、成果物をリポジトリの `docs/` ディレクトリに配置・コミットする CI ワークフローの作成。
-- [ ] **Step 43: CLHS Format Documentation & Core Pages**
-    - [x] `Docs.hs` のデータモデル拡張 (済)。
-    - [ ] `DocGen.hs` による CLHS 形式 Markdown 出力の改修。
-    - [ ] `docs/syntax.md` と `docs/introduction.md` の作成。
+- [x] **Step 43: CLHS Format Documentation & Core Pages**
+    - [x] `Docs.hs` のデータモデルを拡張し、CLHS と同等のセクション (Syntax, Arguments, Description, Examples 等) を追加。
+    - [x] `DocGen.hs` のジェネレータを改修し、各 Operator のページを CLHS フォーマットで出力。
+    - [x] `docs/syntax.md` に Lisp 構文と Haskell セマンティクスの解説を執筆・反映。
+    - [x] `docs/introduction.md` にインストール、セットアップ、利用方法のガイドを執筆・反映。
 - [ ] **Step 43-B: Build & Environment Guide (ビルド手順の文書化)**
     - [ ] `docs/build.md` を新規作成（または `introduction.md` に統合）し、環境構築手順を詳細に記載する。
     - [ ] **WSL2 環境:** 必要なシステムパッケージ (`libglfw3-dev`, `libgl1-mesa-dev`, `pocl-opencl-icd` 等) のインストールコマンドと `cabal build` 手順の記載。
