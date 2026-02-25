@@ -26,7 +26,57 @@
 実装完了後、**このファイル自体を編集して**、以下のセクションを末尾に追記してください。
 
 ### 実装方針
-(サイドバーのデータ構造の設計、Markdown 分割時の情報整理のポイントなど)
+
+**サイドバーのデータ構造:**
+- `NavItem` インターフェースに `items?: NavItem[]` を追加し、ネスト可能な構造を実現
+- カテゴリ項目は `to` (リンク先) と `items` (子要素) の両方を持てる設計
+- 子要素の存在する場所への遷移時に自動展開する機能を実装
+
+**Markdown 分割の方針:**
+- 元の `syntax.md` の見出し構造に基づいて6つのトピックに分割
+- 各ページ末尾に「次のステップ」として関連ページへのリンクを追加
+- 元の `syntax.md` はサブページへのインデックスとして再構成
 
 ### 実装内容
-(作成・変更したファイル、新しく導入した React コンポーネントの構造など)
+
+**新規作成ファイル:**
+
+| ファイル | 内容 |
+|---------|------|
+| `manual/public/docs/syntax/atoms.md` | 数値、シンボル、文字列、特殊シンボル |
+| `manual/public/docs/syntax/type-system.md` | 型推論、多相性、基本型 |
+| `manual/public/docs/syntax/evaluation.md` | リストの評価規則、クオート |
+| `manual/public/docs/syntax/definitions.md` | def, fn, mac, クロージャ |
+| `manual/public/docs/syntax/control-flow.md` | if, let, begin, setq |
+| `manual/public/docs/syntax/data-types.md` | data, match, パターンマッチ |
+
+**変更ファイル:**
+
+| ファイル | 変更内容 |
+|---------|---------|
+| `manual/src/components/Sidebar.tsx` | `NavItem` インターフェース追加、`NavItemComponent` で階層表示を実装 |
+| `manual/src/App.css` | サイドバー階層表示用のスタイル追加 (`.sidebar-category-*` クラス) |
+| `manual/public/docs/syntax.md` | サブページへのインデックスページに変更 |
+| `manual/public/docs/introduction.md` | Syntax リンクを `syntax/atoms` に更新 |
+| `manual/public/docs/build.md` | Syntax リンクを `syntax/atoms` に更新 |
+
+**React コンポーネント構造:**
+
+```typescript
+interface NavItem {
+  label: string
+  to?: string       // リンク先 (オプション)
+  items?: NavItem[] // 子メニュー (オプション)
+}
+
+function NavItemComponent({ item, depth }: NavItemProps)
+  // - hasChildren の場合: 展開/折りたたみボタン + リンク or ラベル
+  // - それ以外: 通常のリンク
+  // - depth に応じた左パディングで階層を視覚化
+```
+
+**UI 機能:**
+- ▶/▼ アイコンで展開状態を表示
+- 現在のパスに一致する子要素がある場合、自動的に親を展開
+- カテゴリ名自体もクリック可能 (インデックスページへ遷移)
+- ダークモード対応
