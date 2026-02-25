@@ -245,6 +245,13 @@ React を用いて、CLHS ライクでモダンなリファレンスサイトを
     - [ ] Haskellカーネルでのパース・型推論や C/WASM へのトランスパイル戦略を解説する `docs/architecture.md` の作成。
 - [ ] **Step 43-F: Editor Setup Guide (エディタ環境構築ガイド)**
     - [ ] `spinor-mode` や LSP/SLY の連携手順を解説する `docs/emacs_setup.md` の作成。
+- [x] **Step 43-G: CLHS Core Chapters Expansion**
+    - [x] Numbers, Strings, Conses, Arrays 等のデータ型別解説ページの追加。
+    - [x] Packages (Module System) 解説ページの追加。
+    - [x] サイドバーのカテゴリ再編 (Data Types / System)。
+- [x] **Step 43-H: CLHS Extended Chapters**
+    - [x] Symbols, Iteration, Files, Environment 解説ページの追加。
+    - [x] 既存ドキュメントの整理と相互リンクの整備。
 
 ## 🌌 The Ultimate Dream (究極の目標: Lispマシンの創生)
 Spinor を単なるアプリケーションレベルの処理系から、ハードウェアと直接対話する「Lispマシン（OS / ハードウェア）」へと昇華させる。
