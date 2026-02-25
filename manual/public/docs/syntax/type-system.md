@@ -62,7 +62,3 @@ id
 ;; :: (-> (List a) Int)
 ```
 
-## 次のステップ
-
-- [Atoms](atoms) - 基本データ型
-- [Definitions](definitions) - 関数とマクロの定義

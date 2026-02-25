@@ -95,7 +95,3 @@ x  ; => 2
     counter))  ; => 2
 ```
 
-## 次のステップ
-
-- [Definitions](definitions) - 関数とマクロの定義
-- [Data Types](data-types) - 代数的データ型とパターンマッチ

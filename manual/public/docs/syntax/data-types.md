@@ -113,8 +113,3 @@ Nothing
 (tree-sum my-tree)  ; => 6
 ```
 
-## 次のステップ
-
-- [API Reference](/docs/api-index) - 組み込み関数の詳細
-- [Definitions](definitions) - 関数とマクロの定義
-- [Control Flow](control-flow) - 制御構造

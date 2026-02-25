@@ -41,7 +41,3 @@ null?           ; 疑問符で終わるシンボル (述語)
 | `nil` | 空リスト / 偽値 |
 | `t` | 真値 |
 
-## 次のステップ
-
-- [Type System](type-system) - 型システムと型推論
-- [Evaluation](evaluation) - 評価規則とクオート

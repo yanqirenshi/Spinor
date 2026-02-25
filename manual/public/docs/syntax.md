@@ -48,7 +48,3 @@ Spinor の構文リファレンスです。以下のセクションに分かれ�
   (Nothing  0))
 ```
 
-## 次のステップ
-
-- [API Reference](api-index) - 組み込み関数の詳細
-- [Introduction](introduction) - インストールと環境設定

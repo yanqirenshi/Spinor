@@ -91,8 +91,3 @@
 (unless nil (print "executed"))  ; => "executed"
 ```
 
-## 次のステップ
-
-- [Control Flow](control-flow) - 制御構造
-- [Data Types](data-types) - 代数的データ型
-- [Type System](type-system) - 型推論

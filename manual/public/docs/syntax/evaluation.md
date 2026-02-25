@@ -61,8 +61,3 @@
 (eq 'x 'y)    ; => nil
 ```
 
-## 次のステップ
-
-- [Atoms](atoms) - 基本データ型
-- [Definitions](definitions) - 関数とマクロの定義
-- [Control Flow](control-flow) - 制御構造
