@@ -8,6 +8,6 @@ TBD
 ### Arguments and Values:
 TBD
 ### Description:
-�t�@�C���ɕ������ǋL���܂��B
+ファイルに文字列を追記します。
 ### Examples:
 TBD

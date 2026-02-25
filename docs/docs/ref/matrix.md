@@ -6,26 +6,26 @@
 (matrix rows cols elements)
 ```
 ### Arguments and Values:
-- `rows` -- �s�� (���̐���)
-- `cols` -- �� (���̐���)
-- `elements` -- �v�f�̃��X�g (`Int` �܂��� `Float`)
-- �߂�l: `rows �~ cols` �̍s��
+- `rows` -- 行数 (正の整数)
+- `cols` -- 列数 (正の整数)
+- `elements` -- 要素のリスト (`Int` または `Float`)
+- 戻り値: `rows × cols` の行列
 ### Description:
-�s��𐶐����܂��B�s���E�񐔂Ɨv�f�̃t���b�g���X�g����s�D�� (row-major) �ō\�z���܂��B
+行列を生成します。行数・列数と要素のフラットリストから行優先 (row-major) で構築します。
 ### Examples:
 ```lisp
-;; 2x3 �s��𐶐�
+;; 2x3 行列を生成
 (matrix 2 3 '(1 2 3 4 5 6))
 ; => #m((1.0 2.0 3.0) (4.0 5.0 6.0))
 
-;; �P�ʍs��
+;; 単位行列
 (matrix 2 2 '(1 0 0 1))
 ; => #m((1.0 0.0) (0.0 1.0))
 ```
 ### Exceptional Situations:
-- `rows * cols` �Ɨv�f������v���Ȃ��ꍇ�A�G���[��Ԃ��܂��B
-- �v�f�ɐ��l�ȊO���܂܂��ꍇ�A�G���[��Ԃ��܂��B
+- `rows * cols` と要素数が一致しない場合、エラーを返します。
+- 要素に数値以外が含まれる場合、エラーを返します。
 ### See Also:
 [mdim](mdim), [mref](mref)
 ### Notes:
-�����I�ɂ� `Data.Vector.Storable` ���g�p���A�����I�� BLAS/LAPACK �A�g��z�肵�Ă��܂��B
+内部的には `Data.Vector.Storable` を使用し、将来的な BLAS/LAPACK 連携を想定しています。

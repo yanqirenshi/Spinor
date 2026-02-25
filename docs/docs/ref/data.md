@@ -6,11 +6,11 @@
 (data TypeName (Ctor1 field1 ...) (Ctor2 field2 ...) ...)
 ```
 ### Arguments and Values:
-- `TypeName` -- Œ^‚Ì–¼‘O
-- `Ctors` -- ƒRƒ“ƒXƒgƒ‰ƒNƒ^’è‹`‚ÌƒŠƒXƒg
-- –ß‚è’l: ()
+- `TypeName` -- å‹ã®åå‰
+- `Ctors` -- ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿å®šç¾©ã®ãƒªã‚¹ãƒˆ
+- æˆ»ã‚Šå€¤: ()
 ### Description:
-‘ã”“Iƒf[ƒ^Œ^ (ADT) ‚ğ’è‹`‚µ‚Ü‚·B
+ä»£æ•°çš„ãƒ‡ãƒ¼ã‚¿å‹ (ADT) ã‚’å®šç¾©ã—ã¾ã™ã€‚
 ### Examples:
 ```lisp
 (data Maybe (Just val) Nothing)

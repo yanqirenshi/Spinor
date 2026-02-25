@@ -6,23 +6,23 @@
 (cl-init)
 ```
 ### Arguments and Values:
-- ˆø”‚È‚µ
-- –ß‚è’l: OpenCL ƒRƒ“ƒeƒLƒXƒg (`CLContext`)
+- å¼•æ•°ãªã—
+- æˆ»ã‚Šå€¤: OpenCL ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆ (`CLContext`)
 ### Description:
-OpenCL ƒvƒ‰ƒbƒgƒtƒH[ƒ€‚ÆƒfƒoƒCƒX‚ðƒXƒLƒƒƒ“‚µAƒRƒ“ƒeƒLƒXƒg‚ÆƒRƒ}ƒ“ƒhƒLƒ…[‚ð‰Šú‰»‚µ‚Ü‚·BGPU ‚ð—Dæ‚µA‚È‚¯‚ê‚Î CPU ‚ÉƒtƒH[ƒ‹ƒoƒbƒN‚µ‚Ü‚·B
+OpenCL ãƒ—ãƒ©ãƒƒãƒˆãƒ•ã‚©ãƒ¼ãƒ ã¨ãƒ‡ãƒã‚¤ã‚¹ã‚’ã‚¹ã‚­ãƒ£ãƒ³ã—ã€ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆã¨ã‚³ãƒžãƒ³ãƒ‰ã‚­ãƒ¥ãƒ¼ã‚’åˆæœŸåŒ–ã—ã¾ã™ã€‚GPU ã‚’å„ªå…ˆã—ã€ãªã‘ã‚Œã° CPU ã«ãƒ•ã‚©ãƒ¼ãƒ«ãƒãƒƒã‚¯ã—ã¾ã™ã€‚
 ### Examples:
 ```lisp
 (def ctx (cl-init))
 ctx  ; => <CLContext>
 ```
 ### Side Effects:
-OpenCL ƒvƒ‰ƒbƒgƒtƒH[ƒ€‚Ì‰Šú‰»‚ðs‚¢‚Ü‚·B
+OpenCL ãƒ—ãƒ©ãƒƒãƒˆãƒ•ã‚©ãƒ¼ãƒ ã®åˆæœŸåŒ–ã‚’è¡Œã„ã¾ã™ã€‚
 ### Affected By:
-ƒVƒXƒeƒ€‚ÉƒCƒ“ƒXƒg[ƒ‹‚³‚ê‚½ OpenCL ƒhƒ‰ƒCƒo‚ÆƒfƒoƒCƒX‚ÉˆË‘¶‚µ‚Ü‚·B
+ã‚·ã‚¹ãƒ†ãƒ ã«ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã•ã‚ŒãŸ OpenCL ãƒ‰ãƒ©ã‚¤ãƒã¨ãƒ‡ãƒã‚¤ã‚¹ã«ä¾å­˜ã—ã¾ã™ã€‚
 ### Exceptional Situations:
-- OpenCL ƒvƒ‰ƒbƒgƒtƒH[ƒ€‚ªŒ©‚Â‚©‚ç‚È‚¢ê‡AƒGƒ‰[‚ð•Ô‚µ‚Ü‚·B
-- —˜—p‰Â”\‚ÈƒfƒoƒCƒX (GPU/CPU) ‚ªŒ©‚Â‚©‚ç‚È‚¢ê‡AƒGƒ‰[‚ð•Ô‚µ‚Ü‚·B
+- OpenCL ãƒ—ãƒ©ãƒƒãƒˆãƒ•ã‚©ãƒ¼ãƒ ãŒè¦‹ã¤ã‹ã‚‰ãªã„å ´åˆã€ã‚¨ãƒ©ãƒ¼ã‚’è¿”ã—ã¾ã™ã€‚
+- åˆ©ç”¨å¯èƒ½ãªãƒ‡ãƒã‚¤ã‚¹ (GPU/CPU) ãŒè¦‹ã¤ã‹ã‚‰ãªã„å ´åˆã€ã‚¨ãƒ©ãƒ¼ã‚’è¿”ã—ã¾ã™ã€‚
 ### See Also:
 [to-device](to-device), [to-host](to-host), [cl-compile](cl-compile)
 ### Notes:
-Haskell ‚Ì OpenCL ƒpƒbƒP[ƒW (`Control.Parallel.OpenCL`) ‚ðŽg—p‚µ‚Ä‚¢‚Ü‚·B
+Haskell ã® OpenCL ãƒ‘ãƒƒã‚±ãƒ¼ã‚¸ (`Control.Parallel.OpenCL`) ã‚’ä½¿ç”¨ã—ã¦ã„ã¾ã™ã€‚

@@ -6,23 +6,23 @@
 (gl-init width height title)
 ```
 ### Arguments and Values:
-- `width` -- ƒEƒBƒ“ƒhƒE‚Ì• (ƒsƒNƒZƒ‹)
-- `height` -- ƒEƒBƒ“ƒhƒE‚Ì‚‚³ (ƒsƒNƒZƒ‹)
-- `title` -- ƒEƒBƒ“ƒhƒE‚Ìƒ^ƒCƒgƒ‹ (•¶Žš—ñ)
-- –ß‚è’l: GLFW ƒEƒBƒ“ƒhƒEƒnƒ“ƒhƒ‹ (`Window`)
+- `width` -- ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®å¹… (ãƒ”ã‚¯ã‚»ãƒ«)
+- `height` -- ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®é«˜ã• (ãƒ”ã‚¯ã‚»ãƒ«)
+- `title` -- ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ã‚¿ã‚¤ãƒˆãƒ« (æ–‡å­—åˆ—)
+- æˆ»ã‚Šå€¤: GLFW ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒãƒ³ãƒ‰ãƒ« (`Window`)
 ### Description:
-GLFW ‚ð‰Šú‰»‚µAŽw’è‚³‚ê‚½ƒTƒCƒY‚Æƒ^ƒCƒgƒ‹‚ÅƒEƒBƒ“ƒhƒE‚ðì¬‚µ‚Ü‚·B
+GLFW ã‚’åˆæœŸåŒ–ã—ã€æŒ‡å®šã•ã‚ŒãŸã‚µã‚¤ã‚ºã¨ã‚¿ã‚¤ãƒˆãƒ«ã§ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆã—ã¾ã™ã€‚
 ### Examples:
 ```lisp
 (def win (gl-init 640 480 "My Window"))
 win  ; => <Window>
 ```
 ### Side Effects:
-GLFW ‚ð‰Šú‰»‚µAOpenGL ƒRƒ“ƒeƒLƒXƒg•t‚«‚ÌƒEƒBƒ“ƒhƒE‚ðì¬‚µ‚Ü‚·B
+GLFW ã‚’åˆæœŸåŒ–ã—ã€OpenGL ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆä»˜ãã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ä½œæˆã—ã¾ã™ã€‚
 ### Affected By:
-ƒfƒBƒXƒvƒŒƒCŠÂ‹«‚ÉˆË‘¶‚µ‚Ü‚·B
+ãƒ‡ã‚£ã‚¹ãƒ—ãƒ¬ã‚¤ç’°å¢ƒã«ä¾å­˜ã—ã¾ã™ã€‚
 ### Exceptional Situations:
-- GLFW ‚Ì‰Šú‰»‚ÉŽ¸”s‚µ‚½ê‡AƒGƒ‰[‚ð•Ô‚µ‚Ü‚·B
-- ƒEƒBƒ“ƒhƒE‚Ìì¬‚ÉŽ¸”s‚µ‚½ê‡AƒGƒ‰[‚ð•Ô‚µ‚Ü‚·B
+- GLFW ã®åˆæœŸåŒ–ã«å¤±æ•—ã—ãŸå ´åˆã€ã‚¨ãƒ©ãƒ¼ã‚’è¿”ã—ã¾ã™ã€‚
+- ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®ä½œæˆã«å¤±æ•—ã—ãŸå ´åˆã€ã‚¨ãƒ©ãƒ¼ã‚’è¿”ã—ã¾ã™ã€‚
 ### See Also:
 [gl-window-should-close](gl-window-should-close), [gl-swap-buffers](gl-swap-buffers), [gl-clear](gl-clear), [gl-draw-points](gl-draw-points)

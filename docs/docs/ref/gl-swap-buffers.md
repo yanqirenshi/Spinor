@@ -6,10 +6,10 @@
 (gl-swap-buffers win)
 ```
 ### Arguments and Values:
-- `win` -- GLFW ƒEƒBƒ“ƒhƒE
-- –ß‚è’l: `nil`
+- `win` -- GLFW ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦
+- æˆ»ã‚Šå€¤: `nil`
 ### Description:
-ƒtƒƒ“ƒgƒoƒbƒtƒ@‚ÆƒoƒbƒNƒoƒbƒtƒ@‚ð“ü‚ê‘Ö‚¦A•`‰æ“à—e‚ð‰æ–Ê‚É”½‰f‚³‚¹‚Ü‚·B“¯Žž‚É GLFW ‚ÌƒCƒxƒ“ƒg‚ðƒ|[ƒŠƒ“ƒO‚µ‚Ü‚·B
+ãƒ•ãƒ­ãƒ³ãƒˆãƒãƒƒãƒ•ã‚¡ã¨ãƒãƒƒã‚¯ãƒãƒƒãƒ•ã‚¡ã‚’å…¥ã‚Œæ›¿ãˆã€æç”»å†…å®¹ã‚’ç”»é¢ã«åæ˜ ã•ã›ã¾ã™ã€‚åŒæ™‚ã« GLFW ã®ã‚¤ãƒ™ãƒ³ãƒˆã‚’ãƒãƒ¼ãƒªãƒ³ã‚°ã—ã¾ã™ã€‚
 ### Examples:
 ```lisp
 (gl-clear)
@@ -17,8 +17,8 @@
 (gl-swap-buffers win)
 ```
 ### Side Effects:
-ƒoƒbƒtƒ@ƒXƒƒbƒv‚ÆƒCƒxƒ“ƒgƒ|[ƒŠƒ“ƒO‚ðs‚¢‚Ü‚·B
+ãƒãƒƒãƒ•ã‚¡ã‚¹ãƒ¯ãƒƒãƒ—ã¨ã‚¤ãƒ™ãƒ³ãƒˆãƒãƒ¼ãƒªãƒ³ã‚°ã‚’è¡Œã„ã¾ã™ã€‚
 ### Exceptional Situations:
-ˆø”‚ª Window ‚Å‚È‚¢ê‡AƒGƒ‰[‚ð•Ô‚µ‚Ü‚·B
+å¼•æ•°ãŒ Window ã§ãªã„å ´åˆã€ã‚¨ãƒ©ãƒ¼ã‚’è¿”ã—ã¾ã™ã€‚
 ### See Also:
 [gl-init](gl-init), [gl-clear](gl-clear), [gl-draw-points](gl-draw-points)

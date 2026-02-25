@@ -6,20 +6,20 @@
 (mref m row col)
 ```
 ### Arguments and Values:
-- `m` -- �s��
-- `row` -- �s�C���f�b�N�X (0-indexed)
-- `col` -- ��C���f�b�N�X (0-indexed)
-- �߂�l: �w��ʒu�̗v�f (���������_��)
+- `m` -- 行列
+- `row` -- 行インデックス (0-indexed)
+- `col` -- 列インデックス (0-indexed)
+- 戻り値: 指定位置の要素 (浮動小数点数)
 ### Description:
-�s��̎w��ʒu�̗v�f���擾���܂��B�C���f�b�N�X�� 0-indexed �ł��B
+行列の指定位置の要素を取得します。インデックスは 0-indexed です。
 ### Examples:
 ```lisp
 (def m (matrix 2 3 '(1 2 3 4 5 6)))
-(mref m 0 0)  ; => 1.0  ; ����
-(mref m 0 2)  ; => 3.0  ; 1�s�ڂ̍Ō�
-(mref m 1 1)  ; => 5.0  ; 2�s�ڂ̒���
+(mref m 0 0)  ; => 1.0  ; 左上
+(mref m 0 2)  ; => 3.0  ; 1行目の最後
+(mref m 1 1)  ; => 5.0  ; 2行目の中央
 ```
 ### Exceptional Situations:
-�C���f�b�N�X���͈͊O�̏ꍇ�A�G���[��Ԃ��܂��B
+インデックスが範囲外の場合、エラーを返します。
 ### See Also:
 [matrix](matrix), [mdim](mdim)

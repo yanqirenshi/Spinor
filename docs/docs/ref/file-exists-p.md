@@ -8,6 +8,6 @@ TBD
 ### Arguments and Values:
 TBD
 ### Description:
-ファイルが存在するかを判定します。
+繝輔ぃ繧､繝ｫ縺悟ｭ伜惠縺吶ｋ縺九ｒ蛻､螳壹＠縺ｾ縺吶�
 ### Examples:
 TBD

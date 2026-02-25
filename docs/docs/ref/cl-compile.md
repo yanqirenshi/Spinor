@@ -6,12 +6,12 @@
 (cl-compile ctx source kernel-name)
 ```
 ### Arguments and Values:
-- `ctx` -- OpenCL ƒRƒ“ƒeƒLƒXƒg
-- `source` -- OpenCL C ƒ\[ƒXƒR[ƒh (•¶Žš—ñ)
-- `kernel-name` -- ƒGƒ“ƒgƒŠƒ|ƒCƒ“ƒg‚Æ‚È‚éƒJ[ƒlƒ‹ŠÖ”–¼ (•¶Žš—ñ)
-- –ß‚è’l: ƒRƒ“ƒpƒCƒ‹Ï‚ÝƒJ[ƒlƒ‹ (`CLKernel`)
+- `ctx` -- OpenCL ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆ
+- `source` -- OpenCL C ã‚½ãƒ¼ã‚¹ã‚³ãƒ¼ãƒ‰ (æ–‡å­—åˆ—)
+- `kernel-name` -- ã‚¨ãƒ³ãƒˆãƒªãƒã‚¤ãƒ³ãƒˆã¨ãªã‚‹ã‚«ãƒ¼ãƒãƒ«é–¢æ•°å (æ–‡å­—åˆ—)
+- æˆ»ã‚Šå€¤: ã‚³ãƒ³ãƒ‘ã‚¤ãƒ«æ¸ˆã¿ã‚«ãƒ¼ãƒãƒ« (`CLKernel`)
 ### Description:
-OpenCL C ‚Ìƒ\[ƒXƒR[ƒh‚ðƒRƒ“ƒpƒCƒ‹‚µAŽw’è‚³‚ê‚½ƒJ[ƒlƒ‹ŠÖ”‚Ö‚Ìƒnƒ“ƒhƒ‹‚ðŽæ“¾‚µ‚Ü‚·B
+OpenCL C ã®ã‚½ãƒ¼ã‚¹ã‚³ãƒ¼ãƒ‰ã‚’ã‚³ãƒ³ãƒ‘ã‚¤ãƒ«ã—ã€æŒ‡å®šã•ã‚ŒãŸã‚«ãƒ¼ãƒãƒ«é–¢æ•°ã¸ã®ãƒãƒ³ãƒ‰ãƒ«ã‚’å–å¾—ã—ã¾ã™ã€‚
 ### Examples:
 ```lisp
 (def ctx (cl-init))
@@ -21,12 +21,12 @@ OpenCL C ‚Ìƒ\[ƒXƒR[ƒh‚ðƒRƒ“ƒpƒCƒ‹‚µAŽw’è‚³‚ê‚½ƒJ[ƒlƒ‹ŠÖ”‚Ö‚Ìƒnƒ“ƒhƒ‹‚ðŽæ“¾‚
 k  ; => <CLKernel:add>
 ```
 ### Side Effects:
-OpenCL ƒvƒƒOƒ‰ƒ€‚ÌƒRƒ“ƒpƒCƒ‹‚ðs‚¢‚Ü‚·B
+OpenCL ãƒ—ãƒ­ã‚°ãƒ©ãƒ ã®ã‚³ãƒ³ãƒ‘ã‚¤ãƒ«ã‚’è¡Œã„ã¾ã™ã€‚
 ### Exceptional Situations:
-- ƒ\[ƒXƒR[ƒh‚ÌƒRƒ“ƒpƒCƒ‹‚ÉŽ¸”s‚µ‚½ê‡Aƒrƒ‹ƒhƒƒO•t‚«‚ÌƒGƒ‰[‚ð•Ô‚µ‚Ü‚·B
-- Žw’è‚³‚ê‚½ƒJ[ƒlƒ‹–¼‚ªŒ©‚Â‚©‚ç‚È‚¢ê‡AƒGƒ‰[‚ð•Ô‚µ‚Ü‚·B
-- ‘æ1ˆø”‚ª CLContext ‚Å‚È‚¢ê‡AƒGƒ‰[‚ð•Ô‚µ‚Ü‚·B
+- ã‚½ãƒ¼ã‚¹ã‚³ãƒ¼ãƒ‰ã®ã‚³ãƒ³ãƒ‘ã‚¤ãƒ«ã«å¤±æ•—ã—ãŸå ´åˆã€ãƒ“ãƒ«ãƒ‰ãƒ­ã‚°ä»˜ãã®ã‚¨ãƒ©ãƒ¼ã‚’è¿”ã—ã¾ã™ã€‚
+- æŒ‡å®šã•ã‚ŒãŸã‚«ãƒ¼ãƒãƒ«åãŒè¦‹ã¤ã‹ã‚‰ãªã„å ´åˆã€ã‚¨ãƒ©ãƒ¼ã‚’è¿”ã—ã¾ã™ã€‚
+- ç¬¬1å¼•æ•°ãŒ CLContext ã§ãªã„å ´åˆã€ã‚¨ãƒ©ãƒ¼ã‚’è¿”ã—ã¾ã™ã€‚
 ### See Also:
 [cl-init](cl-init), [to-device](to-device), [to-host](to-host), [cl-enqueue](cl-enqueue)
 ### Notes:
-ƒRƒ“ƒpƒCƒ‹ƒGƒ‰[Žž‚Íƒrƒ‹ƒhƒƒO‚ªŠÜ‚Ü‚ê‚Ü‚·B
+ã‚³ãƒ³ãƒ‘ã‚¤ãƒ«ã‚¨ãƒ©ãƒ¼æ™‚ã¯ãƒ“ãƒ«ãƒ‰ãƒ­ã‚°ãŒå«ã¾ã‚Œã¾ã™ã€‚

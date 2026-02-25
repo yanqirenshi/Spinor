@@ -8,6 +8,6 @@ TBD
 ### Arguments and Values:
 TBD
 ### Description:
-V‚µ‚¢ MVar ‚ğì¬‚µ‚Ü‚·B
+æ–°ã—ã„ MVar ã‚’ä½œæˆã—ã¾ã™ã€‚
 ### Examples:
 TBD

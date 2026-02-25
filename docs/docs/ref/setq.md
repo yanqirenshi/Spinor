@@ -6,11 +6,11 @@
 (setq name expr)
 ```
 ### Arguments and Values:
-- `name` -- �����̕ϐ���
-- `expr` -- �V�����l
-- �߂�l: ������ꂽ�l
+- `name` -- 代入先の変数名
+- `expr` -- 新しい値
+- 戻り値: 代入された値
 ### Description:
-�����̕ϐ��ɐV�����l�������܂��B�ϐ������݂��Ȃ��ꍇ�̓G���[�ɂȂ�܂��B
+既存の変数に新しい値を代入します。変数が存在しない場合はエラーになります。
 ### Examples:
 ```lisp
 (def counter 0)

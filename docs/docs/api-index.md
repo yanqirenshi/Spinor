@@ -1,6 +1,6 @@
 # Spinor Reference
 
-Spinor �̑g�ݍ��݊֐��E����`���̃��t�@�����X�ł��B
+Spinor の組み込み関数・特殊形式のリファレンスです。
 
 ## Special Forms
 
