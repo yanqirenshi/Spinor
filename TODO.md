@@ -157,10 +157,11 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [x] **System:** `command-line-args` の実装。
     - [x] **Dual Implementation:** インタプリタ (Haskell) とコンパイラ (C Runtime) の両対応。
 - [ ] **テストフレームワーク**
-- [ ] **Step 60: JSON Support**
-    - [ ] **Dependency:** `aeson` の導入。
-    - [ ] **Primitives:** `json-parse`, `json-stringify` の実装。
-    - [ ] **Mapping:** JSON Object と Spinor Alist の相互変換。
+- [x] **Step 60: JSON Support**
+    - [x] `aeson`, `scientific` パッケージへの依存を追加。
+    - [x] `json-parse` と `json-stringify` 組み込み関数を実装。
+    - [x] JSON Object と Spinor の Alist の相互変換、および数値精度の維持を実装。
+    - [x] 変換不可能なデータ型に対するエラーハンドリングの実装。
 
 ### 🔬 HPC & Science (科学技術計算と可視化)
 
@@ -231,6 +232,19 @@ React を用いて、CLHS ライクでモダンなリファレンスサイトを
     - [x] `docs/build.md` を新規作成（または `introduction.md` に統合）し、環境構築手順を詳細に記載する。
     - [x] **WSL2 環境:** 必要なシステムパッケージ (`libglfw3-dev`, `libgl1-mesa-dev`, `pocl-opencl-icd` 等) のインストールコマンドと `cabal build` 手順の記載。
     - [x] **Windows 11 環境:** MSYS2 の導入、`pacman` による C ライブラリ (`openblas`, `glfw` 等) のインストール、および `cabal test` 実行時に必要な DLL コピー手順の明記。
+- [ ] **Step 43-C: Documentation Restructuring**
+    - [ ] `syntax.md` をサブディレクトリ配下の複数ページに分割。
+    - [ ] React サイドバーの階層化（ネストメニュー）対応。
+    - [ ] コンテンツ間の相互リンクの整備。
+- [ ] **Step 43-C: Documentation Restructuring (マニュアルの構造化と階層化)**
+    - [ ] 単一の `syntax.md` に詰め込まれている内容を、`Atoms`, `Lists`, `Type System`, `Control Flow` などの個別の Markdown ファイルに分割し `syntax/` ディレクトリ配下に整理する。
+    - [ ] React 側のサイドバー (`Sidebar.tsx`) を改修し、カテゴリ（Syntax 等）の中にサブページがぶら下がる階層的なナビゲーション（ネストメニュー）を実装する。
+- [ ] **Step 43-D: Spinor Cookbook (逆引きレシピ集)**
+    - [ ] 実用的なサンプルコード集 (`docs/cookbook.md` 等) の作成。JSON操作、並行処理、行列計算などの具体例を記載。
+- [ ] **Step 43-E: Architecture & Internals (内部実装の解説)**
+    - [ ] Haskellカーネルでのパース・型推論や C/WASM へのトランスパイル戦略を解説する `docs/architecture.md` の作成。
+- [ ] **Step 43-F: Editor Setup Guide (エディタ環境構築ガイド)**
+    - [ ] `spinor-mode` や LSP/SLY の連携手順を解説する `docs/emacs_setup.md` の作成。
 
 ## 🌌 The Ultimate Dream (究極の目標: Lispマシンの創生)
 Spinor を単なるアプリケーションレベルの処理系から、ハードウェアと直接対話する「Lispマシン（OS / ハードウェア）」へと昇華させる。
