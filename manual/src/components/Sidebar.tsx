@@ -4,6 +4,7 @@ const sections = [
   { label: 'Home', to: '/' },
   { label: 'Introduction', to: '/docs/introduction' },
   { label: 'Syntax', to: '/docs/syntax' },
+  { label: 'Build Guide', to: '/docs/build' },
   { label: 'API Reference', to: '/docs/api-index' },
 ]
 
