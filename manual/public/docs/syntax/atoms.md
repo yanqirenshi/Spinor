@@ -2,6 +2,16 @@
 
 Spinor の最も基本的なデータ型です。
 
+## 関連する組み込み関数・マクロ
+
+- [eq](../ref/eq) - シンボルの同一性を比較
+- [equal](../ref/equal) - 値の等価性を比較
+- [null?](../ref/null-p) - `nil` かどうかを判定
+- [print](../ref/print) - 値を出力
+- [string-length](../ref/string-length) - 文字列の長さを取得
+- [string-append](../ref/string-append) - 文字列を連結
+- [string-eq](../ref/string-eq) - 文字列の等価性を比較
+
 ## 数値 (Numbers)
 
 整数リテラルをサポートしています。
