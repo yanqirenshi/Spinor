@@ -124,10 +124,10 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [x] **AST:** `Expr` への `SourceSpan` フィールド追加。
     - [x] **Parser:** パース時の位置情報キャプチャの実装。
     - [x] **Reporter:** `Infer` / `Eval` での正確なエラー位置指摘。
-- [ ] **Step 59-B: Error Type & CLI Output Wiring (エラー表示の結線)**
-    - [ ] `SpinorError` 型（位置情報とメッセージを持つレコード）を定義する。
-    - [ ] `Infer.hs` と `Eval.hs` のエラー型を `Text` から `SpinorError` に変更し、エラー送出時に AST の `SourceSpan` を渡す。
-    - [ ] `Main.hs` (CLI) でエラーを受け取った際、`ファイル名:行:列: エラー内容` の形式で出力する。
+- [x] **Step 59-B: Error Type & CLI Output Wiring (エラー表示の結線)**
+    - [x] `SpinorError` 型（位置情報とメッセージを持つレコード）を定義する。
+    - [x] `Infer.hs` と `Eval.hs` のエラー型を `Text` から `SpinorError` に変更し、エラー送出時に AST の `SourceSpan` を渡す。
+    - [x] `Main.hs` (CLI) でエラーを受け取った際、`ファイル名:行:列: エラー内容` の形式で出力する。
 
 ## 🚀 Performance & Compilation (パフォーマンスと移植性)
 
@@ -157,7 +157,10 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [x] **System:** `command-line-args` の実装。
     - [x] **Dual Implementation:** インタプリタ (Haskell) とコンパイラ (C Runtime) の両対応。
 - [ ] **テストフレームワーク**
-- [ ] **JSON Support**
+- [ ] **Step 60: JSON Support**
+    - [ ] **Dependency:** `aeson` の導入。
+    - [ ] **Primitives:** `json-parse`, `json-stringify` の実装。
+    - [ ] **Mapping:** JSON Object と Spinor Alist の相互変換。
 
 ### 🔬 HPC & Science (科学技術計算と可視化)
 
