@@ -19,12 +19,14 @@ const sections: NavItem[] = [
       { label: 'Evaluation', to: '/docs/syntax/evaluation' },
       { label: 'Definitions', to: '/docs/syntax/definitions' },
       { label: 'Control Flow', to: '/docs/syntax/control-flow' },
+      { label: 'Iteration', to: '/docs/syntax/iteration' },
       { label: 'Algebraic Types', to: '/docs/syntax/data-types' },
     ],
   },
   {
     label: 'Data Types',
     items: [
+      { label: 'Symbols', to: '/docs/syntax/symbols' },
       { label: 'Numbers', to: '/docs/syntax/numbers' },
       { label: 'Characters', to: '/docs/syntax/characters' },
       { label: 'Strings', to: '/docs/syntax/strings' },
@@ -36,6 +38,8 @@ const sections: NavItem[] = [
     label: 'System',
     items: [
       { label: 'Packages & Modules', to: '/docs/syntax/packages' },
+      { label: 'Files', to: '/docs/syntax/files' },
+      { label: 'Environment', to: '/docs/syntax/environment' },
     ],
   },
   { label: 'Build Guide', to: '/docs/build' },
