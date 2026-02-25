@@ -2,16 +2,6 @@
 
 代数的データ型とパターンマッチについて解説します。
 
-## 関連する組み込み関数・マクロ
-
-- [data](../ref/data) - 代数的データ型を定義
-- [match](../ref/match) - パターンマッチによる分岐
-- [list](../ref/list) - リストを作成
-- [cons](../ref/cons) - 要素とリストを結合 (パターンでも使用)
-- [car](../ref/car) - リストの先頭要素を取得
-- [cdr](../ref/cdr) - リストの残りを取得
-- [null?](../ref/null-p) - `nil` かどうかを判定
-
 ## 代数的データ型: `data`
 
 カスタムデータ型を定義します。
@@ -123,3 +113,12 @@ Nothing
 (tree-sum my-tree)  ; => 6
 ```
 
+## Symbols
+
+- [data](../ref/data) - 代数的データ型を定義
+- [match](../ref/match) - パターンマッチによる分岐
+- [list](../ref/list) - リストを作成
+- [cons](../ref/cons) - 要素とリストを結合 (パターンでも使用)
+- [car](../ref/car) - リストの先頭要素を取得
+- [cdr](../ref/cdr) - リストの残りを取得
+- [null?](../ref/null-p) - `nil` かどうかを判定
