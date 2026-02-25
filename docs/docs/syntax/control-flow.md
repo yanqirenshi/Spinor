@@ -95,6 +95,10 @@ x  ; => 2
     counter))  ; => 2
 ```
 
+## 関連ページ
+
+- [Iteration](iteration) - 反復処理と再帰、末尾再帰最適化
+
 ## Symbols
 
 | Type | Name | Description |

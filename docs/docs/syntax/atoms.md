@@ -21,9 +21,9 @@ Spinor の最も基本的なデータ型です。
 x
 my-variable
 calculate-sum
-string->list    ; 矢印を含むシンボル
-null?           ; 疑問符で終わるシンボル (述語)
 ```
+
+詳細は [Symbols](symbols) を参照してください。
 
 ## 文字列 (Strings)
 
@@ -45,6 +45,7 @@ null?           ; 疑問符で終わるシンボル (述語)
 
 ## 関連ページ
 
+- [Symbols](symbols) - シンボルの性質と比較の詳細
 - [Numbers](numbers) - 数値型と算術演算の詳細
 - [Characters](characters) - 文字とエスケープシーケンス
 - [Strings](strings) - 文字列操作の詳細
