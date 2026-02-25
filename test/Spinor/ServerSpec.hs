@@ -3,22 +3,26 @@
 module Spinor.ServerSpec (spec) where
 
 import Test.Hspec
+import qualified Data.Text as T
 
-import Spinor.Syntax (Expr(..))
+import Spinor.Syntax (Expr(..), dummySpan)
 import Spinor.Server
-    ( normalizeCommand
-    , normalizeForm
-    , extractTraceSpec
-    , exprToText
-    , mkOkResponse
-    , mkAbortResponse
-    , newTracedFunctions
-    , addTracedFunction
-    , removeTracedFunction
-    , isTraced
-    , getTracedFunctions
-    , clearAllTraces
-    )
+
+-- | 短縮版の Expr コンストラクタ (テスト用)
+eInt :: Integer -> Expr
+eInt = EInt dummySpan
+
+eBool :: Bool -> Expr
+eBool = EBool dummySpan
+
+eStr :: T.Text -> Expr
+eStr = EStr dummySpan
+
+eSym :: T.Text -> Expr
+eSym = ESym dummySpan
+
+eList :: [Expr] -> Expr
+eList = EList dummySpan
 
 spec :: Spec
 spec = do
@@ -93,59 +97,59 @@ spec = do
 
     describe "normalizeForm" $ do
         it "normalizes command symbol in list" $
-            normalizeForm (EList [ESym "slynk:autodoc", EStr "test"])
-                `shouldBe` EList [ESym "swank:autodoc", EStr "test"]
+            normalizeForm (eList [eSym "slynk:autodoc", eStr "test"])
+                `shouldBe` eList [eSym "swank:autodoc", eStr "test"]
 
         it "leaves non-list expressions unchanged" $
-            normalizeForm (EInt 42) `shouldBe` EInt 42
+            normalizeForm (eInt 42) `shouldBe` eInt 42
 
         it "normalizes nested trace-dialog command" $
-            normalizeForm (EList [ESym "slynk-trace-dialog:dialog-toggle-trace", EStr "square"])
-                `shouldBe` EList [ESym "swank:trace:dialog-toggle-trace", EStr "square"]
+            normalizeForm (eList [eSym "slynk-trace-dialog:dialog-toggle-trace", eStr "square"])
+                `shouldBe` eList [eSym "swank:trace:dialog-toggle-trace", eStr "square"]
 
     describe "extractTraceSpec" $ do
         it "extracts from plain string" $
-            extractTraceSpec (EStr "square") `shouldBe` "square"
+            extractTraceSpec (eStr "square") `shouldBe` "square"
 
         it "extracts from symbol" $
-            extractTraceSpec (ESym "square") `shouldBe` "square"
+            extractTraceSpec (eSym "square") `shouldBe` "square"
 
         it "extracts from (slynk::from-string \"name\")" $
-            extractTraceSpec (EList [ESym "slynk::from-string", EStr "square"])
+            extractTraceSpec (eList [eSym "slynk::from-string", eStr "square"])
                 `shouldBe` "square"
 
         it "extracts from (swank::from-string \"name\")" $
-            extractTraceSpec (EList [ESym "swank::from-string", EStr "my-func"])
+            extractTraceSpec (eList [eSym "swank::from-string", eStr "my-func"])
                 `shouldBe` "my-func"
 
         it "returns empty for unrecognized format" $
-            extractTraceSpec (EInt 42) `shouldBe` ""
+            extractTraceSpec (eInt 42) `shouldBe` ""
 
     describe "exprToText" $ do
         it "converts integer" $
-            exprToText (EInt 42) `shouldBe` "42"
+            exprToText (eInt 42) `shouldBe` "42"
 
         it "converts true boolean" $
-            exprToText (EBool True) `shouldBe` "t"
+            exprToText (eBool True) `shouldBe` "t"
 
         it "converts false boolean" $
-            exprToText (EBool False) `shouldBe` "nil"
+            exprToText (eBool False) `shouldBe` "nil"
 
         it "converts symbol" $
-            exprToText (ESym ":ok") `shouldBe` ":ok"
+            exprToText (eSym ":ok") `shouldBe` ":ok"
 
         it "converts string with escaping" $
-            exprToText (EStr "hello\"world") `shouldBe` "\"hello\\\"world\""
+            exprToText (eStr "hello\"world") `shouldBe` "\"hello\\\"world\""
 
         it "converts empty list to nil" $
-            exprToText (EList []) `shouldBe` "nil"
+            exprToText (eList []) `shouldBe` "nil"
 
         it "converts non-empty list" $
-            exprToText (EList [ESym ":return", EInt 1])
+            exprToText (eList [eSym ":return", eInt 1])
                 `shouldBe` "(:return 1)"
 
         it "converts nested list" $
-            exprToText (EList [ESym ":ok", EList [EInt 1, EInt 2]])
+            exprToText (eList [eSym ":ok", eList [eInt 1, eInt 2]])
                 `shouldBe` "(:ok (1 2))"
 
     describe "TracedFunctions state management" $ do
@@ -198,15 +202,15 @@ spec = do
     describe "Response builders" $ do
         describe "mkOkResponse" $ do
             it "creates (:return (:ok result) reqId) format" $
-                exprToText (mkOkResponse 1 (EInt 42))
+                exprToText (mkOkResponse 1 (eInt 42))
                     `shouldBe` "(:return (:ok 42) 1)"
 
             it "works with list result" $
-                exprToText (mkOkResponse 5 (EList [EStr "hello"]))
+                exprToText (mkOkResponse 5 (eList [eStr "hello"]))
                     `shouldBe` "(:return (:ok (\"hello\")) 5)"
 
             it "works with empty list (nil)" $
-                exprToText (mkOkResponse 10 (EList []))
+                exprToText (mkOkResponse 10 (eList []))
                     `shouldBe` "(:return (:ok nil) 10)"
 
         describe "mkAbortResponse" $ do
@@ -221,18 +225,18 @@ spec = do
     describe "RPC Protocol" $ do
         it "connection-info response format" $ do
             -- Test that connection info response has required fields
-            let response = mkOkResponse 1 (EList
-                    [ ESym ":pid", EInt 0
-                    , ESym ":style", ESym ":spawn"
+            let response = mkOkResponse 1 (eList
+                    [ eSym ":pid", eInt 0
+                    , eSym ":style", eSym ":spawn"
                     ])
             exprToText response `shouldBe`
                 "(:return (:ok (:pid 0 :style :spawn)) 1)"
 
         it "mrepl create response format (channel-id thread-id)" $ do
-            let response = mkOkResponse 1 (EList [EInt 1, EInt 0])
+            let response = mkOkResponse 1 (eList [eInt 1, eInt 0])
             exprToText response `shouldBe` "(:return (:ok (1 0)) 1)"
 
         it "trace toggle response format" $ do
-            let response = mkOkResponse 1 (EStr "square is now traced for trace dialog")
+            let response = mkOkResponse 1 (eStr "square is now traced for trace dialog")
             exprToText response `shouldBe`
                 "(:return (:ok \"square is now traced for trace dialog\") 1)"

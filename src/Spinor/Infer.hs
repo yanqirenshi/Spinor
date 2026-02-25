@@ -177,16 +177,16 @@ generalize env t = Scheme (Set.toList vars) t
 infer :: TypeEnv -> Expr -> Infer (Subst, Type)
 
 -- 整数リテラル → TInt
-infer _ (EInt _) = pure (nullSubst, TInt)
+infer _ (EInt _ _) = pure (nullSubst, TInt)
 
 -- 真偽値リテラル → TBool
-infer _ (EBool _) = pure (nullSubst, TBool)
+infer _ (EBool _ _) = pure (nullSubst, TBool)
 
 -- 文字列リテラル → TStr
-infer _ (EStr _) = pure (nullSubst, TStr)
+infer _ (EStr _ _) = pure (nullSubst, TStr)
 
 -- シンボル → 型環境から検索して instantiate
-infer env (ESym x) =
+infer env (ESym _ x) =
   case Map.lookup x env of
     Just scheme -> do
       t <- instantiate scheme
@@ -194,15 +194,15 @@ infer env (ESym x) =
     Nothing -> throwError $ "未定義のシンボル: " <> x
 
 -- 空リスト → フレッシュな要素型の空リスト
-infer _ (EList []) = do
+infer _ (EList _ []) = do
   a <- fresh
   pure (nullSubst, TList a)
 
 -- quote → quote の中身を型推論 (リテラルとリストのみ)
-infer _ (EList [ESym "quote", expr]) = pure (nullSubst, inferQuote expr)
+infer _ (EList _ [ESym _ "quote", expr]) = pure (nullSubst, inferQuote expr)
 
 -- if: cond は Bool, then と else の型を単一化
-infer env (EList [ESym "if", cond, thn, els]) = do
+infer env (EList _ [ESym _ "if", cond, thn, els]) = do
   (s1, tCond) <- infer env cond
   s1' <- liftEither $ unify (apply s1 tCond) TBool
   let s1'' = composeSubst s1' s1
@@ -215,7 +215,7 @@ infer env (EList [ESym "if", cond, thn, els]) = do
   pure (sFinal, apply sFinal tThn)
 
 -- let: Let多相 (並列束縛) — 各 val を現在の環境で推論 → generalize → body を推論
-infer env (ELet bindings body) = do
+infer env (ELet _ bindings body) = do
   -- 1. すべての束縛を現在の環境で推論
   (sFinal, bindingResults) <- foldM inferBinding (nullSubst, []) bindings
   let env' = apply sFinal env
@@ -235,11 +235,11 @@ infer env (ELet bindings body) = do
       pure (sNew, results ++ [(name, t1)])
 
 -- define / def: 本体を推論し、環境に追加
-infer env (EList [ESym "define", ESym name, body]) = inferDefine env name body
-infer env (EList [ESym "def",    ESym name, body]) = inferDefine env name body
+infer env (EList _ [ESym _ "define", ESym _ name, body]) = inferDefine env name body
+infer env (EList _ [ESym _ "def",    ESym _ name, body]) = inferDefine env name body
 
 -- fn (固定長引数): 引数にフレッシュ型変数を割り当て、本体を推論
-infer env (EList [ESym "fn", EList params, body]) = do
+infer env (EList _ [ESym _ "fn", EList _ params, body]) = do
   paramNames <- mapM extractSymName params
   freshTypes <- mapM (const fresh) paramNames
   let paramSchemes = map (\t -> Scheme [] t) freshTypes
@@ -249,7 +249,7 @@ infer env (EList [ESym "fn", EList params, body]) = do
   pure (s, tFunc)
 
 -- fn (全引数キャプチャ): 引数リスト全体を1つのリスト型として扱う
-infer env (EList [ESym "fn", ESym param, body]) = do
+infer env (EList _ [ESym _ "fn", ESym _ param, body]) = do
   a <- fresh
   let paramT = TList a
       env' = Map.insert param (Scheme [] paramT) env
@@ -257,7 +257,7 @@ infer env (EList [ESym "fn", ESym param, body]) = do
   pure (s, TArr (apply s paramT) (apply s tBody))
 
 -- match 式: target を推論 → 各分岐のパターンと body を推論
-infer env (EMatch targetExpr branches) = do
+infer env (EMatch _ targetExpr branches) = do
   (s0, tTarget) <- infer env targetExpr
   tResult <- fresh
   (sFinal, tFinal) <- foldM (inferBranch tTarget tResult) (s0, tResult) branches
@@ -276,17 +276,17 @@ infer env (EMatch targetExpr branches) = do
       pure (s3Acc, apply s3Acc tResult)
 
 -- data 式 (式レベル): inferTop で処理するが、infer にもケースが必要
-infer _ (EData _ _) = pure (nullSubst, TCon "Unit")
+infer _ (EData _ _ _) = pure (nullSubst, TCon "Unit")
 
 -- module 宣言: Unit を返す
-infer _ (EModule _ _) = pure (nullSubst, TCon "Unit")
+infer _ (EModule _ _ _) = pure (nullSubst, TCon "Unit")
 
 -- import 宣言: Unit を返す
-infer _ (EImport _ _) = pure (nullSubst, TCon "Unit")
+infer _ (EImport _ _ _) = pure (nullSubst, TCon "Unit")
 
 -- 関数適用: (func arg1 arg2 ...)
 --   多引数はカリー化として扱う
-infer env (EList (func : args)) = inferApp env func args
+infer env (EList _ (func : args)) = inferApp env func args
 
 -- ============================================================
 -- トップレベル推論 (inferTop)
@@ -296,10 +296,10 @@ infer env (EList (func : args)) = inferApp env func args
 --   define: 右辺を推論 → generalize して型環境に登録 → 更新された型環境を返す
 --   それ以外: 通常の infer → 型環境は変更なし
 inferTop :: TypeEnv -> Expr -> Infer (TypeEnv, Subst, Type)
-inferTop env (EList [ESym "define", ESym name, body]) = inferTopDefine env name body
-inferTop env (EList [ESym "def",    ESym name, body]) = inferTopDefine env name body
+inferTop env (EList _ [ESym _ "define", ESym _ name, body]) = inferTopDefine env name body
+inferTop env (EList _ [ESym _ "def",    ESym _ name, body]) = inferTopDefine env name body
 -- data 式: コンストラクタの型を環境に登録する
-inferTop env (EData typeName constrs) = do
+inferTop env (EData _ typeName constrs) = do
   let -- 全コンストラクタ引数から自由型変数を収集
       allTypeVars = Set.toList $ foldMap conFtv constrs
       -- 結果型: (TypeName a b ...) — 型パラメータを全て適用
@@ -344,17 +344,17 @@ inferTopDefine env name body = do
 
 -- | quote 内の型を静的に推論する (簡易版)
 inferQuote :: Expr -> Type
-inferQuote (EInt _)    = TInt
-inferQuote (EBool _)   = TBool
-inferQuote (EStr _)    = TStr
-inferQuote (EList [])  = TList (TVar "_q")
-inferQuote (EList (x:_)) = TList (inferQuote x)
-inferQuote (ESym _)    = TStr  -- quote されたシンボルは文字列的に扱う
-inferQuote (ELet _ body) = inferQuote body
-inferQuote (EData _ _)     = TCon "Unit"
-inferQuote (EMatch _ _)    = TVar "_match"
-inferQuote (EModule _ _)   = TCon "Unit"
-inferQuote (EImport _ _)   = TCon "Unit"
+inferQuote (EInt _ _)      = TInt
+inferQuote (EBool _ _)     = TBool
+inferQuote (EStr _ _)      = TStr
+inferQuote (EList _ [])    = TList (TVar "_q")
+inferQuote (EList _ (x:_)) = TList (inferQuote x)
+inferQuote (ESym _ _)      = TStr  -- quote されたシンボルは文字列的に扱う
+inferQuote (ELet _ _ body) = inferQuote body
+inferQuote (EData _ _ _)   = TCon "Unit"
+inferQuote (EMatch _ _ _)  = TVar "_match"
+inferQuote (EModule _ _ _) = TCon "Unit"
+inferQuote (EImport _ _ _) = TCon "Unit"
 
 -- | パターンの型推論
 --   パターンの型と tTarget を unify し、パターン内変数の型環境を返す
@@ -428,8 +428,8 @@ typeExprToType (TEApp name args) = foldl TApp (TCon name) (map typeExprToType ar
 
 -- | Expr からシンボル名を取り出す (パラメータリスト用)
 extractSymName :: Expr -> Infer Text
-extractSymName (ESym s) = pure s
-extractSymName _        = throwError "引数にはシンボルが必要です"
+extractSymName (ESym _ s) = pure s
+extractSymName _          = throwError "引数にはシンボルが必要です"
 
 -- ============================================================
 -- プリミティブの型環境

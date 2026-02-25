@@ -6,6 +6,10 @@ module Spinor.Syntax
   , TypeExpr(..)
   , ConstructorDef(..)
   , ImportOption(..)
+  , SourcePos(..)
+  , SourceSpan(..)
+  , dummySpan
+  , exprSpan
   , readExpr
   , parseFile
   , SpinorParseError(..)
@@ -17,7 +21,8 @@ import Data.List.NonEmpty (NonEmpty(..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
-import Text.Megaparsec
+import Text.Megaparsec hiding (SourcePos)
+import qualified Text.Megaparsec as MP
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -41,6 +46,24 @@ data ImportOption
   | Alias Text      -- ^ (alias M): モジュールに別名を与える (M:sym でアクセス)
   deriving (Show, Eq)
 
+-- | ソースコード上の位置 (ファイル名、行、列)
+data SourcePos = SourcePos
+  { posFile   :: FilePath
+  , posLine   :: Int
+  , posColumn :: Int
+  } deriving (Show, Eq)
+
+-- | ソースコード上の範囲 (開始位置〜終了位置)
+data SourceSpan = SourceSpan
+  { spanStart :: SourcePos
+  , spanEnd   :: SourcePos
+  } deriving (Show, Eq)
+
+-- | ダミーの SourceSpan (テスト用・内部生成コード用)
+dummySpan :: SourceSpan
+dummySpan = SourceSpan pos pos
+  where pos = SourcePos "<internal>" 0 0
+
 -- | パターン (match 式用)
 data Pattern
   = PVar  Text             -- 変数パターン: x (任意の値にマッチし束縛)
@@ -52,18 +75,32 @@ data Pattern
 -- | Spinor の抽象構文木
 --   Lisp の S式 を Haskell の代数的データ型にマッピングする。
 --     シンボル → Text, リスト → [Expr]
+--   各コンストラクタの第1引数は SourceSpan (ソースコード上の位置情報)
 data Expr
-  = EInt  Integer
-  | EBool Bool
-  | ESym  Text
-  | EStr  Text
-  | EList [Expr]
-  | ELet  [(Text, Expr)] Expr       -- ^ (let ((var1 val1) ...) body)
-  | EData Text [ConstructorDef]     -- ^ (data Name (Con1 a b) (Con2))
-  | EMatch Expr [(Pattern, Expr)]   -- ^ (match target (pat1 body1) (pat2 body2) ...)
-  | EModule Text [Text]             -- ^ (module name (export sym1 sym2 ...))
-  | EImport Text [ImportOption]     -- ^ (import module-name options...)
+  = EInt    SourceSpan Integer
+  | EBool   SourceSpan Bool
+  | ESym    SourceSpan Text
+  | EStr    SourceSpan Text
+  | EList   SourceSpan [Expr]
+  | ELet    SourceSpan [(Text, Expr)] Expr       -- ^ (let ((var1 val1) ...) body)
+  | EData   SourceSpan Text [ConstructorDef]     -- ^ (data Name (Con1 a b) (Con2))
+  | EMatch  SourceSpan Expr [(Pattern, Expr)]    -- ^ (match target (pat1 body1) (pat2 body2) ...)
+  | EModule SourceSpan Text [Text]               -- ^ (module name (export sym1 sym2 ...))
+  | EImport SourceSpan Text [ImportOption]       -- ^ (import module-name options...)
   deriving (Show, Eq)
+
+-- | 式から SourceSpan を取得
+exprSpan :: Expr -> SourceSpan
+exprSpan (EInt    sp _)     = sp
+exprSpan (EBool   sp _)     = sp
+exprSpan (ESym    sp _)     = sp
+exprSpan (EStr    sp _)     = sp
+exprSpan (EList   sp _)     = sp
+exprSpan (ELet    sp _ _)   = sp
+exprSpan (EData   sp _ _)   = sp
+exprSpan (EMatch  sp _ _)   = sp
+exprSpan (EModule sp _ _)   = sp
+exprSpan (EImport sp _ _)   = sp
 
 type Parser = Parsec Void Text
 
@@ -71,41 +108,59 @@ type Parser = Parsec Void Text
 sc :: Parser ()
 sc = L.space space1 (L.skipLineComment ";") empty
 
+-- | Megaparsec の SourcePos から Spinor の SourcePos に変換
+toSourcePos :: MP.SourcePos -> SourcePos
+toSourcePos pos = SourcePos
+  { posFile   = sourceName pos
+  , posLine   = unPos (sourceLine pos)
+  , posColumn = unPos (sourceColumn pos)
+  }
+
+-- | パーサーをラップして SourceSpan を取得
+withSpan :: Parser (SourceSpan -> a) -> Parser a
+withSpan p = do
+  startPos <- toSourcePos <$> getSourcePos
+  f <- p
+  endPos <- toSourcePos <$> getSourcePos
+  pure $ f (SourceSpan startPos endPos)
+
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme sc
 
 -- 整数リテラル (負数対応)
 pInt :: Parser Expr
-pInt = EInt <$> lexeme (L.signed (pure ()) L.decimal)
+pInt = withSpan $ do
+  n <- lexeme (L.signed (pure ()) L.decimal)
+  pure $ \sp -> EInt sp n
 
 -- 真偽値リテラル: #t / #f
 pBool :: Parser Expr
-pBool = lexeme $ do
+pBool = withSpan $ lexeme $ do
   _ <- char '#'
-  EBool True  <$ char 't'
-    <|> EBool False <$ char 'f'
+  b <- True <$ char 't' <|> False <$ char 'f'
+  pure $ \sp -> EBool sp b
 
 -- 文字列リテラル: "..."
 pStr :: Parser Expr
-pStr = lexeme $ do
+pStr = withSpan $ lexeme $ do
   _ <- char '"'
   s <- manyTill L.charLiteral (char '"')
-  pure $ EStr (T.pack s)
+  pure $ \sp -> EStr sp (T.pack s)
 
 -- シンボル: 英字・記号で始まり、英数字・記号が続く
 pSym :: Parser Expr
-pSym = lexeme $ do
+pSym = withSpan $ lexeme $ do
   s <- some (satisfy isSymChar)
-  pure $ ESym (T.pack s)
+  pure $ \sp -> ESym sp (T.pack s)
   where
     isSymChar c = c `notElem` (" \t\n\r();#'\"" :: String)
 
 -- Quote 略記: 'expr → (quote expr)
 pQuote :: Parser Expr
-pQuote = do
+pQuote = withSpan $ do
   _ <- char '\''
   expr <- parseExpr
-  pure $ EList [ESym "quote", expr]
+  pure $ \sp -> EList sp [ESym sp "quote", expr]
 
 -- TypeExpr パーサー: コンストラクタ引数の型記述
 --   シンボル単体 → TEVar "a"
@@ -138,91 +193,91 @@ pConstructorDef = between (lexeme (char '(')) (lexeme (char ')')) $ do
 --   (data Name (Con1 a b) (Con2)) は EData に変換する
 --   (module ...) と (import ...) は特殊形式として処理する
 pList :: Parser Expr
-pList = do
+pList = withSpan $ do
   xs <- between (lexeme (char '(')) (lexeme (char ')')) (many parseExpr)
   case xs of
     -- 新形式: (let ((var1 val1) (var2 val2) ...) body)
-    [ESym "let", EList bindingsExprs, body] ->
+    [ESym _ "let", EList _ bindingsExprs, body] ->
       case parseLetBindings bindingsExprs of
-        Just bindings -> pure $ ELet bindings body
+        Just bindings -> pure $ \sp -> ELet sp bindings body
         Nothing       -> fail "let: 不正な束縛形式です。((var1 val1) (var2 val2) ...) の形式が必要です"
     -- 旧形式: (let var val body) をサポート (後方互換)
-    [ESym "let", ESym name, val, body] -> pure $ ELet [(name, val)] body
-    (ESym "module" : rest) -> parseModuleForm rest
-    (ESym "import" : rest) -> parseImportForm rest
-    _ -> pure $ EList xs
+    [ESym _ "let", ESym _ name, val, body] -> pure $ \sp -> ELet sp [(name, val)] body
+    (ESym _ "module" : rest) -> parseModuleForm rest
+    (ESym _ "import" : rest) -> parseImportForm rest
+    _ -> pure $ \sp -> EList sp xs
 
 -- | let 式の束縛リストをパースする
 --   ((var1 val1) (var2 val2) ...) → [(var1, val1), (var2, val2), ...]
 parseLetBindings :: [Expr] -> Maybe [(Text, Expr)]
 parseLetBindings = mapM parseBinding
   where
-    parseBinding (EList [ESym var, valExpr]) = Just (var, valExpr)
-    parseBinding _                            = Nothing
+    parseBinding (EList _ [ESym _ var, valExpr]) = Just (var, valExpr)
+    parseBinding _                                = Nothing
 
 -- module 式パーサー: (module name (export sym1 sym2 ...))
-parseModuleForm :: [Expr] -> Parser Expr
-parseModuleForm [ESym name, EList (ESym "export" : exports)] = do
+parseModuleForm :: [Expr] -> Parser (SourceSpan -> Expr)
+parseModuleForm [ESym _ name, EList _ (ESym _ "export" : exports)] = do
   exportNames <- mapM extractSymName exports
-  pure $ EModule name exportNames
-parseModuleForm [ESym name] =
+  pure $ \sp -> EModule sp name exportNames
+parseModuleForm [ESym _ name] =
   -- export を省略した場合は何も公開しない
-  pure $ EModule name []
+  pure $ \sp -> EModule sp name []
 parseModuleForm _ = fail "module: 不正な構文です。(module name (export sym ...)) の形式が必要です"
 
 -- import 式パーサー: (import module-name options...)
-parseImportForm :: [Expr] -> Parser Expr
+parseImportForm :: [Expr] -> Parser (SourceSpan -> Expr)
 parseImportForm (modSpec : optExprs) = do
   modName <- extractModuleName modSpec
   opts <- mapM parseImportOption optExprs
-  pure $ EImport modName opts
+  pure $ \sp -> EImport sp modName opts
 parseImportForm [] = fail "import: モジュール名が必要です"
 
 -- モジュール名を抽出 (シンボルまたは文字列)
 extractModuleName :: Expr -> Parser Text
-extractModuleName (ESym s)  = pure s
-extractModuleName (EStr s)  = pure s
-extractModuleName (EList [ESym "quote", ESym s]) = pure s
+extractModuleName (ESym _ s)  = pure s
+extractModuleName (EStr _ s)  = pure s
+extractModuleName (EList _ [ESym _ "quote", ESym _ s]) = pure s
 extractModuleName _ = fail "import: モジュール名はシンボルまたは文字列で指定してください"
 
 -- シンボル名を抽出
 extractSymName :: Expr -> Parser Text
-extractSymName (ESym s) = pure s
+extractSymName (ESym _ s) = pure s
 extractSymName _ = fail "export: シンボル名が必要です"
 
 -- インポートオプションをパース
 parseImportOption :: Expr -> Parser ImportOption
-parseImportOption (EList (ESym "only" : syms)) = do
+parseImportOption (EList _ (ESym _ "only" : syms)) = do
   names <- mapM extractSymName syms
   pure $ Only names
-parseImportOption (EList (ESym "except" : syms)) = do
+parseImportOption (EList _ (ESym _ "except" : syms)) = do
   names <- mapM extractSymName syms
   pure $ Except names
-parseImportOption (EList [ESym "prefix", ESym pfx]) =
+parseImportOption (EList _ [ESym _ "prefix", ESym _ pfx]) =
   pure $ Prefix pfx
-parseImportOption (EList [ESym "alias", ESym alias]) =
+parseImportOption (EList _ [ESym _ "alias", ESym _ alias]) =
   pure $ Alias alias
 parseImportOption _ = fail "import: 不正なインポートオプションです"
 
 -- data 式パーサー: (data TypeName (Con1 args...) (Con2 args...) ...)
 pData :: Parser Expr
-pData = between (lexeme (char '(')) (lexeme (char ')')) $ do
+pData = withSpan $ between (lexeme (char '(')) (lexeme (char ')')) $ do
   _ <- lexeme (chunk "data")
   typeName <- lexeme $ do
     s <- some (satisfy isSymChar)
     pure (T.pack s)
   constrs <- many pConstructorDef
-  pure $ EData typeName constrs
+  pure $ \sp -> EData sp typeName constrs
   where
     isSymChar c = c `notElem` (" \t\n\r();#'\"" :: String)
 
 -- match 式パーサー: (match target (pat1 body1) (pat2 body2) ...)
 pMatch :: Parser Expr
-pMatch = between (lexeme (char '(')) (lexeme (char ')')) $ do
+pMatch = withSpan $ between (lexeme (char '(')) (lexeme (char ')')) $ do
   _ <- lexeme (chunk "match")
   target <- parseExpr
   branches <- many pBranch
-  pure $ EMatch target branches
+  pure $ \sp -> EMatch sp target branches
   where
     pBranch = between (lexeme (char '(')) (lexeme (char ')')) $ do
       pat  <- pPattern
@@ -245,14 +300,17 @@ pPattern = sc *> (pPatWild <|> pPatCon <|> pPatBool <|> pPatStr <|> try pPatInt 
     -- 真偽値リテラルパターン
     pPatBool = lexeme $ do
       _ <- char '#'
-      PLit . EBool <$> (True <$ char 't' <|> False <$ char 'f')
+      b <- True <$ char 't' <|> False <$ char 'f'
+      pure $ PLit (EBool dummySpan b)
     -- 文字列リテラルパターン
     pPatStr = lexeme $ do
       _ <- char '"'
       s <- manyTill L.charLiteral (char '"')
-      pure $ PLit (EStr (T.pack s))
+      pure $ PLit (EStr dummySpan (T.pack s))
     -- 整数リテラルパターン
-    pPatInt = PLit . EInt <$> lexeme (L.signed (pure ()) L.decimal)
+    pPatInt = do
+      n <- lexeme (L.signed (pure ()) L.decimal)
+      pure $ PLit (EInt dummySpan n)
     -- シンボル: 大文字始まりなら0引数コンストラクタ、それ以外は変数パターン
     pPatSym = lexeme $ do
       s <- some (satisfy isSymChar)
@@ -302,7 +360,7 @@ parseFileWithErrors input = case parse (sc *> many parseExpr <* eof) "<file>" in
     toSpinorParseError posState err =
       let offset = errorOffset err
           (_, newPosState) = reachOffset offset posState
-          SourcePos _ line col = pstateSourcePos newPosState
+          MP.SourcePos _ line col = pstateSourcePos newPosState
       in SpinorParseError
            { errorLine    = unPos line
            , errorColumn  = unPos col

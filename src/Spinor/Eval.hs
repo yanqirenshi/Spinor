@@ -25,7 +25,7 @@ import Control.Exception (try, IOException)
 import System.Directory (doesFileExist)
 import System.Environment (getArgs, lookupEnv)
 
-import Spinor.Syntax (Expr(..), Pattern(..), ConstructorDef(..))
+import Spinor.Syntax (Expr(..), Pattern(..), ConstructorDef(..), dummySpan)
 import Spinor.Val    (Val(..), Env, showVal)
 
 -- | 評価モナド
@@ -43,34 +43,34 @@ runEval env (Eval m) = runExceptT (runStateT m env)
 eval :: Expr -> Eval Val
 
 -- アトム: 整数 → VInt
-eval (EInt n) = pure $ VInt n
+eval (EInt _ n) = pure $ VInt n
 
 -- アトム: 真偽値 → VBool
-eval (EBool b) = pure $ VBool b
+eval (EBool _ b) = pure $ VBool b
 
 -- アトム: 文字列 → VStr
-eval (EStr s) = pure $ VStr s
+eval (EStr _ s) = pure $ VStr s
 
 -- アトム: シンボル → 環境から検索
-eval (ESym name) = do
+eval (ESym _ name) = do
   env <- get
   case Map.lookup name env of
     Just val -> pure val
     Nothing  -> throwError $ "未定義のシンボル: " <> name
 
 -- 空リスト → VNil
-eval (EList []) = pure VNil
+eval (EList _ []) = pure VNil
 
 -- 特殊形式: (quote expr) — 式を評価せず値として返す
-eval (EList [ESym "quote", expr]) = pure (exprToVal expr)
+eval (EList _ [ESym _ "quote", expr]) = pure (exprToVal expr)
 
 -- 特殊形式: (define sym expr) / (def sym expr)
-eval (EList [ESym "define", ESym name, body]) = evalDefine name body
-eval (EList [ESym "def",    ESym name, body]) = evalDefine name body
+eval (EList _ [ESym _ "define", ESym _ name, body]) = evalDefine name body
+eval (EList _ [ESym _ "def",    ESym _ name, body]) = evalDefine name body
 
 -- 特殊形式: (let ((var1 val1) ...) body) — 並列ローカル変数束縛
 --   すべての init-expr を現在の環境で評価した後、一括して束縛を追加する
-eval (ELet bindings body) = do
+eval (ELet _ bindings body) = do
   savedEnv <- get
   -- 1. すべての値を現在の環境で評価 (並列束縛)
   vals <- mapM (eval . snd) bindings
@@ -84,7 +84,7 @@ eval (ELet bindings body) = do
 
 -- data 式: (data TypeName (Con1 a b) (Con2)) — ADT 定義
 --   各コンストラクタを環境に登録する
-eval (EData _typeName constrs) = do
+eval (EData _ _typeName constrs) = do
   mapM_ registerConstructor constrs
   pure VNil
   where
@@ -99,20 +99,20 @@ eval (EData _typeName constrs) = do
                     <> pack (show (length args)) <> ")"
 
 -- match 式: (match target (pat1 body1) (pat2 body2) ...)
-eval (EMatch targetExpr branches) = do
+eval (EMatch _ targetExpr branches) = do
   targetVal <- eval targetExpr
   matchBranches targetVal branches
 
 -- module 宣言: ローダーで処理されるべき
-eval (EModule _ _) =
+eval (EModule _ _ _) =
   throwError "module: module宣言はファイルの先頭に配置し、モジュールローダーで処理される必要があります"
 
 -- import 宣言: ローダーで処理されるべき
-eval (EImport _ _) =
+eval (EImport _ _ _) =
   throwError "import: import宣言はトップレベルに配置し、モジュールローダーで処理される必要があります"
 
 -- 特殊形式: (print expr) — 値を表示して返す
-eval (EList [ESym "print", arg]) = do
+eval (EList _ [ESym _ "print", arg]) = do
   val <- eval arg
   case val of
     VStr s -> liftIO $ TIO.putStrLn s
@@ -120,7 +120,7 @@ eval (EList [ESym "print", arg]) = do
   pure val
 
 -- 特殊形式: (if cond then else)
-eval (EList [ESym "if", cond, thenE, elseE]) = do
+eval (EList _ [ESym _ "if", cond, thenE, elseE]) = do
   c <- eval cond
   case c of
     VBool False -> eval elseE
@@ -128,11 +128,11 @@ eval (EList [ESym "if", cond, thenE, elseE]) = do
     _           -> eval thenE
 
 -- 特殊形式: (begin expr1 expr2 ...) / (progn expr1 expr2 ...) — 順次評価
-eval (EList (ESym "begin" : exprs)) = evalSequence exprs
-eval (EList (ESym "progn" : exprs)) = evalSequence exprs
+eval (EList _ (ESym _ "begin" : exprs)) = evalSequence exprs
+eval (EList _ (ESym _ "progn" : exprs)) = evalSequence exprs
 
 -- 特殊形式: (setq var new-value-expr) — 破壊的代入
-eval (EList [ESym "setq", ESym name, valExpr]) = do
+eval (EList _ [ESym _ "setq", ESym _ name, valExpr]) = do
   env <- get
   case Map.lookup name env of
     Nothing -> throwError $ "setq: 未束縛の変数です: " <> name
@@ -142,7 +142,7 @@ eval (EList [ESym "setq", ESym name, valExpr]) = do
       pure val
 
 -- 特殊形式: (spawn expr) — 新しいスレッドで式を評価
-eval (EList [ESym "spawn", expr]) = do
+eval (EList _ [ESym _ "spawn", expr]) = do
   env <- get  -- 現在の環境をキャプチャ (クロージャと同じ原理)
   liftIO $ void $ forkIO $ do
     -- 新しいスレッドで評価を実行。エラーは表示。
@@ -153,7 +153,7 @@ eval (EList [ESym "spawn", expr]) = do
   pure $ VBool True
 
 -- 特殊形式: (sleep millis) — 指定ミリ秒だけスレッドを停止
-eval (EList [ESym "sleep", arg]) = do
+eval (EList _ [ESym _ "sleep", arg]) = do
   val <- eval arg
   case val of
     VInt ms -> do
@@ -162,24 +162,24 @@ eval (EList [ESym "sleep", arg]) = do
     _ -> throwError "sleep: 整数が必要です"
 
 -- 特殊形式: (new-mvar) / (new-mvar val) — MVar を作成
-eval (EList [ESym "new-mvar"]) = do
+eval (EList _ [ESym _ "new-mvar"]) = do
   mvar <- liftIO newEmptyMVar
   pure $ VMVar mvar
 
-eval (EList [ESym "new-mvar", arg]) = do
+eval (EList _ [ESym _ "new-mvar", arg]) = do
   val <- eval arg
   mvar <- liftIO $ newMVar val
   pure $ VMVar mvar
 
 -- 特殊形式: (take-mvar mvar) — MVar から値を取り出す (ブロッキング)
-eval (EList [ESym "take-mvar", arg]) = do
+eval (EList _ [ESym _ "take-mvar", arg]) = do
   val <- eval arg
   case val of
     VMVar mvar -> liftIO $ takeMVar mvar
     _ -> throwError "take-mvar: MVar が必要です"
 
 -- 特殊形式: (put-mvar mvar val) — MVar に値を格納する (ブロッキング)
-eval (EList [ESym "put-mvar", mvarExpr, valExpr]) = do
+eval (EList _ [ESym _ "put-mvar", mvarExpr, valExpr]) = do
   mvarVal <- eval mvarExpr
   val <- eval valExpr
   case mvarVal of
@@ -190,37 +190,37 @@ eval (EList [ESym "put-mvar", mvarExpr, valExpr]) = do
 
 -- 特殊形式: (fn (params...) body) — 固定長 / ドット記法可変長
 --   現在の環境をキャプチャしてクロージャを生成する。
-eval (EList [ESym "fn", EList params, body]) = do
+eval (EList _ [ESym _ "fn", EList _ params, body]) = do
   paramNames <- mapM extractSym params
   closureEnv <- get
   pure $ VFunc paramNames body closureEnv
 
 -- 特殊形式: (fn name body) — 全引数を1つのシンボルにキャプチャ
-eval (EList [ESym "fn", ESym param, body]) = do
+eval (EList _ [ESym _ "fn", ESym _ param, body]) = do
   closureEnv <- get
   pure $ VFunc [".", param] body closureEnv
 
 -- 特殊形式: (mac (params...) body) — 固定長 / ドット記法可変長
-eval (EList [ESym "mac", EList params, body]) = do
+eval (EList _ [ESym _ "mac", EList _ params, body]) = do
   paramNames <- mapM extractSym params
   closureEnv <- get
   pure $ VMacro paramNames body closureEnv
 
 -- 特殊形式: (mac name body) — 全引数を1つのシンボルにキャプチャ
-eval (EList [ESym "mac", ESym param, body]) = do
+eval (EList _ [ESym _ "mac", ESym _ param, body]) = do
   closureEnv <- get
   pure $ VMacro [".", param] body closureEnv
 
 -- 特殊形式: (dotimes (var count-expr) body...) — カウンタループ
 --   setq の副作用がクロージャ境界を超えないため、特殊形式として実装
-eval (EList (ESym "dotimes" : EList [ESym var, countExpr] : body)) = do
+eval (EList _ (ESym _ "dotimes" : EList _ [ESym _ var, countExpr] : body)) = do
   countVal <- eval countExpr
   case countVal of
     VInt count -> dotimesLoop var count body 0
     _ -> throwError "dotimes: 整数が必要です"
 
 -- 特殊形式: (dolist (var list-expr) body...) — リスト反復
-eval (EList (ESym "dolist" : EList [ESym var, listExpr] : body)) = do
+eval (EList _ (ESym _ "dolist" : EList _ [ESym _ var, listExpr] : body)) = do
   listVal <- eval listExpr
   case listVal of
     VList xs -> dolistLoop var xs body
@@ -228,14 +228,14 @@ eval (EList (ESym "dolist" : EList [ESym var, listExpr] : body)) = do
     _        -> throwError "dolist: リストが必要です"
 
 -- 特殊形式: (error message) — ランタイムエラーを発生させる
-eval (EList [ESym "error", msgExpr]) = do
+eval (EList _ [ESym _ "error", msgExpr]) = do
   val <- eval msgExpr
   case val of
     VStr msg -> throwError msg
     _        -> throwError $ "error: 文字列が必要です"
 
 -- 特殊形式: (bound? symbol) — シンボルが環境に定義されているか判定
-eval (EList [ESym "bound?", arg]) = do
+eval (EList _ [ESym _ "bound?", arg]) = do
   val <- eval arg
   case val of
     VSym name -> do
@@ -244,7 +244,7 @@ eval (EList [ESym "bound?", arg]) = do
     _ -> throwError $ "bound?: シンボルが必要です"
 
 -- 特殊形式: (read-file path) — ファイルを読み込んで文字列として返す
-eval (EList [ESym "read-file", pathExpr]) = do
+eval (EList _ [ESym _ "read-file", pathExpr]) = do
   pathVal <- eval pathExpr
   case pathVal of
     VStr path -> do
@@ -255,7 +255,7 @@ eval (EList [ESym "read-file", pathExpr]) = do
     _ -> throwError "read-file: パスには文字列が必要です"
 
 -- 特殊形式: (write-file path content) — ファイルに書き込む (上書き)
-eval (EList [ESym "write-file", pathExpr, contentExpr]) = do
+eval (EList _ [ESym _ "write-file", pathExpr, contentExpr]) = do
   pathVal <- eval pathExpr
   contentVal <- eval contentExpr
   case (pathVal, contentVal) of
@@ -267,7 +267,7 @@ eval (EList [ESym "write-file", pathExpr, contentExpr]) = do
     _ -> throwError "write-file: (String, String) が必要です"
 
 -- 特殊形式: (append-file path content) — ファイルに追記する
-eval (EList [ESym "append-file", pathExpr, contentExpr]) = do
+eval (EList _ [ESym _ "append-file", pathExpr, contentExpr]) = do
   pathVal <- eval pathExpr
   contentVal <- eval contentExpr
   case (pathVal, contentVal) of
@@ -279,7 +279,7 @@ eval (EList [ESym "append-file", pathExpr, contentExpr]) = do
     _ -> throwError "append-file: (String, String) が必要です"
 
 -- 特殊形式: (file-exists? path) — ファイルが存在するか確認
-eval (EList [ESym "file-exists?", pathExpr]) = do
+eval (EList _ [ESym _ "file-exists?", pathExpr]) = do
   pathVal <- eval pathExpr
   case pathVal of
     VStr path -> do
@@ -288,12 +288,12 @@ eval (EList [ESym "file-exists?", pathExpr]) = do
     _ -> throwError "file-exists?: パスには文字列が必要です"
 
 -- 特殊形式: (command-line-args) — コマンドライン引数を取得
-eval (EList [ESym "command-line-args"]) = do
+eval (EList _ [ESym _ "command-line-args"]) = do
   args <- liftIO getArgs
   pure $ VList (map (VStr . T.pack) args)
 
 -- 特殊形式: (getenv name) — 環境変数を取得
-eval (EList [ESym "getenv", nameExpr]) = do
+eval (EList _ [ESym _ "getenv", nameExpr]) = do
   nameVal <- eval nameExpr
   case nameVal of
     VStr name -> do
@@ -303,7 +303,7 @@ eval (EList [ESym "getenv", nameExpr]) = do
 
 -- 関数適用: (f arg1 arg2 ...)
 --   マクロ展開は Expander.expand で処理済みの前提。
-eval (EList (x:xs)) = do
+eval (EList _ (x:xs)) = do
   func <- eval x
   args <- mapM eval xs
   apply func args
@@ -373,30 +373,30 @@ bindArgs params args = case break (== ".") params of
 
 -- | Expr を評価せずに Val に変換する (quote / マクロ引数用)
 exprToVal :: Expr -> Val
-exprToVal (EInt n)    = VInt n
-exprToVal (EBool b)   = VBool b
-exprToVal (ESym s)    = VSym s
-exprToVal (EStr s)    = VStr s
-exprToVal (EList xs)  = VList (map exprToVal xs)
-exprToVal (ELet bindings body) =
+exprToVal (EInt _ n)    = VInt n
+exprToVal (EBool _ b)   = VBool b
+exprToVal (ESym _ s)    = VSym s
+exprToVal (EStr _ s)    = VStr s
+exprToVal (EList _ xs)  = VList (map exprToVal xs)
+exprToVal (ELet _ bindings body) =
   let bindingsVal = VList [VList [VSym name, exprToVal expr] | (name, expr) <- bindings]
   in VList [VSym "let", bindingsVal, exprToVal body]
-exprToVal (EData name _) = VSym ("<data:" <> name <> ">")
-exprToVal (EMatch _ _) = VSym "<match>"
-exprToVal (EModule name _) = VSym ("<module:" <> name <> ">")
-exprToVal (EImport name _) = VSym ("<import:" <> name <> ">")
+exprToVal (EData _ name _) = VSym ("<data:" <> name <> ">")
+exprToVal (EMatch _ _ _) = VSym "<match>"
+exprToVal (EModule _ name _) = VSym ("<module:" <> name <> ">")
+exprToVal (EImport _ name _) = VSym ("<import:" <> name <> ">")
 
 -- | Val を Expr に逆変換する (マクロ展開結果の再評価用)
 valToExpr :: Val -> Expr
-valToExpr (VInt n)    = EInt n
-valToExpr (VBool b)   = EBool b
-valToExpr (VSym s)    = ESym s
-valToExpr (VStr s)    = EStr s
-valToExpr (VList vs)  = EList (map valToExpr vs)
-valToExpr VNil        = EList []
-valToExpr (VData name vs) = EList (ESym name : map valToExpr vs)
+valToExpr (VInt n)    = EInt dummySpan n
+valToExpr (VBool b)   = EBool dummySpan b
+valToExpr (VSym s)    = ESym dummySpan s
+valToExpr (VStr s)    = EStr dummySpan s
+valToExpr (VList vs)  = EList dummySpan (map valToExpr vs)
+valToExpr VNil        = EList dummySpan []
+valToExpr (VData name vs) = EList dummySpan (ESym dummySpan name : map valToExpr vs)
 -- VMatch は存在しないが網羅性のため
-valToExpr other       = ESym $ "<" <> pack (showVal other) <> ">"
+valToExpr other       = ESym dummySpan $ "<" <> pack (showVal other) <> ">"
 
 -- | match 式の分岐を上から順に試行する
 matchBranches :: Val -> [(Pattern, Expr)] -> Eval Val
@@ -452,6 +452,6 @@ dolistLoop var (x:xs) body = do
 
 -- | パラメータリストからシンボル名を抽出する (fn / mac 共通)
 extractSym :: Expr -> Eval Text
-extractSym (ESym s) = pure s
-extractSym other    = throwError $ "引数にはシンボルが必要です: "
-                                <> pack (show other)
+extractSym (ESym _ s) = pure s
+extractSym other      = throwError $ "引数にはシンボルが必要です: "
+                                  <> pack (show other)

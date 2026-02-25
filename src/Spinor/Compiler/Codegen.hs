@@ -46,17 +46,17 @@ compileProgram exprs =
 
 -- | defun 式かどうかを判定する
 isDefun :: Expr -> Bool
-isDefun (EList (ESym "defun" : _)) = True
+isDefun (EList _ (ESym _ "defun" : _)) = True
 isDefun _ = False
 
 -- | defun 式を C の関数定義に変換する
 --
 -- 末尾自己再帰が検出された場合は TCO (while(1) + continue) を適用する。
 compileFunDef :: Expr -> CCode
-compileFunDef (EList [ESym "defun", ESym name, EList argExprs, body]) =
+compileFunDef (EList _ [ESym _ "defun", ESym _ name, EList _ argExprs, body]) =
     let cName = mangle name
         cArgs = T.intercalate ", " (map toCArg argExprs)
-        paramNames = [n | ESym n <- argExprs]
+        paramNames = [n | ESym _ n <- argExprs]
     in if hasTailSelfCall name body
        then -- TCO 適用: while(1) ループで末尾再帰を最適化
             T.unlines
@@ -73,7 +73,7 @@ compileFunDef (EList [ESym "defun", ESym name, EList argExprs, body]) =
               , "}"
               ]
   where
-    toCArg (ESym argName) = "SpObject* " <> mangle argName
+    toCArg (ESym _ argName) = "SpObject* " <> mangle argName
     toCArg _ = "SpObject* _unknown"
 compileFunDef _ = "/* invalid defun */"
 
@@ -81,9 +81,9 @@ compileFunDef _ = "/* invalid defun */"
 --
 -- if 式の場合は両分岐を検査する。
 hasTailSelfCall :: Text -> Expr -> Bool
-hasTailSelfCall fname (EList [ESym "if", _, thenE, elseE]) =
+hasTailSelfCall fname (EList _ [ESym _ "if", _, thenE, elseE]) =
     hasTailSelfCall fname thenE || hasTailSelfCall fname elseE
-hasTailSelfCall fname (EList (ESym f : _)) = f == fname
+hasTailSelfCall fname (EList _ (ESym _ f : _)) = f == fname
 hasTailSelfCall _ _ = False
 
 -- | 末尾位置の式を TCO 対応の C コード (文) に変換する
@@ -93,7 +93,7 @@ hasTailSelfCall _ _ = False
 -- - その他: return 文を生成
 compileTailBody :: Text -> [Text] -> Expr -> CCode
 -- if 式: 分岐を C の if/else 文に変換
-compileTailBody fname params (EList [ESym "if", cond, thenE, elseE]) =
+compileTailBody fname params (EList _ [ESym _ "if", cond, thenE, elseE]) =
     T.unlines
       [ "        if (" <> compileExpr cond <> "->value.boolean) {"
       , compileTailBody fname params thenE
@@ -102,7 +102,7 @@ compileTailBody fname params (EList [ESym "if", cond, thenE, elseE]) =
       , "        }"
       ]
 -- 末尾自己再帰呼び出し: 引数を一時変数に退避してから更新 + continue
-compileTailBody fname params (EList (ESym f : args))
+compileTailBody fname params (EList _ (ESym _ f : args))
     | f == fname =
         let compiledArgs = map compileExpr args
             indexedArgs = zip [0::Int ..] compiledArgs
@@ -141,74 +141,74 @@ compileStmt expr =
 -- 各 Spinor 式は SpObject* を返す C の式に変換される。
 compileExpr :: Expr -> CCode
 -- リテラル
-compileExpr (EInt n)  = "sp_make_int(" <> T.pack (show n) <> ")"
-compileExpr (EBool b) = "sp_make_bool(" <> (if b then "true" else "false") <> ")"
-compileExpr (EStr s)  = "sp_make_str(\"" <> escapeC s <> "\")"
+compileExpr (EInt _ n)  = "sp_make_int(" <> T.pack (show n) <> ")"
+compileExpr (EBool _ b) = "sp_make_bool(" <> (if b then "true" else "false") <> ")"
+compileExpr (EStr _ s)  = "sp_make_str(\"" <> escapeC s <> "\")"
 
 -- if 式: (if cond then else)
-compileExpr (EList [ESym "if", cond, thenE, elseE]) =
+compileExpr (EList _ [ESym _ "if", cond, thenE, elseE]) =
     "(" <> compileExpr cond <> "->value.boolean ? " <>
     compileExpr thenE <> " : " <> compileExpr elseE <> ")"
 
 -- 算術演算
-compileExpr (EList [ESym "+", a, b]) =
+compileExpr (EList _ [ESym _ "+", a, b]) =
     "sp_add(" <> compileExpr a <> ", " <> compileExpr b <> ")"
-compileExpr (EList [ESym "-", a, b]) =
+compileExpr (EList _ [ESym _ "-", a, b]) =
     "sp_sub(" <> compileExpr a <> ", " <> compileExpr b <> ")"
-compileExpr (EList [ESym "*", a, b]) =
+compileExpr (EList _ [ESym _ "*", a, b]) =
     "sp_mul(" <> compileExpr a <> ", " <> compileExpr b <> ")"
-compileExpr (EList [ESym "/", a, b]) =
+compileExpr (EList _ [ESym _ "/", a, b]) =
     "sp_div(" <> compileExpr a <> ", " <> compileExpr b <> ")"
 
 -- 比較演算
-compileExpr (EList [ESym "=", a, b]) =
+compileExpr (EList _ [ESym _ "=", a, b]) =
     "sp_eq(" <> compileExpr a <> ", " <> compileExpr b <> ")"
-compileExpr (EList [ESym "<", a, b]) =
+compileExpr (EList _ [ESym _ "<", a, b]) =
     "sp_lt(" <> compileExpr a <> ", " <> compileExpr b <> ")"
-compileExpr (EList [ESym ">", a, b]) =
+compileExpr (EList _ [ESym _ ">", a, b]) =
     "sp_gt(" <> compileExpr a <> ", " <> compileExpr b <> ")"
-compileExpr (EList [ESym "<=", a, b]) =
+compileExpr (EList _ [ESym _ "<=", a, b]) =
     "sp_lte(" <> compileExpr a <> ", " <> compileExpr b <> ")"
-compileExpr (EList [ESym ">=", a, b]) =
+compileExpr (EList _ [ESym _ ">=", a, b]) =
     "sp_gte(" <> compileExpr a <> ", " <> compileExpr b <> ")"
 
 -- 文字列操作
-compileExpr (EList [ESym "string-append", a, b]) =
+compileExpr (EList _ [ESym _ "string-append", a, b]) =
     "sp_str_append(" <> compileExpr a <> ", " <> compileExpr b <> ")"
-compileExpr (EList [ESym "string-length", s]) =
+compileExpr (EList _ [ESym _ "string-length", s]) =
     "sp_str_length(" <> compileExpr s <> ")"
-compileExpr (EList [ESym "substring", s, start, end]) =
+compileExpr (EList _ [ESym _ "substring", s, start, end]) =
     "sp_substring(" <> compileExpr s <> ", " <> compileExpr start <> ", " <> compileExpr end <> ")"
-compileExpr (EList [ESym "string=?", a, b]) =
+compileExpr (EList _ [ESym _ "string=?", a, b]) =
     "sp_str_eq(" <> compileExpr a <> ", " <> compileExpr b <> ")"
 
 -- ファイル I/O
-compileExpr (EList [ESym "read-file", path]) =
+compileExpr (EList _ [ESym _ "read-file", path]) =
     "sp_read_file(" <> compileExpr path <> ")"
-compileExpr (EList [ESym "write-file", path, content]) =
+compileExpr (EList _ [ESym _ "write-file", path, content]) =
     "sp_write_file(" <> compileExpr path <> ", " <> compileExpr content <> ")"
-compileExpr (EList [ESym "append-file", path, content]) =
+compileExpr (EList _ [ESym _ "append-file", path, content]) =
     "sp_append_file(" <> compileExpr path <> ", " <> compileExpr content <> ")"
-compileExpr (EList [ESym "file-exists?", path]) =
+compileExpr (EList _ [ESym _ "file-exists?", path]) =
     "sp_file_exists(" <> compileExpr path <> ")"
 
 -- OpenGL プリミティブ
-compileExpr (EList [ESym "gl-init", w, h, title]) =
+compileExpr (EList _ [ESym _ "gl-init", w, h, title]) =
     "sp_gl_init(" <> compileExpr w <> ", " <> compileExpr h <> ", " <> compileExpr title <> ")"
-compileExpr (EList [ESym "gl-clear"]) =
+compileExpr (EList _ [ESym _ "gl-clear"]) =
     "sp_gl_clear()"
-compileExpr (EList [ESym "gl-draw-points", m]) =
+compileExpr (EList _ [ESym _ "gl-draw-points", m]) =
     "sp_gl_draw_points(" <> compileExpr m <> ")"
-compileExpr (EList [ESym "gl-swap-buffers", win]) =
+compileExpr (EList _ [ESym _ "gl-swap-buffers", win]) =
     "sp_gl_swap_buffers(" <> compileExpr win <> ")"
-compileExpr (EList [ESym "gl-window-should-close", win]) =
+compileExpr (EList _ [ESym _ "gl-window-should-close", win]) =
     "sp_gl_window_should_close(" <> compileExpr win <> ")"
 
 -- 変数参照 (引数など)
-compileExpr (ESym s) = mangle s
+compileExpr (ESym _ s) = mangle s
 
 -- ユーザー定義関数の呼び出し (プリミティブでない関数)
-compileExpr (EList (ESym fname : args))
+compileExpr (EList _ (ESym _ fname : args))
     | fname `notElem` primitives =
         let cFun = mangle fname
             cArgs = T.intercalate ", " (map compileExpr args)

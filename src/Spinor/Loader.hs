@@ -122,9 +122,9 @@ scanTopLevel = go Nothing [] []
   where
     go modDecl imports body [] = (modDecl, reverse imports, reverse body)
     go modDecl imports body (e:es) = case e of
-      EModule name exports -> go (Just (name, exports)) imports body es
-      EImport name opts    -> go modDecl ((name, opts) : imports) body es
-      _                    -> go modDecl imports (e : body) es
+      EModule _ name exports -> go (Just (name, exports)) imports body es
+      EImport _ name opts    -> go modDecl ((name, opts) : imports) body es
+      _                      -> go modDecl imports (e : body) es
 
 -- | 依存モジュールをロードし、インポートされたシンボルを含む環境を構築
 loadDependencies :: LoaderConfig

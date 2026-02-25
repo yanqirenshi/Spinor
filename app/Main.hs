@@ -301,9 +301,9 @@ loadSpinFile (env, tyEnv) path = do
 processBootExpr :: (Env, TypeEnv) -> Expr -> IO (Env, TypeEnv)
 processBootExpr (env, tyEnv) expr = case expr of
   -- module 宣言はスキップ
-  EModule _ _ -> pure (env, tyEnv)
+  EModule _ _ _ -> pure (env, tyEnv)
   -- import 宣言はスキップ (boot では全て同じ環境で実行されるため不要)
-  EImport _ _ -> pure (env, tyEnv)
+  EImport _ _ _ -> pure (env, tyEnv)
   -- 通常の式
   _ -> do
     -- 1. マクロ展開
