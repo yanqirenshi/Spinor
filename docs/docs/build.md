@@ -268,5 +268,5 @@ pacman -S --noconfirm mingw-w64-x86_64-pkg-config
 ## 次のステップ
 
 - [Introduction](introduction) - クイックスタートガイド
-- [Syntax](syntax) - 言語構文の解説
+- [Syntax](syntax/atoms) - 言語構文の解説
 - [API Reference](api-index) - 組み込み関数リファレンス
