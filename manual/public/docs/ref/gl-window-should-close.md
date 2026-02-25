@@ -6,10 +6,10 @@
 (gl-window-should-close win)
 ```
 ### Arguments and Values:
-- `win` -- GLFW �E�B���h�E
-- �߂�l: ����ׂ��Ȃ� `#t`�A�����łȂ���� `#f`
+- `win` -- GLFW ウィンドウ
+- 戻り値: 閉じるべきなら `#t`、そうでなければ `#f`
 ### Description:
-�E�B���h�E�̕���{�^���������ꂽ���A�܂��͏I���t���O���Z�b�g����Ă��邩���m�F���܂��B
+ウィンドウの閉じるボタンが押されたか、または終了フラグがセットされているかを確認します。
 ### Examples:
 ```lisp
 (if (not (gl-window-should-close win))
@@ -17,8 +17,8 @@
     (print "done"))
 ```
 ### Affected By:
-���[�U�[�̃E�B���h�E���� (����{�^��) �Ɉˑ����܂��B
+ユーザーのウィンドウ操作 (閉じるボタン) に依存します。
 ### Exceptional Situations:
-������ Window �łȂ��ꍇ�A�G���[��Ԃ��܂��B
+引数が Window でない場合、エラーを返します。
 ### See Also:
 [gl-init](gl-init), [gl-swap-buffers](gl-swap-buffers)

@@ -6,11 +6,11 @@
 (mac (param1 param2 ...) body)
 ```
 ### Arguments and Values:
-- `params` -- �������̃��X�g
-- `body` -- �}�N���{��
-- �߂�l: �}�N���I�u�W�F�N�g
+- `params` -- 仮引数のリスト
+- `body` -- マクロ本体
+- 戻り値: マクロオブジェクト
 ### Description:
-�}�N�����쐬���܂��B�����͕]�����ꂸ�ɂ��̂܂ܓn����A�Ԃ�l���]������܂��B
+マクロを作成します。引数は評価されずにそのまま渡され、返り値が評価されます。
 ### Examples:
 ```lisp
 (def when (mac (cond body)

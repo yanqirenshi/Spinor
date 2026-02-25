@@ -8,6 +8,6 @@ TBD
 ### Arguments and Values:
 TBD
 ### Description:
-新しいスレッドで式を評価します。
+譁ｰ縺励＞繧ｹ繝ｬ繝�繝峨〒蠑上ｒ隧穂ｾ｡縺励∪縺吶�
 ### Examples:
 TBD

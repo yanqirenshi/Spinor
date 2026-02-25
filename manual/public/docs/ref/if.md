@@ -6,12 +6,12 @@
 (if condition then-expr else-expr)
 ```
 ### Arguments and Values:
-- `condition` -- ������
-- `then-expr` -- �������^�̏ꍇ�ɕ]������鎮
-- `else-expr` -- �������U�̏ꍇ�ɕ]������鎮
-- �߂�l: �]�����ꂽ����̌���
+- `condition` -- 条件式
+- `then-expr` -- 条件が真の場合に評価される式
+- `else-expr` -- 条件が偽の場合に評価される式
+- 戻り値: 評価された分岐の結果
 ### Description:
-����������s���܂��B`condition` ���^ (nil �ȊO) �Ȃ� `then-expr` ���A�U (nil) �Ȃ� `else-expr` ��]�����܂��B
+条件分岐を行います。`condition` が真 (nil 以外) なら `then-expr` を、偽 (nil) なら `else-expr` を評価します。
 ### Examples:
 ```lisp
 (if (> 5 3) "yes" "no")  ; => "yes"
@@ -23,4 +23,4 @@
 ### See Also:
 [match](match), [begin](begin)
 ### Notes:
-Spinor �ł� `nil` �݂̂��U�Ƃ��Ĉ����܂��B`0` ��󃊃X�g�͐^�ł��B
+Spinor では `nil` のみが偽として扱われます。`0` や空リストは真です。

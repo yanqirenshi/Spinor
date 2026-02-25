@@ -6,11 +6,11 @@
 (match expr (pattern1 body1) (pattern2 body2) ...)
 ```
 ### Arguments and Values:
-- `expr` -- �}�b�`�Ώۂ̎�
-- `patterns` -- �p�^�[���Ɩ{�̂̃y�A
-- �߂�l: �}�b�`��������̖{�̂̕]������
+- `expr` -- マッチ対象の式
+- `patterns` -- パターンと本体のペア
+- 戻り値: マッチした分岐の本体の評価結果
 ### Description:
-�p�^�[���}�b�`���s���܂��B���̒l�ɍŏ��Ƀ}�b�`����p�^�[���̖{�̂�]�����܂��B
+パターンマッチを行います。式の値に最初にマッチするパターンの本体を評価します。
 ### Examples:
 ```lisp
 (data Maybe (Just val) Nothing)

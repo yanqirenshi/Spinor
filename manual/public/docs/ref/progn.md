@@ -6,10 +6,10 @@
 (progn expr1 expr2 ... exprN)
 ```
 ### Arguments and Values:
-- `exprs` -- •]‰¿‚·‚éŽ®‚ÌƒV[ƒPƒ“ƒX
-- –ß‚è’l: ÅŒã‚ÌŽ®‚Ì•]‰¿Œ‹‰Ê
+- `exprs` -- è©•ä¾¡ã™ã‚‹å¼ã®ã‚·ãƒ¼ã‚±ãƒ³ã‚¹
+- æˆ»ã‚Šå€¤: æœ€å¾Œã®å¼ã®è©•ä¾¡çµæžœ
 ### Description:
-`begin` ‚ÌƒGƒCƒŠƒAƒXBCommon Lisp ƒXƒ^ƒCƒ‹B
+`begin` ã®ã‚¨ã‚¤ãƒªã‚¢ã‚¹ã€‚Common Lisp ã‚¹ã‚¿ã‚¤ãƒ«ã€‚
 ### Examples:
 ```lisp
 (progn (setq x 1) (setq x (+ x 1)) x)  ; => 2

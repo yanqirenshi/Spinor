@@ -6,10 +6,10 @@
 (empty? x)
 ```
 ### Arguments and Values:
-- `x` -- ”»’è‚·‚é’l
-- –ß‚è’l: ‹ó‚È‚ç `t`
+- `x` -- åˆ¤å®šã™ã‚‹å€¤
+- æˆ»ã‚Šå€¤: ç©ºãªã‚‰ `t`
 ### Description:
-`null?` ‚ÌƒGƒCƒŠƒAƒXB
+`null?` ã®ã‚¨ã‚¤ãƒªã‚¢ã‚¹ã€‚
 ### Examples:
 ```lisp
 (empty? nil)  ; => t

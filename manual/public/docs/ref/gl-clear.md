@@ -6,15 +6,15 @@
 (gl-clear)
 ```
 ### Arguments and Values:
-- ˆø”‚È‚µ
-- –ß‚è’l: `nil`
+- å¼•æ•°ãªã—
+- æˆ»ã‚Šå€¤: `nil`
 ### Description:
-ƒJƒ‰[ƒoƒbƒtƒ@‚ğƒNƒŠƒA‚µ‚Ü‚· (ƒfƒtƒHƒ‹ƒg‚Í•)B
+ã‚«ãƒ©ãƒ¼ãƒãƒƒãƒ•ã‚¡ã‚’ã‚¯ãƒªã‚¢ã—ã¾ã™ (ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã¯é»’)ã€‚
 ### Examples:
 ```lisp
-(gl-clear)  ; ‰æ–Ê‚ğ•‚ÅƒNƒŠƒA
+(gl-clear)  ; ç”»é¢ã‚’é»’ã§ã‚¯ãƒªã‚¢
 ```
 ### Side Effects:
-OpenGL ‚ÌƒJƒ‰[ƒoƒbƒtƒ@‚ğƒNƒŠƒA‚µ‚Ü‚·B
+OpenGL ã®ã‚«ãƒ©ãƒ¼ãƒãƒƒãƒ•ã‚¡ã‚’ã‚¯ãƒªã‚¢ã—ã¾ã™ã€‚
 ### See Also:
 [gl-draw-points](gl-draw-points), [gl-swap-buffers](gl-swap-buffers)

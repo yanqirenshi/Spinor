@@ -6,16 +6,16 @@
 (print expr)
 ```
 ### Arguments and Values:
-- `expr` -- �\������l
-- �߂�l: ���͂Ɠ����l
+- `expr` -- 表示する値
+- 戻り値: 入力と同じ値
 ### Description:
-�l��W���o�͂ɕ\�����A���̒l�����̂܂ܕԂ��܂��B�f�o�b�O�ɕ֗��ł��B
+値を標準出力に表示し、その値をそのまま返します。デバッグに便利です。
 ### Examples:
 ```lisp
-(print "Hello, World!")  ; �o��: Hello, World!
-(+ 1 (print 2))          ; �o��: 2, �߂�l: 3
+(print "Hello, World!")  ; 出力: Hello, World!
+(+ 1 (print 2))          ; 出力: 2, 戻り値: 3
 ```
 ### Side Effects:
-�W���o�͂Ƀe�L�X�g���o�͂��܂��B
+標準出力にテキストを出力します。
 ### See Also:
 [write-file](write-file)

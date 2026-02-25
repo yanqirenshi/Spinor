@@ -8,7 +8,8 @@ import Data.List (sortBy)
 import Data.Ord (comparing)
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
+import qualified Data.Text.Encoding as TE
+import qualified Data.ByteString as BS
 import System.Directory (createDirectoryIfMissing)
 import Language.LSP.Protocol.Types (CompletionItemKind(..))
 
@@ -32,13 +33,17 @@ generateDocs = do
   putStrLn $ "Generated " ++ show (length entries) ++ " reference files."
   putStrLn "Documentation generated successfully."
 
+-- | UTF-8 でテキストファイルを書き出す
+writeFileUtf8 :: FilePath -> Text -> IO ()
+writeFileUtf8 path = BS.writeFile path . TE.encodeUtf8
+
 -- | 個別ファイルを生成
 generateEntryFile :: (Text, DocEntry) -> IO ()
 generateEntryFile (name, entry) = do
   let slug = docSlug entry
       path = "manual/public/docs/ref/" ++ T.unpack slug ++ ".md"
       content = renderEntry name entry
-  TIO.writeFile path content
+  writeFileUtf8 path content
 
 -- | 個別エントリを CLHS スタイルの Markdown に変換
 renderEntry :: Text -> DocEntry -> Text
@@ -118,7 +123,7 @@ kindToText _                           = "Other"
 generateIndexFile :: [(Text, DocEntry)] -> IO ()
 generateIndexFile entries = do
   let content = renderIndex entries
-  TIO.writeFile "manual/public/docs/api-index.md" content
+  writeFileUtf8 "manual/public/docs/api-index.md" content
 
 -- | インデックスを Markdown に変換
 renderIndex :: [(Text, DocEntry)] -> Text

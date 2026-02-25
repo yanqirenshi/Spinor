@@ -6,11 +6,11 @@
 (+ a b)
 ```
 ### Arguments and Values:
-- `a` -- ‘æˆêƒIƒyƒ‰ƒ“ƒh (®”)
-- `b` -- ‘æ“ñƒIƒyƒ‰ƒ“ƒh (®”)
-- –ß‚è’l: `a + b` ‚ÌŒ‹‰Ê (®”)
+- `a` -- ç¬¬ä¸€ã‚ªãƒšãƒ©ãƒ³ãƒ‰ (æ•´æ•°)
+- `b` -- ç¬¬äºŒã‚ªãƒšãƒ©ãƒ³ãƒ‰ (æ•´æ•°)
+- æˆ»ã‚Šå€¤: `a + b` ã®çµæžœ (æ•´æ•°)
 ### Description:
-2‚Â‚Ì®”‚ð‰ÁŽZ‚µA‚»‚Ì˜a‚ð•Ô‚µ‚Ü‚·B
+2ã¤ã®æ•´æ•°ã‚’åŠ ç®—ã—ã€ãã®å’Œã‚’è¿”ã—ã¾ã™ã€‚
 ### Examples:
 ```lisp
 (+ 1 2)      ; => 3
@@ -18,6 +18,6 @@
 (+ 0 0)      ; => 0
 ```
 ### Exceptional Situations:
-ˆø”‚ª®”‚Å‚È‚¢ê‡AŒ^ƒGƒ‰[‚ª”­¶‚µ‚Ü‚·B
+å¼•æ•°ãŒæ•´æ•°ã§ãªã„å ´åˆã€åž‹ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã™ã€‚
 ### See Also:
 [sub](sub), [mul](mul), [mod](mod)

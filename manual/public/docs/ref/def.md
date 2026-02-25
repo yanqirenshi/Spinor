@@ -6,24 +6,24 @@
 (def name expr)
 ```
 ### Arguments and Values:
-- `name` -- ��`����ϐ��� (�V���{��)
-- `expr` -- ��������l�𐶐����鎮
-- �߂�l: �������ꂽ�l
+- `name` -- 定義する変数名 (シンボル)
+- `expr` -- 束縛する値を生成する式
+- 戻り値: 束縛された値
 ### Description:
-�g�b�v���x���ɕϐ����`���܂��B�V���{�� `name` �Ɏ� `expr` �̕]�����ʂ𑩔����܂��B
+トップレベルに変数を定義します。シンボル `name` に式 `expr` の評価結果を束縛します。
 ### Examples:
 ```lisp
-;; ���l�̒�`
+;; 数値の定義
 (def x 42)
 x  ; => 42
 
-;; �֐��̒�`
+;; 関数の定義
 (def square (fn (n) (* n n)))
 (square 5)  ; => 25
 ```
 ### Side Effects:
-�O���[�o�����ɐV����������ǉ����܂��B
+グローバル環境に新しい束縛を追加します。
 ### See Also:
 [fn](fn), [let](let), [setq](setq)
 ### Notes:
-`define` �� `def` �̃G�C���A�X�ł��BScheme �X�^�C���̍\�����D�ޏꍇ�Ɏg�p�ł��܂��B
+`define` は `def` のエイリアスです。Scheme スタイルの構文を好む場合に使用できます。

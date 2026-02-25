@@ -6,11 +6,11 @@
 (to-device ctx matrix)
 ```
 ### Arguments and Values:
-- `ctx` -- OpenCL �R���e�L�X�g
-- `matrix` -- CPU ���̍s��f�[�^ (`VMatrix`)
-- �߂�l: GPU �o�b�t�@ (`CLBuffer`)
+- `ctx` -- OpenCL コンテキスト
+- `matrix` -- CPU 側の行列データ (`VMatrix`)
+- 戻り値: GPU バッファ (`CLBuffer`)
 ### Description:
-�s��f�[�^�� GPU ���̃o�b�t�@�ɓ]�����܂��B
+行列データを GPU 側のバッファに転送します。
 ### Examples:
 ```lisp
 (def ctx (cl-init))
@@ -18,9 +18,9 @@
 (def buf (to-device ctx m))  ; => <CLBuffer:size=4>
 ```
 ### Side Effects:
-GPU ���������m�ۂ��A�f�[�^��]�����܂��B
+GPU メモリを確保し、データを転送します。
 ### Exceptional Situations:
-- ��1������ CLContext �łȂ��ꍇ�A�G���[��Ԃ��܂��B
-- ��2������ Matrix �łȂ��ꍇ�A�G���[��Ԃ��܂��B
+- 第1引数が CLContext でない場合、エラーを返します。
+- 第2引数が Matrix でない場合、エラーを返します。
 ### See Also:
 [to-host](to-host), [cl-init](cl-init), [matrix](matrix)
