@@ -43,10 +43,12 @@ null?           ; 疑問符で終わるシンボル (述語)
 
 ## Symbols
 
-- [eq](../ref/eq) - シンボルの同一性を比較
-- [equal](../ref/equal) - 値の等価性を比較
-- [null?](../ref/null-p) - `nil` かどうかを判定
-- [print](../ref/print) - 値を出力
-- [string-length](../ref/string-length) - 文字列の長さを取得
-- [string-append](../ref/string-append) - 文字列を連結
-- [string-eq](../ref/string-eq) - 文字列の等価性を比較
+| Type | Name | Description |
+|:-----|:-----|:------------|
+| Function | [eq](../ref/eq) | シンボルの同一性を比較 |
+| Function | [equal](../ref/equal) | 値の等価性を比較 |
+| Function | [null?](../ref/null-p) | `nil` かどうかを判定 |
+| Function | [print](../ref/print) | 値を出力 |
+| Function | [string-length](../ref/string-length) | 文字列の長さを取得 |
+| Function | [string-append](../ref/string-append) | 文字列を連結 |
+| Function | [string-eq](../ref/string-eq) | 文字列の等価性を比較 |
