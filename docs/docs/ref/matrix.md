@@ -26,6 +26,6 @@
 - `rows * cols` と要素数が一致しない場合、エラーを返します。
 - 要素に数値以外が含まれる場合、エラーを返します。
 ### See Also:
-[mdim](mdim), [mref](mref)
+[mdim](ref/mdim), [mref](ref/mref)
 ### Notes:
 内部的には `Data.Vector.Storable` を使用し、将来的な BLAS/LAPACK 連携を想定しています。

@@ -16,4 +16,4 @@
 (= "a" "b")  ; => nil
 ```
 ### See Also:
-[lt](lt), [gt](gt), [eq](eq), [equal](equal)
+[lt](ref/lt), [gt](ref/gt), [eq](ref/eq), [equal](ref/equal)

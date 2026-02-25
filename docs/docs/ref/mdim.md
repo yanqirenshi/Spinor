@@ -18,4 +18,4 @@
 ### Exceptional Situations:
 引数が行列でない場合、エラーを返します。
 ### See Also:
-[matrix](matrix), [mref](mref)
+[matrix](ref/matrix), [mref](ref/mref)

@@ -20,4 +20,4 @@
 ### Exceptional Situations:
 引数が整数でない場合、型エラーが発生します。
 ### See Also:
-[sub](sub), [mul](mul), [mod](mod)
+[sub](ref/sub), [mul](ref/mul), [mod](ref/mod)

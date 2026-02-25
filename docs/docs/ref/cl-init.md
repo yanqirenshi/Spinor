@@ -23,6 +23,6 @@ OpenCL プラットフォームの初期化を行います。
 - OpenCL プラットフォームが見つからない場合、エラーを返します。
 - 利用可能なデバイス (GPU/CPU) が見つからない場合、エラーを返します。
 ### See Also:
-[to-device](to-device), [to-host](to-host), [cl-compile](cl-compile)
+[to-device](ref/to-device), [to-host](ref/to-host), [cl-compile](ref/cl-compile)
 ### Notes:
 Haskell の OpenCL パッケージ (`Control.Parallel.OpenCL`) を使用しています。

@@ -17,4 +17,4 @@
 (* 7 0)   ; => 0
 ```
 ### See Also:
-[add](add), [sub](sub)
+[add](ref/add), [sub](ref/sub)

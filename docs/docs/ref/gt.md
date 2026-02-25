@@ -16,4 +16,4 @@
 (> 1 2)  ; => nil
 ```
 ### See Also:
-[lt](lt), [eq-op](eq-op)
+[lt](ref/lt), [eq-op](ref/eq-op)

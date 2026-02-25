@@ -17,4 +17,4 @@
 (- 5 8)   ; => -3
 ```
 ### See Also:
-[add](add), [mul](mul)
+[add](ref/add), [mul](ref/mul)

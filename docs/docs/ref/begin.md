@@ -18,4 +18,4 @@
   42)  ; => 42 ("first" "second" が出力される)
 ```
 ### See Also:
-[progn](progn), [let](let)
+[progn](ref/progn), [let](ref/let)

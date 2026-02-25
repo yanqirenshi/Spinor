@@ -24,6 +24,6 @@ OpenGL の固定機能パイプラインで点を描画します。
 - 引数が Matrix でない場合、エラーを返します。
 - 列数が 2 または 3 でない場合、エラーを返します。
 ### See Also:
-[gl-clear](gl-clear), [gl-swap-buffers](gl-swap-buffers), [matrix](matrix)
+[gl-clear](ref/gl-clear), [gl-swap-buffers](ref/gl-swap-buffers), [matrix](ref/matrix)
 ### Notes:
 座標系は OpenGL 標準の正規化デバイス座標系 (-1.0 ～ 1.0) です。

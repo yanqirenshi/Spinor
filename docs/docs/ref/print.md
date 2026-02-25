@@ -18,4 +18,4 @@
 ### Side Effects:
 標準出力にテキストを出力します。
 ### See Also:
-[write-file](write-file)
+[write-file](ref/write-file)

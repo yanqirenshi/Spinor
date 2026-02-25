@@ -17,4 +17,4 @@
 (data Tree (Leaf val) (Node left right))
 ```
 ### See Also:
-[match](match)
+[match](ref/match)

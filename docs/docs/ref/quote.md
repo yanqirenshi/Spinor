@@ -16,4 +16,4 @@
 '(a b c)         ; => (a b c)
 ```
 ### See Also:
-[list](list), [mac](mac)
+[list](ref/list), [mac](ref/mac)

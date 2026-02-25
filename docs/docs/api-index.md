@@ -4,65 +4,65 @@ Spinor の組み込み関数・特殊形式のリファレンスです。
 
 ## Special Forms
 
-- [begin](doc.html?src=ref/begin.md)
-- [data](doc.html?src=ref/data.md)
-- [def](doc.html?src=ref/def.md)
-- [define](doc.html?src=ref/define.md)
-- [fn](doc.html?src=ref/fn.md)
-- [if](doc.html?src=ref/if.md)
-- [let](doc.html?src=ref/let.md)
-- [mac](doc.html?src=ref/mac.md)
-- [match](doc.html?src=ref/match.md)
-- [progn](doc.html?src=ref/progn.md)
-- [quote](doc.html?src=ref/quote.md)
-- [setq](doc.html?src=ref/setq.md)
+- [begin](ref/begin)
+- [data](ref/data)
+- [def](ref/def)
+- [define](ref/define)
+- [fn](ref/fn)
+- [if](ref/if)
+- [let](ref/let)
+- [mac](ref/mac)
+- [match](ref/match)
+- [progn](ref/progn)
+- [quote](ref/quote)
+- [setq](ref/setq)
 
 ## Arithmetic
 
-- [%](doc.html?src=ref/mod.md)
-- [*](doc.html?src=ref/mul.md)
-- [+](doc.html?src=ref/add.md)
-- [-](doc.html?src=ref/sub.md)
+- [%](ref/mod)
+- [*](ref/mul)
+- [+](ref/add)
+- [-](ref/sub)
 
 ## Comparison
 
-- [<](doc.html?src=ref/lt.md)
-- [=](doc.html?src=ref/eq-op.md)
-- [>](doc.html?src=ref/gt.md)
+- [<](ref/lt)
+- [=](ref/eq-op)
+- [>](ref/gt)
 
 ## List Operations
 
-- [car](doc.html?src=ref/car.md)
-- [cdr](doc.html?src=ref/cdr.md)
-- [cons](doc.html?src=ref/cons.md)
-- [empty?](doc.html?src=ref/empty-p.md)
-- [eq](doc.html?src=ref/eq.md)
-- [equal](doc.html?src=ref/equal.md)
-- [list](doc.html?src=ref/list.md)
-- [null?](doc.html?src=ref/null-p.md)
+- [car](ref/car)
+- [cdr](ref/cdr)
+- [cons](ref/cons)
+- [empty?](ref/empty-p)
+- [eq](ref/eq)
+- [equal](ref/equal)
+- [list](ref/list)
+- [null?](ref/null-p)
 
 ## String Operations
 
-- [list->string](doc.html?src=ref/list-to-string.md)
-- [string->list](doc.html?src=ref/string-to-list.md)
-- [string-append](doc.html?src=ref/string-append.md)
-- [string-length](doc.html?src=ref/string-length.md)
-- [string=?](doc.html?src=ref/string-eq.md)
-- [substring](doc.html?src=ref/substring.md)
+- [list->string](ref/list-to-string)
+- [string->list](ref/string-to-list)
+- [string-append](ref/string-append)
+- [string-length](ref/string-length)
+- [string=?](ref/string-eq)
+- [substring](ref/substring)
 
 ## I/O
 
-- [append-file](doc.html?src=ref/append-file.md)
-- [file-exists?](doc.html?src=ref/file-exists-p.md)
-- [print](doc.html?src=ref/print.md)
-- [read-file](doc.html?src=ref/read-file.md)
-- [write-file](doc.html?src=ref/write-file.md)
+- [append-file](ref/append-file)
+- [file-exists?](ref/file-exists-p)
+- [print](ref/print)
+- [read-file](ref/read-file)
+- [write-file](ref/write-file)
 
 ## Concurrency
 
-- [new-mvar](doc.html?src=ref/new-mvar.md)
-- [put-mvar](doc.html?src=ref/put-mvar.md)
-- [sleep](doc.html?src=ref/sleep.md)
-- [spawn](doc.html?src=ref/spawn.md)
-- [take-mvar](doc.html?src=ref/take-mvar.md)
+- [new-mvar](ref/new-mvar)
+- [put-mvar](ref/put-mvar)
+- [sleep](ref/sleep)
+- [spawn](ref/spawn)
+- [take-mvar](ref/take-mvar)
 

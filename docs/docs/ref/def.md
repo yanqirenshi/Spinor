@@ -24,6 +24,6 @@ x  ; => 42
 ### Side Effects:
 グローバル環境に新しい束縛を追加します。
 ### See Also:
-[fn](fn), [let](let), [setq](setq)
+[fn](ref/fn), [let](ref/let), [setq](ref/setq)
 ### Notes:
 `define` は `def` のエイリアスです。Scheme スタイルの構文を好む場合に使用できます。

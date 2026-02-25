@@ -28,6 +28,6 @@
 ### Exceptional Situations:
 引数の数が一致しない場合、実行時エラーが発生します。
 ### See Also:
-[def](def), [mac](mac), [let](let)
+[def](ref/def), [mac](ref/mac), [let](ref/let)
 ### Notes:
 Spinor の関数は正格評価 (call-by-value) です。

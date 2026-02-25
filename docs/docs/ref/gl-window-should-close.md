@@ -21,4 +21,4 @@
 ### Exceptional Situations:
 引数が Window でない場合、エラーを返します。
 ### See Also:
-[gl-init](gl-init), [gl-swap-buffers](gl-swap-buffers)
+[gl-init](ref/gl-init), [gl-swap-buffers](ref/gl-swap-buffers)

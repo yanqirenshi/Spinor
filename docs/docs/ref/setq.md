@@ -18,4 +18,4 @@
 counter  ; => 1
 ```
 ### See Also:
-[def](def)
+[def](ref/def)

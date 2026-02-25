@@ -18,4 +18,4 @@
 (when (> 5 3) (print "yes"))  ; => "yes"
 ```
 ### See Also:
-[fn](fn), [quote](quote)
+[fn](ref/fn), [quote](ref/quote)

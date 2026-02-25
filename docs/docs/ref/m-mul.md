@@ -21,6 +21,6 @@
 - 引数が行列でない場合、エラーを返します。
 - 左行列の列数と右行列の行数が一致しない場合、エラーを返します。
 ### See Also:
-[m+](m+), [transpose](transpose), [inverse](inverse)
+[m+](ref/m+), [transpose](ref/transpose), [inverse](ref/inverse)
 ### Notes:
 内部的に hmatrix (BLAS/dgemm) を使用しています。

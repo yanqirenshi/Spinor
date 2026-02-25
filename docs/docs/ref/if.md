@@ -21,6 +21,6 @@
 (abs -5)  ; => 5
 ```
 ### See Also:
-[match](match), [begin](begin)
+[match](ref/match), [begin](ref/begin)
 ### Notes:
 Spinor では `nil` のみが偽として扱われます。`0` や空リストは真です。
