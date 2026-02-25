@@ -69,10 +69,6 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [ ] 全プリミティブ・標準ライブラリ関数を網羅したリファレンスの作成。
     - [ ] 型シグネチャ、使用例、エッジケースの挙動を記載。
     - [ ] Web上で閲覧可能な形式 (HTML/Markdown) への出力。
-- [ ] **Step 59: Error Reporting & Source Tracking**
-    - [ ] **AST:** `Expr` への `SourceSpan` フィールド追加。
-    - [ ] **Parser:** パース時の位置情報キャプチャの実装。
-    - [ ] **Reporter:** `Infer` / `Eval` での正確なエラー位置指摘。
 - [x] **Step 29: SLY / SLIME Support (TCP Socket Integration)**
     - [x] **Dependency:** `package.yaml` に `network` パッケージを追加。
     - [x] **Socket Server:** 指定ポートで待ち受け、接続を受け入れる `spinor server` コマンドの実装。
@@ -124,6 +120,14 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [x] 作成した `spinor.png` をリポジトリ（例: `assets/` や `docs/assets/`）に配置。
     - [x] `README.md` のトップにロゴ画像を追加。
     - [x] `docs/index.html` および `docs/doc.html` のヘッダー等にロゴを配置してブランディングを強化。
+- [x] **Step 59: Error Reporting & Source Tracking**
+    - [x] **AST:** `Expr` への `SourceSpan` フィールド追加。
+    - [x] **Parser:** パース時の位置情報キャプチャの実装。
+    - [x] **Reporter:** `Infer` / `Eval` での正確なエラー位置指摘。
+- [ ] **Step 59-B: Error Type & CLI Output Wiring (エラー表示の結線)**
+    - [ ] `SpinorError` 型（位置情報とメッセージを持つレコード）を定義する。
+    - [ ] `Infer.hs` と `Eval.hs` のエラー型を `Text` から `SpinorError` に変更し、エラー送出時に AST の `SourceSpan` を渡す。
+    - [ ] `Main.hs` (CLI) でエラーを受け取った際、`ファイル名:行:列: エラー内容` の形式で出力する。
 
 ## 🚀 Performance & Compilation (パフォーマンスと移植性)
 
@@ -220,10 +224,10 @@ React を用いて、CLHS ライクでモダンなリファレンスサイトを
     - [x] `DocGen.hs` のジェネレータを改修し、各 Operator のページを CLHS フォーマットで出力。
     - [x] `docs/syntax.md` に Lisp 構文と Haskell セマンティクスの解説を執筆・反映。
     - [x] `docs/introduction.md` にインストール、セットアップ、利用方法のガイドを執筆・反映。
-- [ ] **Step 43-B: Build & Environment Guide (ビルド手順の文書化)**
-    - [ ] `docs/build.md` を新規作成（または `introduction.md` に統合）し、環境構築手順を詳細に記載する。
-    - [ ] **WSL2 環境:** 必要なシステムパッケージ (`libglfw3-dev`, `libgl1-mesa-dev`, `pocl-opencl-icd` 等) のインストールコマンドと `cabal build` 手順の記載。
-    - [ ] **Windows 11 環境:** MSYS2 の導入、`pacman` による C ライブラリ (`openblas`, `glfw` 等) のインストール、および `cabal test` 実行時に必要な DLL コピー手順の明記。
+- [x] **Step 43-B: Build & Environment Guide (ビルド手順の文書化)**
+    - [x] `docs/build.md` を新規作成（または `introduction.md` に統合）し、環境構築手順を詳細に記載する。
+    - [x] **WSL2 環境:** 必要なシステムパッケージ (`libglfw3-dev`, `libgl1-mesa-dev`, `pocl-opencl-icd` 等) のインストールコマンドと `cabal build` 手順の記載。
+    - [x] **Windows 11 環境:** MSYS2 の導入、`pacman` による C ライブラリ (`openblas`, `glfw` 等) のインストール、および `cabal test` 実行時に必要な DLL コピー手順の明記。
 
 ## 🌌 The Ultimate Dream (究極の目標: Lispマシンの創生)
 Spinor を単なるアプリケーションレベルの処理系から、ハードウェアと直接対話する「Lispマシン（OS / ハードウェア）」へと昇華させる。
