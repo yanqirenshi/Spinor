@@ -22,6 +22,7 @@ library
     Spinor.GPGPU
     Spinor.OpenCL.Raw
     Spinor.GL
+    Spinor.Library.Json
   build-depends:
     base       >= 4.14 && < 5,
     containers >= 0.6  && < 1,
@@ -39,7 +40,9 @@ library
     vector     >= 0.12 && < 1,
     hmatrix    >= 0.20 && < 1,
     GLFW-b     >= 3.3  && < 4,
-    OpenGL     >= 3.0  && < 4
+    OpenGL     >= 3.0  && < 4,
+    aeson      >= 2.0  && < 3,
+    scientific >= 0.3  && < 1
   extra-libraries:  OpenCL
   default-language: Haskell2010
   ghc-options:      -Wall
@@ -66,6 +69,7 @@ test-suite spinor-test
     Spinor.ParserSpec
     Spinor.EvalSpec
     Spinor.ServerSpec
+    Spinor.JsonSpec
   build-depends:
     base           >= 4.14 && < 5,
     hspec          >= 2.7  && < 3,

@@ -15,6 +15,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import Spinor.Val (Val(..), Env)
 import Spinor.GPGPU (gpgpuBindings)
 import Spinor.GL (glBindings)
+import Spinor.Library.Json (jsonParse, jsonStringify)
 
 -- | 初期環境: プリミティブ関数を束縛した Env
 primitiveBindings :: Env
@@ -52,6 +53,9 @@ corePrimitives = Map.fromList
   , ("m*",        VPrim "m*"       primMMul)
   , ("transpose", VPrim "transpose" primMTranspose)
   , ("inverse",   VPrim "inverse"  primMInverse)
+  -- JSON 操作
+  , ("json-parse",     VPrim "json-parse"     primJsonParse)
+  , ("json-stringify", VPrim "json-stringify" primJsonStringify)
   ]
 
 -- | 整数の二項演算をラップするヘルパー
@@ -285,3 +289,24 @@ primMInverse [VMatrix r c vec]
             Left _     -> Left "inverse: 特異行列のため逆行列を計算できません"
 primMInverse [_] = Left "inverse: 行列が必要です"
 primMInverse args = Left $ "inverse: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"
+
+-- ===========================================================================
+-- JSON 操作プリミティブ
+-- ===========================================================================
+
+-- | json-parse: JSON 文字列を Spinor の値に変換
+--   (json-parse "{}") -> ()
+--   (json-parse "{\"a\": 1}") -> (("a" 1))
+primJsonParse :: [Val] -> Either Text Val
+primJsonParse [VStr s] = jsonParse s
+primJsonParse [_]      = Left "json-parse: 文字列が必要です"
+primJsonParse args     = Left $ "json-parse: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"
+
+-- | json-stringify: Spinor の値を JSON 文字列に変換
+--   (json-stringify '((\"a\" 1))) -> "{\"a\":1}"
+--   (json-stringify (list 1 2 3)) -> "[1,2,3]"
+primJsonStringify :: [Val] -> Either Text Val
+primJsonStringify [val] = case jsonStringify val of
+  Left err  -> Left err
+  Right str -> Right (VStr str)
+primJsonStringify args = Left $ "json-stringify: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"

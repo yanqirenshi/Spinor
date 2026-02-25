@@ -498,4 +498,7 @@ baseTypeEnv = Map.fromList
   , ("gl-swap-buffers",        Scheme [] (TArr (TCon "Window") (TCon "Nil")))
   , ("gl-clear",               Scheme [] (TCon "Nil"))
   , ("gl-draw-points",         Scheme [] (TArr (TCon "Matrix") (TCon "Nil")))
+    -- JSON 操作
+  , ("json-parse",     Scheme ["a"] (TArr TStr (TVar "a")))
+  , ("json-stringify", Scheme ["a"] (TArr (TVar "a") TStr))
   ]

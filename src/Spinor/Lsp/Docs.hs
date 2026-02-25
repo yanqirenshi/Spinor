@@ -995,6 +995,103 @@ primitiveDocs = Map.fromList
       , docSeeAlso = ["gl-clear", "gl-swap-buffers", "matrix"]
       , docNotes = "座標系は OpenGL 標準の正規化デバイス座標系 (-1.0 ～ 1.0) です。"
       })
+
+  -- ========================================
+  -- JSON 操作 (JSON Operations)
+  -- ========================================
+  , ("json-parse", DocEntry
+      { docSignature = "(String) -> Val"
+      , docDescription = "JSON 文字列をパースして Spinor の値に変換します。オブジェクトは連想リスト (Alist) として表現されます。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "json-parse"
+      , docSyntax = "(json-parse json-string)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `json-string` -- パースする JSON 文字列"
+          , "- 戻り値: Spinor の値"
+          , "    - JSON Number (整数) → `VInt`"
+          , "    - JSON Number (浮動小数) → `VFloat`"
+          , "    - JSON String → `VStr`"
+          , "    - JSON Boolean → `VBool` (`true` → `#t`, `false` → `#f`)"
+          , "    - JSON Null → `VNil` (`nil`)"
+          , "    - JSON Array → `VList`"
+          , "    - JSON Object → `VList` (Alist: `((\"key1\" val1) (\"key2\" val2) ...)`)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; 基本的なパース"
+          , "(json-parse \"42\")           ; => 42"
+          , "(json-parse \"3.14\")         ; => 3.14"
+          , "(json-parse \"\\\"hello\\\"\")    ; => \"hello\""
+          , "(json-parse \"true\")         ; => #t"
+          , "(json-parse \"null\")         ; => nil"
+          , ""
+          , ";; 配列のパース"
+          , "(json-parse \"[1, 2, 3]\")    ; => (1 2 3)"
+          , ""
+          , ";; オブジェクトのパース (Alist として表現)"
+          , "(json-parse \"{\\\"name\\\": \\\"Alice\\\", \\\"age\\\": 30}\")"
+          , "; => ((\"name\" \"Alice\") (\"age\" 30))"
+          , ""
+          , ";; ネストしたデータ"
+          , "(json-parse \"{\\\"items\\\": [1, 2, 3]}\")"
+          , "; => ((\"items\" (1 2 3)))"
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = T.unlines
+          [ "- 不正な JSON 文字列の場合、パースエラーを返します。"
+          , "- 引数が文字列でない場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["json-stringify"]
+      , docNotes = "内部的に aeson パッケージを使用しています。"
+      })
+
+  , ("json-stringify", DocEntry
+      { docSignature = "(Val) -> String"
+      , docDescription = "Spinor の値を JSON 文字列に変換します。連想リスト (Alist) は JSON オブジェクトとして出力されます。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "json-stringify"
+      , docSyntax = "(json-stringify value)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `value` -- JSON に変換する値"
+          , "- 戻り値: JSON 文字列"
+          , ""
+          , "変換規則:"
+          , "    - `VInt` → JSON Number (整数)"
+          , "    - `VFloat` → JSON Number (浮動小数)"
+          , "    - `VStr` → JSON String"
+          , "    - `VBool` → JSON Boolean (`#t` → `true`, `#f` → `false`)"
+          , "    - `VNil` → JSON Null (`null`)"
+          , "    - `VList` → JSON Array (通常のリスト) または JSON Object (Alist)"
+          , "    - `VSym` → JSON String (シンボルは文字列として変換)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; 基本的な変換"
+          , "(json-stringify 42)          ; => \"42\""
+          , "(json-stringify 3.14)        ; => \"3.14\""
+          , "(json-stringify \"hello\")    ; => \"\\\"hello\\\"\""
+          , "(json-stringify #t)          ; => \"true\""
+          , "(json-stringify nil)         ; => \"null\""
+          , ""
+          , ";; 配列の変換"
+          , "(json-stringify (list 1 2 3))  ; => \"[1,2,3]\""
+          , ""
+          , ";; オブジェクトの変換 (Alist から)"
+          , "(json-stringify '((\"name\" \"Alice\") (\"age\" 30)))"
+          , "; => \"{\\\"name\\\":\\\"Alice\\\",\\\"age\\\":30}\""
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = T.unlines
+          [ "- 関数、マクロ、MVar など JSON に変換できない型が含まれる場合、エラーを返します。"
+          , "- 行列 (VMatrix)、CLContext、CLBuffer、Window も変換不可です。"
+          ]
+      , docSeeAlso = ["json-parse"]
+      , docNotes = "Alist として認識されるには、リストの全要素が `(\"key\" value)` の形式である必要があります。"
+      })
   ]
 
 lookupDoc :: Text -> Maybe DocEntry
