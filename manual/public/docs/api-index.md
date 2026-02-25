@@ -8,14 +8,18 @@ Spinor の組み込み関数・特殊形式のリファレンスです。
 - [data](ref/data)
 - [def](ref/def)
 - [define](ref/define)
+- [defpackage](ref/defpackage)
+- [export](ref/export)
 - [fn](ref/fn)
 - [if](ref/if)
+- [in-package](ref/in-package)
 - [let](ref/let)
 - [mac](ref/mac)
 - [match](ref/match)
 - [progn](ref/progn)
 - [quote](ref/quote)
 - [setq](ref/setq)
+- [use-package](ref/use-package)
 
 ## Arithmetic
 

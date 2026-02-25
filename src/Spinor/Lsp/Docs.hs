@@ -267,6 +267,157 @@ primitiveDocs = Map.fromList
       "```lisp\n(data Maybe (Just val) Nothing)\n(data Tree (Leaf val) (Node left right))\n```"
       ["match"])
 
+  -- ========================================
+  -- パッケージ操作 (Package Operations)
+  -- ========================================
+  , ("defpackage", DocEntry
+      { docSignature = "(String, Options...) -> String"
+      , docDescription = "新しいパッケージを定義します。パッケージは名前空間を提供し、シンボルの衝突を防ぎます。"
+      , docKind = CompletionItemKind_Keyword
+      , docSlug = "defpackage"
+      , docSyntax = "(defpackage \"pkg-name\" (:use \"base-pkg\") (:export \"sym1\" \"sym2\"))"
+      , docArgumentsAndValues = T.unlines
+          [ "- `pkg-name` -- 定義するパッケージ名 (文字列)"
+          , "- `:use` -- (オプション) インポートするパッケージのリスト"
+          , "- `:export` -- (オプション) 外部に公開するシンボル名のリスト"
+          , "- 戻り値: 作成されたパッケージ名"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; シンプルなパッケージ定義"
+          , "(defpackage \"mylib\")"
+          , ""
+          , ";; エクスポートを指定"
+          , "(defpackage \"math-utils\" (:export \"square\" \"cube\"))"
+          , ""
+          , ";; 他のパッケージを use"
+          , "(defpackage \"my-app\" (:use \"math-utils\") (:export \"main\"))"
+          , "```"
+          ]
+      , docSideEffects = "新しいパッケージをパッケージレジストリに登録します。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "パッケージ名が文字列でない場合、エラーを返します。"
+      , docSeeAlso = ["in-package", "use-package", "export", "current-package"]
+      , docNotes = "すべてのパッケージは暗黙的に \"spinor\" パッケージを use します (コアプリミティブへのアクセス)。"
+      })
+
+  , ("in-package", DocEntry
+      { docSignature = "(String) -> String"
+      , docDescription = "現在の評価コンテキストを指定したパッケージに切り替えます。以降の `def` はこのパッケージに定義されます。"
+      , docKind = CompletionItemKind_Keyword
+      , docSlug = "in-package"
+      , docSyntax = "(in-package \"pkg-name\")"
+      , docArgumentsAndValues = T.unlines
+          [ "- `pkg-name` -- 切り替え先のパッケージ名 (文字列)"
+          , "- 戻り値: 切り替え先のパッケージ名"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(defpackage \"mylib\")"
+          , "(in-package \"mylib\")"
+          , "(def x 42)  ; mylib パッケージに定義"
+          , ""
+          , "(in-package \"user\")"
+          , "(def y 100)  ; user パッケージに定義"
+          , "```"
+          ]
+      , docSideEffects = "現在のパッケージコンテキストを変更します。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "指定されたパッケージが存在しない場合、エラーを返します。"
+      , docSeeAlso = ["defpackage", "current-package", "use-package"]
+      , docNotes = "REPL での実験的な開発に便利です。"
+      })
+
+  , ("use-package", DocEntry
+      { docSignature = "(String) -> Bool"
+      , docDescription = "指定したパッケージの公開シンボルを現在のパッケージから参照可能にします。"
+      , docKind = CompletionItemKind_Keyword
+      , docSlug = "use-package"
+      , docSyntax = "(use-package \"pkg-name\")"
+      , docArgumentsAndValues = T.unlines
+          [ "- `pkg-name` -- インポートするパッケージ名 (文字列)"
+          , "- 戻り値: `#t`"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; math-lib の公開シンボルを使えるようにする"
+          , "(defpackage \"math-lib\" (:export \"square\"))"
+          , "(in-package \"math-lib\")"
+          , "(def square (fn (x) (* x x)))"
+          , "(export \"square\")"
+          , ""
+          , "(defpackage \"my-app\")"
+          , "(in-package \"my-app\")"
+          , "(use-package \"math-lib\")"
+          , "(square 5)  ; => 25"
+          , "```"
+          ]
+      , docSideEffects = "現在のパッケージの使用パッケージリストを更新します。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "指定されたパッケージが存在しない場合、エラーを返します。"
+      , docSeeAlso = ["defpackage", "in-package", "export"]
+      , docNotes = "公開 (export) されたシンボルのみがインポートされます。"
+      })
+
+  , ("current-package", DocEntry
+      { docSignature = "() -> String"
+      , docDescription = "現在のパッケージ名を返します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "current-package"
+      , docSyntax = "(current-package)"
+      , docArgumentsAndValues = T.unlines
+          [ "- 引数なし"
+          , "- 戻り値: 現在のパッケージ名 (文字列)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(current-package)  ; => \"user\" (デフォルト)"
+          , ""
+          , "(defpackage \"mylib\")"
+          , "(in-package \"mylib\")"
+          , "(current-package)  ; => \"mylib\""
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "`in-package` の呼び出しに影響されます。"
+      , docExceptionalSituations = "None."
+      , docSeeAlso = ["in-package", "defpackage"]
+      , docNotes = "初期状態では \"user\" パッケージが現在のパッケージです。"
+      })
+
+  , ("export", DocEntry
+      { docSignature = "(String...) -> Bool"
+      , docDescription = "現在のパッケージから指定したシンボルを公開 (エクスポート) します。"
+      , docKind = CompletionItemKind_Keyword
+      , docSlug = "export"
+      , docSyntax = "(export \"sym1\" \"sym2\" ...)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `syms` -- 公開するシンボル名 (文字列、可変長)"
+          , "- 戻り値: `#t`"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(defpackage \"mylib\")"
+          , "(in-package \"mylib\")"
+          , "(def public-fn (fn (x) (* x 2)))"
+          , "(def private-fn (fn (x) (+ x 1)))"
+          , "(export \"public-fn\")  ; public-fn のみ公開"
+          , ""
+          , ";; 別パッケージから"
+          , "(defpackage \"app\")"
+          , "(in-package \"app\")"
+          , "(use-package \"mylib\")"
+          , "(public-fn 5)   ; => 10 (アクセス可)"
+          , ";; private-fn は見えない"
+          , "```"
+          ]
+      , docSideEffects = "現在のパッケージのエクスポートリストを更新します。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "シンボル名が文字列でない場合、エラーを返します。"
+      , docSeeAlso = ["defpackage", "use-package", "in-package"]
+      , docNotes = "`defpackage` の `:export` オプションでも定義時にエクスポートを指定できます。"
+      })
+
   , ("print", DocEntry
       { docSignature = "(a) -> a"
       , docDescription = "値を標準出力に表示し、その値をそのまま返します。デバッグに便利です。"

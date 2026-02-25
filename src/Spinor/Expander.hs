@@ -8,13 +8,11 @@ module Spinor.Expander
 import Data.Text (pack)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
-import qualified Data.Map.Strict as Map
-import Control.Monad.State.Strict
-import Control.Monad.Except
+import Control.Monad.IO.Class (liftIO)
 
 import Spinor.Syntax (Expr(..), parseFile, dummySpan, exprSpan)
 import Spinor.Val    (Val(..))
-import Spinor.Eval   (Eval, eval, applyClosureBody, exprToVal, valToExpr, throwErrorAt)
+import Spinor.Eval   (Eval, eval, applyClosureBody, exprToVal, valToExpr, throwErrorAt, lookupSymbol)
 
 -- | マクロを全て展開した純粋な AST を返す
 --   expand 後の Expr にはマクロ呼び出しが残らない。
@@ -116,8 +114,8 @@ expand (EList sp (ESym _ "let" : EList _ bindingExprs : body@(_:_))) =
 
 -- リスト: 先頭シンボルがマクロならマクロ展開、そうでなければ全要素を再帰展開
 expand (EList sp (ESym sp2 name : args)) = do
-  env <- get
-  case Map.lookup name env of
+  maybeVal <- lookupSymbol name
+  case maybeVal of
     Just (VMacro params body closureEnv) -> do
       -- マクロ適用: 引数を評価せず Val に変換して適用
       let argVals = map exprToVal args

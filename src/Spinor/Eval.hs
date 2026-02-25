@@ -5,18 +5,26 @@
 
 module Spinor.Eval
   ( Eval
+  , EvalState(..)
   , eval
   , runEval
+  , runEvalWithContext
   , applyClosureBody
   , exprToVal
   , valToExpr
   , throwErrorAt
+  , lookupSymbol
+  , defineSymbol
+  , getCurrentPackageName
+  , getContext
+  , modifyContext
   ) where
 
 import Data.Text (Text, pack)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import Control.Monad.State.Strict
 import Control.Monad.Except
 import Control.Concurrent (forkIO, threadDelay)
@@ -27,22 +35,156 @@ import System.Directory (doesFileExist)
 import System.Environment (getArgs, lookupEnv)
 
 import Spinor.Syntax (Expr(..), Pattern(..), ConstructorDef(..), SourceSpan, SpinorError(..), dummySpan, exprSpan, formatError)
-import Spinor.Val    (Val(..), Env, showVal)
+import Spinor.Val    (Val(..), Env, Package(..), Context(..), showVal, emptyPackage, initialContext)
+
+-- | 評価状態: ローカル環境とパッケージコンテキスト
+data EvalState = EvalState
+  { esLocal   :: Env       -- ^ ローカル束縛 (let, fn 引数など)
+  , esContext :: Context   -- ^ パッケージコンテキスト
+  } deriving (Eq, Show)
 
 -- | 評価モナド
---   StateT  : 変数環境の読み書き
+--   StateT  : ローカル環境とパッケージコンテキストの読み書き
 --   ExceptT : エラーハンドリング (位置情報付き)
 --   IO      : 将来の拡張用 (ファイル読み込みなど)
-newtype Eval a = Eval (StateT Env (ExceptT SpinorError IO) a)
-  deriving (Functor, Applicative, Monad, MonadState Env, MonadError SpinorError, MonadIO)
+newtype Eval a = Eval (StateT EvalState (ExceptT SpinorError IO) a)
+  deriving (Functor, Applicative, Monad, MonadState EvalState, MonadError SpinorError, MonadIO)
 
--- | Eval モナドを実行する
+-- | Eval モナドを実行する (後方互換: Env のみ渡す版)
+--   内部では initialContext を使用し、spinor パッケージに Env の内容を注入する
 runEval :: Env -> Eval a -> IO (Either SpinorError (a, Env))
-runEval env (Eval m) = runExceptT (runStateT m env)
+runEval env action = do
+  result <- runEvalWithContext env initialContext action
+  case result of
+    Left err -> pure $ Left err
+    Right (val, st) -> pure $ Right (val, flattenToEnv st)
+
+-- | Eval モナドを実行する (新API: Env と Context を渡す版)
+runEvalWithContext :: Env -> Context -> Eval a -> IO (Either SpinorError (a, EvalState))
+runEvalWithContext env ctx (Eval m) = do
+  let ctxWithPrimitives = injectPrimitives env ctx
+      initialState = EvalState { esLocal = Map.empty, esContext = ctxWithPrimitives }
+  runExceptT (runStateT m initialState)
+
+-- | プリミティブ束縛を spinor パッケージに注入
+injectPrimitives :: Env -> Context -> Context
+injectPrimitives prims ctx =
+  let spinorPkg = case Map.lookup "spinor" (ctxPackages ctx) of
+        Just pkg -> pkg { pkgBindings = Map.union prims (pkgBindings pkg)
+                        , pkgExports = Set.fromList (Map.keys prims) }
+        Nothing  -> (emptyPackage "spinor") { pkgBindings = prims
+                                            , pkgExports = Set.fromList (Map.keys prims) }
+  in ctx { ctxPackages = Map.insert "spinor" spinorPkg (ctxPackages ctx) }
+
+-- | EvalState からフラットな Env に変換 (後方互換用)
+--   全パッケージのバインディングをマージする
+flattenToEnv :: EvalState -> Env
+flattenToEnv st =
+  let ctx = esContext st
+      allBindings = Map.unions $ map pkgBindings $ Map.elems (ctxPackages ctx)
+  in Map.union (esLocal st) allBindings
 
 -- | 位置情報付きエラーを投げるヘルパー
 throwErrorAt :: SourceSpan -> Text -> Eval a
 throwErrorAt sp msg = throwError (SpinorError sp msg)
+
+-- ===========================================================================
+-- シンボル解決とパッケージ操作
+-- ===========================================================================
+
+-- | シンボルを検索する (検索順序: ローカル → カレントパッケージ → usedPackages → spinor)
+lookupSymbol :: Text -> Eval (Maybe Val)
+lookupSymbol name = do
+  st <- get
+  let localEnv = esLocal st
+      ctx = esContext st
+  -- 1. ローカルスコープ
+  case Map.lookup name localEnv of
+    Just val -> pure $ Just val
+    Nothing -> lookupInPackages ctx name
+
+-- | パッケージ階層からシンボルを検索
+lookupInPackages :: Context -> Text -> Eval (Maybe Val)
+lookupInPackages ctx name = do
+  let curPkgName = ctxCurrentPackage ctx
+      packages = ctxPackages ctx
+  case Map.lookup curPkgName packages of
+    Nothing -> lookupInCore packages name  -- カレントパッケージがない場合はコアのみ
+    Just curPkg -> do
+      -- 2. カレントパッケージの bindings
+      case Map.lookup name (pkgBindings curPkg) of
+        Just val -> pure $ Just val
+        Nothing -> do
+          -- 3. usedPackages の exports を順に検索
+          result <- lookupInUsedPackages packages (pkgUsedPackages curPkg) name
+          case result of
+            Just val -> pure $ Just val
+            Nothing -> lookupInCore packages name
+
+-- | usedPackages リストから順にシンボルを検索 (exports のみ)
+lookupInUsedPackages :: Map.Map Text Package -> [Text] -> Text -> Eval (Maybe Val)
+lookupInUsedPackages _ [] _ = pure Nothing
+lookupInUsedPackages packages (pkgName:rest) name =
+  case Map.lookup pkgName packages of
+    Nothing -> lookupInUsedPackages packages rest name  -- パッケージが存在しない場合はスキップ
+    Just pkg ->
+      if Set.member name (pkgExports pkg)
+        then case Map.lookup name (pkgBindings pkg) of
+               Just val -> pure $ Just val
+               Nothing -> lookupInUsedPackages packages rest name
+        else lookupInUsedPackages packages rest name
+
+-- | コア (spinor) パッケージから検索
+lookupInCore :: Map.Map Text Package -> Text -> Eval (Maybe Val)
+lookupInCore packages name =
+  case Map.lookup "spinor" packages of
+    Nothing -> pure Nothing
+    Just corePkg -> pure $ Map.lookup name (pkgBindings corePkg)
+
+-- | シンボルをカレントパッケージに定義する
+defineSymbol :: Text -> Val -> Eval ()
+defineSymbol name val = do
+  st <- get
+  let ctx = esContext st
+      curPkgName = ctxCurrentPackage ctx
+  case Map.lookup curPkgName (ctxPackages ctx) of
+    Nothing -> do
+      -- カレントパッケージがなければ作成
+      let newPkg = (emptyPackage curPkgName) { pkgBindings = Map.singleton name val }
+          newCtx = ctx { ctxPackages = Map.insert curPkgName newPkg (ctxPackages ctx) }
+      put st { esContext = newCtx }
+    Just pkg -> do
+      let newPkg = pkg { pkgBindings = Map.insert name val (pkgBindings pkg) }
+          newCtx = ctx { ctxPackages = Map.insert curPkgName newPkg (ctxPackages ctx) }
+      put st { esContext = newCtx }
+
+-- | ローカル環境にシンボルを追加 (let, fn 引数など)
+defineLocal :: Text -> Val -> Eval ()
+defineLocal name val = modify $ \st -> st { esLocal = Map.insert name val (esLocal st) }
+
+-- | ローカル環境を取得
+getLocalEnv :: Eval Env
+getLocalEnv = gets esLocal
+
+-- | ローカル環境を設定
+putLocalEnv :: Env -> Eval ()
+putLocalEnv env = modify $ \st -> st { esLocal = env }
+
+-- | コンテキストを取得
+getContext :: Eval Context
+getContext = gets esContext
+
+-- | コンテキストを更新
+modifyContext :: (Context -> Context) -> Eval ()
+modifyContext f = modify $ \st -> st { esContext = f (esContext st) }
+
+-- | 現在のパッケージ名を取得
+getCurrentPackageName :: Eval Text
+getCurrentPackageName = gets (ctxCurrentPackage . esContext)
+
+-- | ローカル環境に複数の束縛を追加
+extendLocalEnv :: Env -> Eval ()
+extendLocalEnv bindings = modify $ \st -> st { esLocal = Map.union bindings (esLocal st) }
 
 -- | 式を評価して値を返す
 eval :: Expr -> Eval Val
@@ -58,8 +200,8 @@ eval (EStr _ s) = pure $ VStr s
 
 -- アトム: シンボル → 環境から検索
 eval (ESym sp name) = do
-  env <- get
-  case Map.lookup name env of
+  result <- lookupSymbol name
+  case result of
     Just val -> pure val
     Nothing  -> throwErrorAt sp $ "未定義のシンボル: " <> name
 
@@ -76,27 +218,27 @@ eval (EList _ [ESym _ "def",    ESym _ name, body]) = evalDefine name body
 -- 特殊形式: (let ((var1 val1) ...) body) — 並列ローカル変数束縛
 --   すべての init-expr を現在の環境で評価した後、一括して束縛を追加する
 eval (ELet _ bindings body) = do
-  savedEnv <- get
+  savedLocalEnv <- getLocalEnv
   -- 1. すべての値を現在の環境で評価 (並列束縛)
   vals <- mapM (eval . snd) bindings
   let names = map fst bindings
       newBindings = Map.fromList (zip names vals)
   -- 2. 新しい束縛を追加した環境で body を評価
-  modify (Map.union newBindings)
+  extendLocalEnv newBindings
   result <- eval body
-  put savedEnv
+  putLocalEnv savedLocalEnv
   pure result
 
 -- data 式: (data TypeName (Con1 a b) (Con2)) — ADT 定義
---   各コンストラクタを環境に登録する
+--   各コンストラクタをカレントパッケージに登録する
 eval (EData _ _typeName constrs) = do
   mapM_ registerConstructor constrs
   pure VNil
   where
     registerConstructor (ConstructorDef cname fields) =
       case length fields of
-        0 -> modify (Map.insert cname (VData cname []))
-        n -> modify (Map.insert cname (VPrim cname (mkConstructor cname n)))
+        0 -> defineSymbol cname (VData cname [])
+        n -> defineSymbol cname (VPrim cname (mkConstructor cname n))
     mkConstructor cname arity args
       | length args == arity = Right $ VData cname args
       | otherwise = Left $ cname <> ": 引数の数が不正です (期待: "
@@ -138,20 +280,25 @@ eval (EList _ (ESym _ "progn" : exprs)) = evalSequence exprs
 
 -- 特殊形式: (setq var new-value-expr) — 破壊的代入
 eval (EList sp [ESym _ "setq", ESym _ name, valExpr]) = do
-  env <- get
-  case Map.lookup name env of
+  result <- lookupSymbol name
+  case result of
     Nothing -> throwErrorAt sp $ "setq: 未束縛の変数です: " <> name
     Just _  -> do
       val <- eval valExpr
-      modify (Map.insert name val)
+      -- ローカル環境に存在するかチェックし、あればローカルを更新
+      localEnv <- getLocalEnv
+      if Map.member name localEnv
+        then defineLocal name val
+        else defineSymbol name val
       pure val
 
 -- 特殊形式: (spawn expr) — 新しいスレッドで式を評価
 eval (EList _ [ESym _ "spawn", expr]) = do
-  env <- get  -- 現在の環境をキャプチャ (クロージャと同じ原理)
+  st <- get  -- 現在の状態をキャプチャ (クロージャと同じ原理)
   liftIO $ void $ forkIO $ do
     -- 新しいスレッドで評価を実行。エラーは表示。
-    result <- runEval env (eval expr)
+    -- runEvalWithContext を使用してコンテキストも引き継ぐ
+    result <- runEvalWithContext (esLocal st) (esContext st) (eval expr)
     case result of
       Left err -> TIO.putStrLn $ "[spawn error] " <> formatError err
       Right _  -> pure ()
@@ -194,26 +341,27 @@ eval (EList sp [ESym _ "put-mvar", mvarExpr, valExpr]) = do
     _ -> throwErrorAt sp "put-mvar: 第1引数には MVar が必要です"
 
 -- 特殊形式: (fn (params...) body) — 固定長 / ドット記法可変長
---   現在の環境をキャプチャしてクロージャを生成する。
+--   現在のローカル環境をキャプチャしてクロージャを生成する。
+--   パッケージ内のシンボルは実行時に解決される。
 eval (EList _ [ESym _ "fn", EList _ params, body]) = do
   paramNames <- mapM extractSym params
-  closureEnv <- get
+  closureEnv <- getLocalEnv
   pure $ VFunc paramNames body closureEnv
 
 -- 特殊形式: (fn name body) — 全引数を1つのシンボルにキャプチャ
 eval (EList _ [ESym _ "fn", ESym _ param, body]) = do
-  closureEnv <- get
+  closureEnv <- getLocalEnv
   pure $ VFunc [".", param] body closureEnv
 
 -- 特殊形式: (mac (params...) body) — 固定長 / ドット記法可変長
 eval (EList _ [ESym _ "mac", EList _ params, body]) = do
   paramNames <- mapM extractSym params
-  closureEnv <- get
+  closureEnv <- getLocalEnv
   pure $ VMacro paramNames body closureEnv
 
 -- 特殊形式: (mac name body) — 全引数を1つのシンボルにキャプチャ
 eval (EList _ [ESym _ "mac", ESym _ param, body]) = do
-  closureEnv <- get
+  closureEnv <- getLocalEnv
   pure $ VMacro [".", param] body closureEnv
 
 -- 特殊形式: (dotimes (var count-expr) body...) — カウンタループ
@@ -244,8 +392,8 @@ eval (EList sp [ESym _ "bound?", arg]) = do
   val <- eval arg
   case val of
     VSym name -> do
-      env <- get
-      pure $ VBool (Map.member name env)
+      result <- lookupSymbol name
+      pure $ VBool (case result of Just _ -> True; Nothing -> False)
     _ -> throwErrorAt sp "bound?: シンボルが必要です"
 
 -- 特殊形式: (read-file path) — ファイルを読み込んで文字列として返す
@@ -306,6 +454,76 @@ eval (EList sp [ESym _ "getenv", nameExpr]) = do
       pure $ VStr $ maybe "" T.pack result
     _ -> throwErrorAt sp "getenv: 環境変数名には文字列が必要です"
 
+-- ===========================================================================
+-- パッケージ操作
+-- ===========================================================================
+
+-- 特殊形式: (defpackage "PKG-NAME" (:use "BASE-PKG") (:export "SYM1" "SYM2"))
+--   新しいパッケージを定義する
+eval (EList sp (ESym _ "defpackage" : args)) = evalDefpackage sp args
+
+-- 特殊形式: (in-package "PKG-NAME")
+--   現在の評価コンテキストを指定パッケージに切り替える
+eval (EList sp [ESym _ "in-package", pkgExpr]) = do
+  pkgVal <- eval pkgExpr
+  case pkgVal of
+    VStr pkgName -> do
+      ctx <- getContext
+      -- パッケージが存在するか確認
+      case Map.lookup pkgName (ctxPackages ctx) of
+        Nothing -> throwErrorAt sp $ "in-package: パッケージが存在しません: " <> pkgName
+        Just _ -> do
+          modifyContext $ \c -> c { ctxCurrentPackage = pkgName }
+          pure $ VStr pkgName
+    _ -> throwErrorAt sp "in-package: パッケージ名には文字列が必要です"
+
+-- 特殊形式: (use-package "PKG-NAME")
+--   指定パッケージの exports を現在のパッケージの検索パスに追加する
+eval (EList sp [ESym _ "use-package", pkgExpr]) = do
+  pkgVal <- eval pkgExpr
+  case pkgVal of
+    VStr pkgName -> do
+      ctx <- getContext
+      let curPkgName = ctxCurrentPackage ctx
+      -- 対象パッケージが存在するか確認
+      case Map.lookup pkgName (ctxPackages ctx) of
+        Nothing -> throwErrorAt sp $ "use-package: パッケージが存在しません: " <> pkgName
+        Just _ -> do
+          case Map.lookup curPkgName (ctxPackages ctx) of
+            Nothing -> throwErrorAt sp $ "use-package: 現在のパッケージが不正です: " <> curPkgName
+            Just curPkg -> do
+              -- 既に use されていなければ追加
+              let usedPkgs = pkgUsedPackages curPkg
+              if pkgName `elem` usedPkgs
+                then pure $ VBool True  -- 既に use 済み
+                else do
+                  let newPkg = curPkg { pkgUsedPackages = usedPkgs ++ [pkgName] }
+                  modifyContext $ \c -> c { ctxPackages = Map.insert curPkgName newPkg (ctxPackages c) }
+                  pure $ VBool True
+    _ -> throwErrorAt sp "use-package: パッケージ名には文字列が必要です"
+
+-- 特殊形式: (current-package) — 現在のパッケージ名を取得
+eval (EList _ [ESym _ "current-package"]) = do
+  pkgName <- getCurrentPackageName
+  pure $ VStr pkgName
+
+-- 特殊形式: (export "SYM1" "SYM2" ...) — 現在のパッケージからシンボルをエクスポート
+eval (EList sp (ESym _ "export" : symExprs)) = do
+  symVals <- mapM eval symExprs
+  symNames <- mapM extractStr symVals
+  ctx <- getContext
+  let curPkgName = ctxCurrentPackage ctx
+  case Map.lookup curPkgName (ctxPackages ctx) of
+    Nothing -> throwErrorAt sp $ "export: 現在のパッケージが不正です: " <> curPkgName
+    Just curPkg -> do
+      let newExports = Set.union (pkgExports curPkg) (Set.fromList symNames)
+          newPkg = curPkg { pkgExports = newExports }
+      modifyContext $ \c -> c { ctxPackages = Map.insert curPkgName newPkg (ctxPackages c) }
+      pure $ VBool True
+  where
+    extractStr (VStr s) = pure s
+    extractStr _ = throwErrorAt sp "export: シンボル名には文字列が必要です"
+
 -- 関数適用: (f arg1 arg2 ...)
 --   マクロ展開は Expander.expand で処理済みの前提。
 eval (EList _ (x:xs)) = do
@@ -317,8 +535,54 @@ eval (EList _ (x:xs)) = do
 evalDefine :: Text -> Expr -> Eval Val
 evalDefine name body = do
   val <- eval body
-  modify (Map.insert name val)
+  defineSymbol name val
   pure val
+
+-- | defpackage の実装
+--   (defpackage "PKG-NAME" (:use "BASE-PKG") (:export "SYM1" "SYM2"))
+evalDefpackage :: SourceSpan -> [Expr] -> Eval Val
+evalDefpackage sp args = case args of
+  [] -> throwErrorAt sp "defpackage: パッケージ名が必要です"
+  (nameExpr : opts) -> do
+    nameVal <- eval nameExpr
+    case nameVal of
+      VStr pkgName -> do
+        -- オプションを解析
+        (usePkgs, exports) <- parseDefpackageOpts sp opts
+        -- パッケージを作成
+        let newPkg = Package
+              { pkgName = pkgName
+              , pkgBindings = Map.empty
+              , pkgExports = Set.fromList exports
+              , pkgUsedPackages = usePkgs ++ ["spinor"]  -- spinor は常に use
+              }
+        -- コンテキストに追加
+        modifyContext $ \ctx ->
+          ctx { ctxPackages = Map.insert pkgName newPkg (ctxPackages ctx) }
+        pure $ VStr pkgName
+      _ -> throwErrorAt sp "defpackage: パッケージ名には文字列が必要です"
+
+-- | defpackage のオプションを解析
+parseDefpackageOpts :: SourceSpan -> [Expr] -> Eval ([Text], [Text])
+parseDefpackageOpts sp = go [] []
+  where
+    go usePkgs exports [] = pure (usePkgs, exports)
+    go usePkgs exports (opt : rest) = case opt of
+      -- (:use "pkg1" "pkg2" ...)
+      EList _ (ESym _ ":use" : pkgExprs) -> do
+        pkgs <- mapM evalToStr pkgExprs
+        go (usePkgs ++ pkgs) exports rest
+      -- (:export "sym1" "sym2" ...)
+      EList _ (ESym _ ":export" : symExprs) -> do
+        syms <- mapM evalToStr symExprs
+        go usePkgs (exports ++ syms) rest
+      _ -> throwErrorAt sp "defpackage: 不正なオプション形式です"
+
+    evalToStr expr = do
+      val <- eval expr
+      case val of
+        VStr s -> pure s
+        _ -> throwErrorAt sp "defpackage: 文字列が必要です"
 
 -- | 関数適用
 apply :: Val -> [Val] -> Eval Val
@@ -348,11 +612,12 @@ applyClosureBody params body closureEnv args = do
   case bindArgs params args of
     Left err -> throwErrorAt (exprSpan body) err
     Right bindings -> do
-      savedEnv <- get
-      let localEnv = Map.union bindings (Map.union closureEnv savedEnv)
-      put localEnv
+      savedLocalEnv <- getLocalEnv
+      -- クロージャ環境 + 引数束縛をローカル環境として設定
+      let localEnv = Map.union bindings closureEnv
+      putLocalEnv localEnv
       result <- eval body
-      put savedEnv
+      putLocalEnv savedLocalEnv
       pure result
 
 -- | 仮引数と実引数の束縛 (固定長 / ドット記法可変長対応)
@@ -410,10 +675,10 @@ matchBranches val ((pat, body) : rest) =
   case matchPattern val pat of
     Nothing       -> matchBranches val rest
     Just bindings -> do
-      savedEnv <- get
-      modify (Map.union bindings)
+      savedLocalEnv <- getLocalEnv
+      extendLocalEnv bindings
       result <- eval body
-      put savedEnv
+      putLocalEnv savedLocalEnv
       pure result
 
 -- | パターンマッチを試行し、成功時は束縛を返す
@@ -443,7 +708,7 @@ evalSequence (e:es) = eval e >> evalSequence es
 dotimesLoop :: Text -> Integer -> [Expr] -> Integer -> Eval Val
 dotimesLoop _   count _    i | i >= count = pure VNil
 dotimesLoop var count body i = do
-  modify (Map.insert var (VInt i))
+  defineLocal var (VInt i)
   mapM_ eval body
   dotimesLoop var count body (i + 1)
 
@@ -451,7 +716,7 @@ dotimesLoop var count body i = do
 dolistLoop :: Text -> [Val] -> [Expr] -> Eval Val
 dolistLoop _   []     _    = pure VNil
 dolistLoop var (x:xs) body = do
-  modify (Map.insert var x)
+  defineLocal var x
   mapM_ eval body
   dolistLoop var xs body
 

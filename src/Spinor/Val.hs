@@ -3,12 +3,17 @@
 module Spinor.Val
   ( Val(..)
   , Env
+  , Package(..)
+  , Context(..)
+  , emptyPackage
+  , initialContext
   , showVal
   ) where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import Control.Concurrent.MVar (MVar)
 import qualified Data.Vector.Storable as VS
 import Foreign.Ptr (Ptr)
@@ -17,8 +22,43 @@ import qualified Graphics.UI.GLFW as GLFW
 import Spinor.Syntax (Expr)
 
 -- | 変数環境: シンボル名 → 値
+--   ローカル束縛 (let, fn 引数など) に使用。
 --   Val と Env は相互に参照するため同一モジュールに定義する。
 type Env = Map.Map Text Val
+
+-- | パッケージ: 名前空間単位の定義を保持
+data Package = Package
+  { pkgName        :: Text                   -- ^ パッケージ名
+  , pkgBindings    :: Map.Map Text Val       -- ^ このパッケージで定義されたシンボル
+  , pkgExports     :: Set.Set Text           -- ^ 外部に公開するシンボルの集合
+  , pkgUsedPackages :: [Text]                -- ^ use-package でインポートしたパッケージ名リスト
+  } deriving (Eq, Show)
+
+-- | 空のパッケージを作成
+emptyPackage :: Text -> Package
+emptyPackage name = Package
+  { pkgName        = name
+  , pkgBindings    = Map.empty
+  , pkgExports     = Set.empty
+  , pkgUsedPackages = []
+  }
+
+-- | グローバルコンテキスト: パッケージシステム全体の状態
+data Context = Context
+  { ctxCurrentPackage :: Text                     -- ^ 現在のパッケージ名
+  , ctxPackages       :: Map.Map Text Package     -- ^ 全パッケージのマップ
+  } deriving (Eq, Show)
+
+-- | 初期コンテキスト: "spinor" (コアプリミティブ) と "user" パッケージを含む
+--   primitiveBindings は後から spinor パッケージに注入される
+initialContext :: Context
+initialContext = Context
+  { ctxCurrentPackage = "user"
+  , ctxPackages = Map.fromList
+      [ ("spinor", emptyPackage "spinor")
+      , ("user", (emptyPackage "user") { pkgUsedPackages = ["spinor"] })
+      ]
+  }
 
 -- | 評価結果の値型
 --   Lisp の値を Haskell の代数的データ型にマッピングする。

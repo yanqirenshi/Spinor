@@ -4,6 +4,7 @@ module Spinor.EvalSpec (spec) where
 
 import Test.Hspec
 import Data.Text (Text, pack)
+import qualified Data.Text as T
 import Spinor.Syntax    (readExpr, parseFile, formatError)
 import Spinor.Val       (Val(..))
 import Spinor.Eval      (runEval, eval)
@@ -291,3 +292,65 @@ spec = describe "Spinor.Eval (Evaluator)" $ do
       case result of
         Left _ -> pure ()
         Right _ -> expectationFailure "特異行列でエラーになるべき"
+
+  describe "パッケージシステム (Package System)" $ do
+    it "defpackage で新しいパッケージを定義" $ do
+      result <- evalMulti "(defpackage \"mylib\")"
+      result `shouldBe` Right (VStr "mylib")
+
+    it "defpackage で :export オプション付きパッケージを定義" $ do
+      result <- evalMulti "(defpackage \"mylib\" (:export \"add\" \"sub\"))"
+      result `shouldBe` Right (VStr "mylib")
+
+    it "defpackage で :use オプション付きパッケージを定義" $ do
+      result <- evalMulti "(defpackage \"mylib\" (:use \"spinor\"))"
+      result `shouldBe` Right (VStr "mylib")
+
+    it "in-package で存在するパッケージに切り替え" $ do
+      result <- evalMulti "(defpackage \"mylib\")\n(in-package \"mylib\")"
+      result `shouldBe` Right (VStr "mylib")
+
+    it "in-package で存在しないパッケージに切り替えはエラー" $ do
+      result <- evalMulti "(in-package \"nonexistent\")"
+      case result of
+        Left _ -> pure ()  -- エラーが発生すればOK
+        Right _ -> expectationFailure "存在しないパッケージへの切り替えはエラーになるべき"
+
+    it "current-package で現在のパッケージ名を取得" $ do
+      result <- evalStr "(current-package)"
+      result `shouldBe` Right (VStr "user")
+
+    it "in-package 後の current-package" $ do
+      result <- evalMulti "(defpackage \"mylib\")\n(in-package \"mylib\")\n(current-package)"
+      result `shouldBe` Right (VStr "mylib")
+
+    it "パッケージ間で定義が隔離される" $ do
+      result <- evalMulti $ T.unlines
+        [ "(defpackage \"pkg-a\")"
+        , "(in-package \"pkg-a\")"
+        , "(def x 100)"
+        , "(defpackage \"pkg-b\")"
+        , "(in-package \"pkg-b\")"
+        , "(bound? 'x)"  -- pkg-a の x は見えない
+        ]
+      result `shouldBe` Right (VBool False)
+
+    it "use-package でエクスポートされたシンボルが見える" $ do
+      result <- evalMulti $ T.unlines
+        [ "(defpackage \"math-lib\" (:export \"double\"))"
+        , "(in-package \"math-lib\")"
+        , "(def double (fn (x) (* x 2)))"
+        , "(export \"double\")"
+        , "(defpackage \"user-pkg\" (:use \"math-lib\"))"
+        , "(in-package \"user-pkg\")"
+        , "(double 21)"
+        ]
+      result `shouldBe` Right (VInt 42)
+
+    it "spinor パッケージのプリミティブは常に使える" $ do
+      result <- evalMulti $ T.unlines
+        [ "(defpackage \"my-pkg\")"
+        , "(in-package \"my-pkg\")"
+        , "(+ 1 2)"  -- + は spinor パッケージのプリミティブ
+        ]
+      result `shouldBe` Right (VInt 3)

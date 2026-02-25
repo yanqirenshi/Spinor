@@ -39,7 +39,7 @@ import Text.Printf (printf)
 import Numeric (readHex)
 
 import Spinor.Syntax (Expr(..), Pattern(..), ConstructorDef(..), TypeExpr(..), readExpr, dummySpan, formatError)
-import Spinor.Eval (Eval, runEval, eval, valToExpr, exprToVal, applyClosureBody)
+import Spinor.Eval (Eval, runEval, eval, valToExpr, exprToVal, applyClosureBody, lookupSymbol)
 import Spinor.Val (Env, Val(..))
 import Spinor.Expander (expand)
 import Spinor.Lsp.Docs (primitiveDocs, DocEntry(..))
@@ -1262,8 +1262,8 @@ macrostepExpandFull env code =
 -- | 1段階のみマクロ展開を行う (再帰展開しない)
 macroExpandOnce :: Expr -> Eval Expr
 macroExpandOnce (EList sp (ESym _ name : args)) = do
-    env <- get
-    case Map.lookup name env of
+    maybeVal <- lookupSymbol name
+    case maybeVal of
         Just (VMacro params body closureEnv) -> do
             -- マクロ適用: 引数を評価せず Val に変換して適用
             let argVals = map exprToVal args
