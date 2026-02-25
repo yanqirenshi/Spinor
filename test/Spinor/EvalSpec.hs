@@ -4,7 +4,7 @@ module Spinor.EvalSpec (spec) where
 
 import Test.Hspec
 import Data.Text (Text, pack)
-import Spinor.Syntax    (readExpr, parseFile)
+import Spinor.Syntax    (readExpr, parseFile, formatError)
 import Spinor.Val       (Val(..))
 import Spinor.Eval      (runEval, eval)
 import Spinor.Expander  (expand, expandAndEval)
@@ -18,7 +18,7 @@ evalStr input =
     Right ast -> do
       result <- runEval primitiveBindings (expand ast >>= eval)
       pure $ case result of
-        Left err       -> Left err
+        Left err       -> Left (formatError err)
         Right (val, _) -> Right val
 
 -- | ヘルパー: 複数式を順次パース → 展開 → 評価し、最後の結果を返す
@@ -29,7 +29,7 @@ evalMulti input =
     Right exprs -> do
       result <- runEval primitiveBindings (mapM expandAndEval exprs)
       pure $ case result of
-        Left err        -> Left err
+        Left err        -> Left (formatError err)
         Right (vals, _) -> Right (last vals)
 
 -- | ヘルパー: 評価結果が期待値と一致するか検証

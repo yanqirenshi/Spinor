@@ -12,9 +12,9 @@ import qualified Data.Map.Strict as Map
 import Control.Monad.State.Strict
 import Control.Monad.Except
 
-import Spinor.Syntax (Expr(..), parseFile, dummySpan)
+import Spinor.Syntax (Expr(..), parseFile, dummySpan, exprSpan)
 import Spinor.Val    (Val(..))
-import Spinor.Eval   (Eval, eval, applyClosureBody, exprToVal, valToExpr)
+import Spinor.Eval   (Eval, eval, applyClosureBody, exprToVal, valToExpr, throwErrorAt)
 
 -- | マクロを全て展開した純粋な AST を返す
 --   expand 後の Expr にはマクロ呼び出しが残らない。
@@ -81,11 +81,11 @@ expand (EList sp [ESym _ "load", arg]) = do
     VStr path -> do
       content <- liftIO $ TIO.readFile (T.unpack path)
       case parseFile content of
-        Left err   -> throwError $ "load パースエラー (" <> path <> "): " <> pack err
+        Left err   -> throwErrorAt sp $ "load パースエラー (" <> path <> "): " <> pack err
         Right exprs -> do
           mapM_ expandAndEval exprs
           pure $ EBool sp True
-    _ -> throwError "load: ファイルパス (文字列) が必要です"
+    _ -> throwErrorAt sp "load: ファイルパス (文字列) が必要です"
 
 -- dotimes: count-expr と body を展開 (var は束縛変数なので展開しない)
 expand (EList sp (ESym sp2 "dotimes" : EList sp3 [var@(ESym _ _), countExpr] : body)) = do
@@ -109,7 +109,7 @@ expand (EList sp (ESym _ "let" : EList _ bindingExprs : body@(_:_))) =
             [b] -> b
             _   -> EList sp (ESym dummySpan "begin" : body)
       expand (ELet sp bindings bodyExpr)
-    Nothing -> throwError "let: 不正な束縛リストです"
+    Nothing -> throwErrorAt sp "let: 不正な束縛リストです"
   where
     parseBinding (EList _ [ESym _ name, val]) = Just (name, val)
     parseBinding _ = Nothing

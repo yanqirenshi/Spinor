@@ -8,8 +8,11 @@ module Spinor.Syntax
   , ImportOption(..)
   , SourcePos(..)
   , SourceSpan(..)
+  , SpinorError(..)
   , dummySpan
   , exprSpan
+  , formatError
+  , mkError
   , readExpr
   , parseFile
   , SpinorParseError(..)
@@ -63,6 +66,26 @@ data SourceSpan = SourceSpan
 dummySpan :: SourceSpan
 dummySpan = SourceSpan pos pos
   where pos = SourcePos "<internal>" 0 0
+
+-- | Spinor エラー (位置情報付き)
+data SpinorError = SpinorError
+  { errorSpan    :: SourceSpan  -- ^ エラー発生位置
+  , errorMsg     :: Text        -- ^ エラーメッセージ
+  } deriving (Show, Eq)
+
+-- | SpinorError を人間が読みやすい形式に整形する
+--   形式: <ファイル名>:<行>:<列>: <エラーメッセージ>
+--   dummySpan の場合はファイル名・位置情報を省略する
+formatError :: SpinorError -> Text
+formatError (SpinorError span msg)
+  | posFile (spanStart span) == "<internal>" = msg
+  | otherwise = T.pack (posFile start) <> ":" <> T.pack (show (posLine start))
+              <> ":" <> T.pack (show (posColumn start)) <> ": " <> msg
+  where start = spanStart span
+
+-- | SpinorError を簡単に生成するヘルパー
+mkError :: SourceSpan -> Text -> SpinorError
+mkError = SpinorError
 
 -- | パターン (match 式用)
 data Pattern

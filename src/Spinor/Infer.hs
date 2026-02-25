@@ -26,7 +26,7 @@ import Control.Monad.State.Strict
 import Control.Monad.Except
 
 import Spinor.Type   (Type(..), Scheme(..), TypeEnv, showType)
-import Spinor.Syntax (Expr(..), Pattern(..), TypeExpr(..), ConstructorDef(..))
+import Spinor.Syntax (Expr(..), Pattern(..), TypeExpr(..), ConstructorDef(..), SourceSpan, SpinorError(..), dummySpan, exprSpan)
 
 -- ============================================================
 -- 置換 (Substitution)
@@ -130,18 +130,28 @@ varBind a t
 
 -- | 型推論モナド
 --   StateT Int: フレッシュ型変数のカウンタ (t0, t1, t2, ...)
---   ExceptT Text: 型エラーの報告
-newtype Infer a = Infer (StateT Int (Either Text) a)
-  deriving (Functor, Applicative, Monad, MonadState Int, MonadError Text)
+--   ExceptT SpinorError: 型エラーの報告 (位置情報付き)
+newtype Infer a = Infer (StateT Int (Either SpinorError) a)
+  deriving (Functor, Applicative, Monad, MonadState Int, MonadError SpinorError)
 
 -- | Infer モナドを実行する (カウンタ 0 から開始)
-runInfer :: Infer a -> Either Text a
+runInfer :: Infer a -> Either SpinorError a
 runInfer (Infer m) = fmap fst (runStateT m 0)
 
 -- | Infer モナドを指定カウンタから実行する (boot 中の連続推論用)
 --   戻り値: (結果, 次のカウンタ)
-runInferFrom :: Int -> Infer a -> Either Text (a, Int)
+runInferFrom :: Int -> Infer a -> Either SpinorError (a, Int)
 runInferFrom n (Infer m) = runStateT m n
+
+-- | 位置情報付きエラーを投げるヘルパー
+throwErrorAt :: SourceSpan -> Text -> Infer a
+throwErrorAt span msg = throwError (SpinorError span msg)
+
+-- | Text エラーを SpinorError に変換してリフトするヘルパー
+--   unify など Text を返す関数の結果をリフトする際に使用
+liftUnify :: SourceSpan -> Either Text a -> Infer a
+liftUnify span (Left msg)  = throwErrorAt span msg
+liftUnify _    (Right val) = pure val
 
 -- | 新しい型変数を生成する (t0, t1, t2, ...)
 fresh :: Infer Type
@@ -186,12 +196,12 @@ infer _ (EBool _ _) = pure (nullSubst, TBool)
 infer _ (EStr _ _) = pure (nullSubst, TStr)
 
 -- シンボル → 型環境から検索して instantiate
-infer env (ESym _ x) =
+infer env (ESym sp x) =
   case Map.lookup x env of
     Just scheme -> do
       t <- instantiate scheme
       pure (nullSubst, t)
-    Nothing -> throwError $ "未定義のシンボル: " <> x
+    Nothing -> throwErrorAt sp $ "未定義のシンボル: " <> x
 
 -- 空リスト → フレッシュな要素型の空リスト
 infer _ (EList _ []) = do
@@ -202,15 +212,15 @@ infer _ (EList _ []) = do
 infer _ (EList _ [ESym _ "quote", expr]) = pure (nullSubst, inferQuote expr)
 
 -- if: cond は Bool, then と else の型を単一化
-infer env (EList _ [ESym _ "if", cond, thn, els]) = do
+infer env (EList sp [ESym _ "if", cond, thn, els]) = do
   (s1, tCond) <- infer env cond
-  s1' <- liftEither $ unify (apply s1 tCond) TBool
+  s1' <- liftUnify (exprSpan cond) $ unify (apply s1 tCond) TBool
   let s1'' = composeSubst s1' s1
   (s2, tThn) <- infer (apply s1'' env) thn
   let s12 = composeSubst s2 s1''
   (s3, tEls) <- infer (apply s12 env) els
   let s123 = composeSubst s3 s12
-  s4 <- liftEither $ unify (apply s123 tThn) (apply s123 tEls)
+  s4 <- liftUnify sp $ unify (apply s123 tThn) (apply s123 tEls)
   let sFinal = composeSubst s4 s123
   pure (sFinal, apply sFinal tThn)
 
@@ -271,7 +281,7 @@ infer env (EMatch _ targetExpr branches) = do
           env'' = Map.union envExt (apply s1Acc env)
       (s2, tBody) <- infer env'' body
       let s2Acc = composeSubst s2 s1Acc
-      s3 <- liftEither $ unify (apply s2Acc tResult) (apply s2Acc tBody)
+      s3 <- liftUnify (exprSpan body) $ unify (apply s2Acc tResult) (apply s2Acc tBody)
       let s3Acc = composeSubst s3 s2Acc
       pure (s3Acc, apply s3Acc tResult)
 
@@ -335,7 +345,7 @@ inferTopDefine env name body = do
   tv <- fresh
   let env' = Map.insert name (Scheme [] tv) env
   (s1, tBody) <- infer env' body
-  s2 <- liftEither $ unify (apply s1 tv) tBody
+  s2 <- liftUnify (exprSpan body) $ unify (apply s1 tv) tBody
   let sFinal = composeSubst s2 s1
       finalType = apply sFinal tBody
       scheme = generalize (apply sFinal env) finalType
@@ -361,23 +371,23 @@ inferQuote (EImport _ _ _) = TCon "Unit"
 inferPattern :: TypeEnv -> Type -> Pattern -> Infer (Subst, TypeEnv)
 inferPattern _ tTarget (PVar name) = do
   tv <- fresh
-  s <- liftEither $ unify tTarget tv
+  s <- liftUnify dummySpan $ unify tTarget tv
   pure (s, Map.singleton name (Scheme [] (apply s tv)))
 inferPattern _ _ PWild = pure (nullSubst, Map.empty)
 inferPattern env tTarget (PLit expr) = do
   (s1, tLit) <- infer env expr
-  s2 <- liftEither $ unify (apply s1 tTarget) tLit
+  s2 <- liftUnify (exprSpan expr) $ unify (apply s1 tTarget) tLit
   pure (composeSubst s2 s1, Map.empty)
 inferPattern env tTarget (PCon conName pats) =
   case Map.lookup conName env of
-    Nothing -> throwError $ "未定義のコンストラクタ: " <> conName
+    Nothing -> throwErrorAt dummySpan $ "未定義のコンストラクタ: " <> conName
     Just scheme -> do
       conType <- instantiate scheme
       -- コンストラクタ型を分解: arg1 -> arg2 -> ... -> ResultType
       let (argTypes, resType) = splitArrType conType
       when (length argTypes /= length pats) $
-        throwError $ conName <> ": パターンの引数の数が不正です"
-      s1 <- liftEither $ unify tTarget resType
+        throwErrorAt dummySpan $ conName <> ": パターンの引数の数が不正です"
+      s1 <- liftUnify dummySpan $ unify tTarget resType
       -- 各サブパターンを再帰推論
       (sFinal, envExt) <- foldM (\(sAcc, envAcc) (argT, pat) -> do
         let argT' = apply sAcc argT
@@ -398,7 +408,7 @@ inferDefine env name body = do
   tv <- fresh
   let env' = Map.insert name (Scheme [] tv) env
   (s1, tBody) <- infer env' body
-  s2 <- liftEither $ unify (apply s1 tv) tBody
+  s2 <- liftUnify (exprSpan body) $ unify (apply s1 tv) tBody
   let sFinal = composeSubst s2 s1
   pure (sFinal, apply sFinal tBody)
 
@@ -412,7 +422,7 @@ inferApp env func args = do
   (sFinal, tArgTypes) <- foldM inferArg (s0, []) args
   -- func の型を arg1 -> arg2 -> ... -> ret と単一化
   let expectedFuncType = foldr TArr tRet (reverse tArgTypes)
-  sUnify <- liftEither $ unify (apply sFinal tFunc) (apply sFinal expectedFuncType)
+  sUnify <- liftUnify (exprSpan func) $ unify (apply sFinal tFunc) (apply sFinal expectedFuncType)
   let sResult = composeSubst sUnify sFinal
   pure (sResult, apply sResult tRet)
   where
@@ -429,7 +439,7 @@ typeExprToType (TEApp name args) = foldl TApp (TCon name) (map typeExprToType ar
 -- | Expr からシンボル名を取り出す (パラメータリスト用)
 extractSymName :: Expr -> Infer Text
 extractSymName (ESym _ s) = pure s
-extractSymName _          = throwError "引数にはシンボルが必要です"
+extractSymName expr       = throwErrorAt (exprSpan expr) "引数にはシンボルが必要です"
 
 -- ============================================================
 -- プリミティブの型環境

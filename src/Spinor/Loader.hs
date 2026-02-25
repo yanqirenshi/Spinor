@@ -20,7 +20,7 @@ import Control.Monad (foldM, when)
 import System.FilePath ((</>), normalise)
 import System.Directory (doesFileExist)
 
-import Spinor.Syntax (Expr(..), ImportOption(..), parseFile)
+import Spinor.Syntax (Expr(..), ImportOption(..), parseFile, formatError)
 import Spinor.Val (Env)
 import Spinor.Eval (eval, runEval)
 import Spinor.Expander (expand)
@@ -172,12 +172,12 @@ evalExprList env (expr:rest) = do
   -- マクロ展開
   expandResult <- runEval env (expand expr)
   case expandResult of
-    Left err -> pure $ Left err
+    Left err -> pure $ Left (formatError err)
     Right (expanded, envAfterExpand) -> do
       -- 評価
       evalResult <- runEval envAfterExpand (eval expanded)
       case evalResult of
-        Left err -> pure $ Left err
+        Left err -> pure $ Left (formatError err)
         Right (_, env') -> evalExprList env' rest
 
 -- | ファイルをモジュールとしてロードする
@@ -256,14 +256,14 @@ evalExprListWithStatus env exprs = go env True exprs
       expandResult <- runEval e (expand expr)
       case expandResult of
         Left err -> do
-          TIO.putStrLn $ "エラー: " <> err
+          TIO.putStrLn $ "エラー: " <> formatError err
           go e False rest
         Right (expanded, envAfterExpand) -> do
           -- 評価
           evalResult <- runEval envAfterExpand (eval expanded)
           case evalResult of
             Left err -> do
-              TIO.putStrLn $ "エラー: " <> err
+              TIO.putStrLn $ "エラー: " <> formatError err
               go envAfterExpand False rest
             Right (_, env') -> go env' ok rest
 

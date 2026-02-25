@@ -97,3 +97,72 @@ withSpan :: Parser a -> Parser (SourceSpan, a)
 3. **CLI 出力フォーマット**: エラー表示を `file:line:col: message` 形式に統一
 
 現在の実装では AST にソース位置が埋め込まれているため、これらの改善は追加実装として行える。
+
+---
+
+## Step 59-B: Error Type & CLI Output Wiring 実装報告
+
+### 実装概要
+
+AST に埋め込まれた `SourceSpan` を活用し、型推論・評価エラーに位置情報を含めて出力するようにした。
+
+### 実装内容
+
+**1. SpinorError 型の定義 (Syntax.hs)**
+```haskell
+-- | Spinor エラー (位置情報付き)
+data SpinorError = SpinorError
+  { errorSpan :: SourceSpan
+  , errorMsg  :: Text
+  } deriving (Show, Eq)
+
+-- | SpinorError を人間が読みやすい形式に整形する
+formatError :: SpinorError -> Text
+formatError (SpinorError span msg)
+  | posFile (spanStart span) == "<internal>" = msg
+  | otherwise = T.pack (posFile start) <> ":" <> T.pack (show (posLine start))
+              <> ":" <> T.pack (show (posColumn start)) <> ": " <> msg
+  where start = spanStart span
+
+-- | SpinorError を簡単に生成するヘルパー
+mkError :: SourceSpan -> Text -> SpinorError
+mkError = SpinorError
+```
+
+**2. Infer.hs の変更**
+- モナドのエラー型を `Either Text` から `Either SpinorError` に変更
+- `throwErrorAt :: SourceSpan -> Text -> Infer a` ヘルパーを追加
+- `liftUnify :: SourceSpan -> Either Text a -> Infer a` で unify 結果をリフト
+- 全ての `throwError` 呼び出しを `throwErrorAt` に変更し、式の `SourceSpan` を渡すように
+
+**3. Eval.hs の変更**
+- モナドのエラー型を `Either Text` から `Either SpinorError` に変更
+- `throwErrorAt :: SourceSpan -> Text -> Eval a` ヘルパーを追加・エクスポート
+- 全ての `throwError` 呼び出しを `throwErrorAt` に変更
+
+**4. 関連ファイルの対応**
+- `Expander.hs`: `throwErrorAt` を Eval.hs からインポートして使用
+- `Loader.hs`: `formatError` でエラーを Text に変換
+- `Server.hs`: Swank レスポンスのエラーメッセージに `formatError` を使用
+- `Main.hs`: CLI エラー出力に `formatError` を使用
+- `test/Spinor/EvalSpec.hs`: テストのエラーハンドリングを `formatError` で対応
+
+### テスト結果
+```
+152 examples, 0 failures
+```
+
+### 動作確認
+
+**未定義シンボルエラー:**
+```
+$ cabal run spinor -- test_error.spin
+エラー: <file>:1:6: 未定義のシンボル: undefined-symbol
+```
+
+エラーメッセージが `filename:line:col: message` 形式で出力されることを確認。
+
+### 備考
+
+- プリミティブ関数 (Primitive.hs) 内のエラーは現在 `dummySpan` を使用しているため、位置情報なしで表示される
+- 将来的には、呼び出し側の `SourceSpan` をプリミティブに渡すことで、この制限を解消できる

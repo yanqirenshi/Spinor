@@ -38,7 +38,7 @@ import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Text.Printf (printf)
 import Numeric (readHex)
 
-import Spinor.Syntax (Expr(..), Pattern(..), ConstructorDef(..), TypeExpr(..), readExpr, dummySpan)
+import Spinor.Syntax (Expr(..), Pattern(..), ConstructorDef(..), TypeExpr(..), readExpr, dummySpan, formatError)
 import Spinor.Eval (Eval, runEval, eval, valToExpr, exprToVal, applyClosureBody)
 import Spinor.Val (Env, Val(..))
 import Spinor.Expander (expand)
@@ -1104,7 +1104,7 @@ inspectValue env code =
         Right ast -> do
             result <- runEval env (expand ast >>= eval)
             case result of
-                Left err -> pure $ mkInspectorError err
+                Left err -> pure $ mkInspectorError (formatError err)
                 Right (val, _) -> pure $ mkInspectorContent val
 
 -- | インスペクタエラーを生成
@@ -1232,7 +1232,7 @@ macrostepExpand1 env code =
         Right ast -> do
             result <- runEval env (macroExpandOnce ast)
             case result of
-                Left err -> pure $ mkMacrostepError err
+                Left err -> pure $ mkMacrostepError (formatError err)
                 Right (expanded, _) ->
                     let expandedStr = exprToLispText expanded
                         -- マクロ展開が行われたかどうか
@@ -1250,7 +1250,7 @@ macrostepExpandFull env code =
         Right ast -> do
             result <- runEval env (expand ast)
             case result of
-                Left err -> pure $ mkMacrostepError err
+                Left err -> pure $ mkMacrostepError (formatError err)
                 Right (expanded, _) ->
                     let expandedStr = exprToLispText expanded
                         isMacro = expandedStr /= code
@@ -1364,7 +1364,7 @@ meplEvalAndRespond h env channelId code =
                     let abortMsg = EList dummySpan
                             [ ESym dummySpan ":channel-send"
                             , EInt dummySpan channelId
-                            , EList dummySpan [ESym dummySpan ":evaluation-aborted", EStr dummySpan err]
+                            , EList dummySpan [ESym dummySpan ":evaluation-aborted", EStr dummySpan (formatError err)]
                             ]
                     sendPacket h (exprToText abortMsg)
                     sendMreplPrompt h channelId
@@ -1425,7 +1425,7 @@ evalAndRespond h env code reqId =
             result <- runEval env (expand ast >>= eval)
             case result of
                 Left err -> do
-                    let response = mkAbortResponse reqId err
+                    let response = mkAbortResponse reqId (formatError err)
                     sendPacket h (exprToText response)
                     pure env
                 Right (val, env') -> do
@@ -1448,7 +1448,7 @@ compileAndRespond h env code reqId =
             result <- runEval env (expand ast >>= eval)
             case result of
                 Left err -> do
-                    let response = mkAbortResponse reqId err
+                    let response = mkAbortResponse reqId (formatError err)
                     sendPacket h (exprToText response)
                     pure env
                 Right (_, env') -> do

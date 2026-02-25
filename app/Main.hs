@@ -12,7 +12,7 @@ import System.Environment (getArgs)
 import System.Exit (exitFailure, exitSuccess, ExitCode(..))
 import System.FilePath (takeDirectory, takeBaseName, replaceExtension)
 import System.Process (readProcessWithExitCode)
-import Spinor.Syntax    (Expr(..), readExpr, parseFile)
+import Spinor.Syntax    (Expr(..), readExpr, parseFile, formatError)
 import Spinor.Type      (TypeEnv, showType)
 import Spinor.Val       (Env)
 import Spinor.Eval      (Eval, eval, runEval)
@@ -358,14 +358,14 @@ loop env tyEnv = do
               expandResult <- runEval env (expand ast)
               case expandResult of
                 Left err -> do
-                  TIO.putStrLn $ "展開エラー: " <> err
+                  TIO.putStrLn $ formatError err
                   loop env tyEnv
                 Right (expanded, _) -> do
                   -- 2. 型推論 (inferTop で型環境も更新)
                   case runInfer (inferTop tyEnv expanded) of
                     Left tyErr -> do
                       -- 型推論失敗: 型エラーを表示し、実行しない
-                      TIO.putStrLn $ "型エラー: " <> tyErr
+                      TIO.putStrLn $ formatError tyErr
                       loop env tyEnv
                     Right (tyEnv', subst, ty) -> do
                       -- 型推論成功: 型を表示してから評価
@@ -374,7 +374,7 @@ loop env tyEnv = do
                       result <- runEval env (expand ast >>= eval)
                       case result of
                         Left err -> do
-                          TIO.putStrLn $ "エラー: " <> err
+                          TIO.putStrLn $ formatError err
                           loop env tyEnv'
                         Right (val, env') -> do
                           putStrLn (show val)
