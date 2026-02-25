@@ -16,4 +16,4 @@
 (car '(a))      ; => a
 ```
 ### See Also:
-[cdr](cdr), [cons](cons)
+[cdr](ref/cdr), [cons](ref/cons)

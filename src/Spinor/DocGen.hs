@@ -100,7 +100,7 @@ renderSeeAlso slugs =
   , ""
   ]
   where
-    renderSlugLink slug = "[" <> slug <> "](" <> slug <> ")"
+    renderSlugLink slug = "[" <> slug <> "](ref/" <> slug <> ")"
 
 -- | Notes セクションをレンダリング
 renderNotes :: Text -> [Text]
@@ -170,4 +170,4 @@ renderCategory title entries =
   ++ [""]
   where
     renderLink (name, entry) =
-      "- [" <> name <> "](doc.html?src=ref/" <> docSlug entry <> ".md)"
+      "- [" <> name <> "](ref/" <> docSlug entry <> ")"

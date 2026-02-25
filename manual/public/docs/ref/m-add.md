@@ -21,6 +21,6 @@
 - 引数が行列でない場合、エラーを返します。
 - 2つの行列の次元が一致しない場合、エラーを返します。
 ### See Also:
-[m*](m*), [matrix](matrix)
+[m*](ref/m*), [matrix](ref/matrix)
 ### Notes:
 内部的に hmatrix (BLAS) を使用しています。

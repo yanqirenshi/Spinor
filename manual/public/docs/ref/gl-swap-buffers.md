@@ -21,4 +21,4 @@
 ### Exceptional Situations:
 引数が Window でない場合、エラーを返します。
 ### See Also:
-[gl-init](gl-init), [gl-clear](gl-clear), [gl-draw-points](gl-draw-points)
+[gl-init](ref/gl-init), [gl-clear](ref/gl-clear), [gl-draw-points](ref/gl-draw-points)

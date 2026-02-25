@@ -18,6 +18,6 @@
 (cons 1 (cons 2 (cons 3 nil)))  ; => (1 2 3)
 ```
 ### See Also:
-[car](car), [cdr](cdr), [list](list)
+[car](ref/car), [cdr](ref/cdr), [list](ref/list)
 ### Notes:
 `cons` は "construct" の略です。

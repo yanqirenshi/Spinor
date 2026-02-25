@@ -17,4 +17,4 @@
 (null? '(1 2))    ; => nil
 ```
 ### See Also:
-[empty-p](empty-p), [cons](cons)
+[empty-p](ref/empty-p), [cons](ref/cons)

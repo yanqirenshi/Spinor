@@ -17,4 +17,4 @@
 ### Side Effects:
 OpenGL のカラーバッファをクリアします。
 ### See Also:
-[gl-draw-points](gl-draw-points), [gl-swap-buffers](gl-swap-buffers)
+[gl-draw-points](ref/gl-draw-points), [gl-swap-buffers](ref/gl-swap-buffers)

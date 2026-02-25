@@ -27,6 +27,6 @@ OpenCL プログラムのコンパイルを行います。
 - 指定されたカーネル名が見つからない場合、エラーを返します。
 - 第1引数が CLContext でない場合、エラーを返します。
 ### See Also:
-[cl-init](cl-init), [to-device](to-device), [to-host](to-host), [cl-enqueue](cl-enqueue)
+[cl-init](ref/cl-init), [to-device](ref/to-device), [to-host](ref/to-host), [cl-enqueue](ref/cl-enqueue)
 ### Notes:
 コンパイルエラー時はビルドログが含まれます。

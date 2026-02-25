@@ -16,4 +16,4 @@
 (equal '(1 2) '(1 3))  ; => nil
 ```
 ### See Also:
-[eq](eq), [eq-op](eq-op)
+[eq](ref/eq), [eq-op](ref/eq-op)

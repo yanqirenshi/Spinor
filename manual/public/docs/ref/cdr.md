@@ -16,4 +16,4 @@
 (cdr '(a))      ; => nil
 ```
 ### See Also:
-[car](car), [cons](cons)
+[car](ref/car), [cons](ref/cons)

@@ -23,6 +23,6 @@
 - 行列が正方でない場合、エラーを返します。
 - 行列が特異 (singular) な場合、エラーを返します。
 ### See Also:
-[m*](m*), [transpose](transpose), [matrix](matrix)
+[m*](ref/m*), [transpose](ref/transpose), [matrix](ref/matrix)
 ### Notes:
 内部的に hmatrix (LAPACK) を使用しています。

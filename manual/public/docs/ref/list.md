@@ -17,4 +17,4 @@
 (list)            ; => nil
 ```
 ### See Also:
-[cons](cons), [quote](quote)
+[cons](ref/cons), [quote](ref/quote)

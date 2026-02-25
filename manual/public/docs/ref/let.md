@@ -23,6 +23,6 @@
   y)  ; => 10
 ```
 ### See Also:
-[def](def), [fn](fn)
+[def](ref/def), [fn](ref/fn)
 ### Notes:
 Spinor の `let` は Common Lisp の `let*` と同じ意味論です。

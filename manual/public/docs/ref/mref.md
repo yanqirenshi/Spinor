@@ -22,4 +22,4 @@
 ### Exceptional Situations:
 インデックスが範囲外の場合、エラーを返します。
 ### See Also:
-[matrix](matrix), [mdim](mdim)
+[matrix](ref/matrix), [mdim](ref/mdim)

@@ -25,4 +25,4 @@ GLFW を初期化し、OpenGL コンテキスト付きのウィンドウを作�
 - GLFW の初期化に失敗した場合、エラーを返します。
 - ウィンドウの作成に失敗した場合、エラーを返します。
 ### See Also:
-[gl-window-should-close](gl-window-should-close), [gl-swap-buffers](gl-swap-buffers), [gl-clear](gl-clear), [gl-draw-points](gl-draw-points)
+[gl-window-should-close](ref/gl-window-should-close), [gl-swap-buffers](ref/gl-swap-buffers), [gl-clear](ref/gl-clear), [gl-draw-points](ref/gl-draw-points)

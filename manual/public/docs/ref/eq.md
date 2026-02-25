@@ -16,4 +16,4 @@
 (eq 1 1)      ; => t
 ```
 ### See Also:
-[equal](equal), [eq-op](eq-op)
+[equal](ref/equal), [eq-op](ref/eq-op)

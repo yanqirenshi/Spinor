@@ -44,6 +44,6 @@ GPU 上でカーネルを実行し、完了を待機します。
 - global-work-size が空の場合、エラーを返します。
 - カーネル引数の型が不正 (CLBuffer/Int/Float 以外) の場合、エラーを返します。
 ### See Also:
-[cl-init](cl-init), [cl-compile](cl-compile), [to-device](to-device), [to-host](to-host)
+[cl-init](ref/cl-init), [cl-compile](ref/cl-compile), [to-device](ref/to-device), [to-host](ref/to-host)
 ### Notes:
 現在はブロッキング実行のみ対応しています。

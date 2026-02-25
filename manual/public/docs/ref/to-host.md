@@ -27,4 +27,4 @@ GPU からデータを読み戻します。
 - 第1引数が CLContext でない場合、エラーを返します。
 - 第2引数が CLBuffer でない場合、エラーを返します。
 ### See Also:
-[to-device](to-device), [cl-init](cl-init), [matrix](matrix)
+[to-device](ref/to-device), [cl-init](ref/cl-init), [matrix](ref/matrix)

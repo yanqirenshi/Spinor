@@ -23,4 +23,4 @@ GPU メモリを確保し、データを転送します。
 - 第1引数が CLContext でない場合、エラーを返します。
 - 第2引数が Matrix でない場合、エラーを返します。
 ### See Also:
-[to-host](to-host), [cl-init](cl-init), [matrix](matrix)
+[to-host](ref/to-host), [cl-init](ref/cl-init), [matrix](ref/matrix)

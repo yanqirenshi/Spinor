@@ -15,4 +15,4 @@
 (progn (setq x 1) (setq x (+ x 1)) x)  ; => 2
 ```
 ### See Also:
-[begin](begin)
+[begin](ref/begin)

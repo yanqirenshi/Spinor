@@ -17,4 +17,4 @@
 (% 15 5)  ; => 0
 ```
 ### See Also:
-[add](add), [sub](sub), [mul](mul)
+[add](ref/add), [sub](ref/sub), [mul](ref/mul)
