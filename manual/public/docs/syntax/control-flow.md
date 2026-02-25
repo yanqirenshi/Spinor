@@ -97,10 +97,12 @@ x  ; => 2
 
 ## Symbols
 
-- [if](../ref/if) - 条件分岐
-- [let](../ref/let) - ローカル変数の束縛
-- [begin](../ref/begin) - 複数の式を逐次実行
-- [progn](../ref/progn) - `begin` のエイリアス (Common Lisp スタイル)
-- [setq](../ref/setq) - 変数の値を更新
-- [>](../ref/gt) - 数値の大小比較
-- [print](../ref/print) - 値を出力
+| Type | Name | Description |
+|:-----|:-----|:------------|
+| Special Form | [if](../ref/if) | 条件分岐 |
+| Special Form | [let](../ref/let) | ローカル変数の束縛 |
+| Special Form | [begin](../ref/begin) | 複数の式を逐次実行 |
+| Special Form | [progn](../ref/progn) | `begin` のエイリアス (Common Lisp スタイル) |
+| Special Form | [setq](../ref/setq) | 変数の値を更新 |
+| Function | [>](../ref/gt) | 数値の大小比較 |
+| Function | [print](../ref/print) | 値を出力 |

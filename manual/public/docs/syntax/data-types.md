@@ -115,10 +115,12 @@ Nothing
 
 ## Symbols
 
-- [data](../ref/data) - 代数的データ型を定義
-- [match](../ref/match) - パターンマッチによる分岐
-- [list](../ref/list) - リストを作成
-- [cons](../ref/cons) - 要素とリストを結合 (パターンでも使用)
-- [car](../ref/car) - リストの先頭要素を取得
-- [cdr](../ref/cdr) - リストの残りを取得
-- [null?](../ref/null-p) - `nil` かどうかを判定
+| Type | Name | Description |
+|:-----|:-----|:------------|
+| Special Form | [data](../ref/data) | 代数的データ型を定義 |
+| Special Form | [match](../ref/match) | パターンマッチによる分岐 |
+| Function | [list](../ref/list) | リストを作成 |
+| Function | [cons](../ref/cons) | 要素とリストを結合 (パターンでも使用) |
+| Function | [car](../ref/car) | リストの先頭要素を取得 |
+| Function | [cdr](../ref/cdr) | リストの残りを取得 |
+| Function | [null?](../ref/null-p) | `nil` かどうかを判定 |
