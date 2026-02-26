@@ -10,6 +10,7 @@ interface NavItem {
 const sections: NavItem[] = [
   { label: 'Home', to: '/' },
   { label: 'Introduction', to: '/docs/introduction' },
+  { label: 'Cookbook (逆引きレシピ)', to: '/docs/cookbook' },
   {
     label: 'Syntax',
     to: '/docs/syntax',
