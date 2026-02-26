@@ -150,7 +150,7 @@ Spinor では、反復処理は主に再帰関数によって実現されます�
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Special Form | [fn](../ref/fn) | 再帰関数を定義 |
-| Special Form | [match](../ref/match) | パターンマッチで場合分け |
-| Special Form | [if](../ref/if) | 条件分岐 |
-| Special Form | [let](../ref/let) | ローカル変数の束縛 |
+| Special Form | [fn](ref/fn) | 再帰関数を定義 |
+| Special Form | [match](ref/match) | パターンマッチで場合分け |
+| Special Form | [if](ref/if) | 条件分岐 |
+| Special Form | [let](ref/let) | ローカル変数の束縛 |

@@ -52,7 +52,7 @@ Spinor は UTF-8 エンコーディングをサポートしており、日本語
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Function | [string-to-list](../ref/string-to-list) | 文字列を文字リストに変換 |
-| Function | [list-to-string](../ref/list-to-string) | 文字リストを文字列に変換 |
-| Function | [string-length](../ref/string-length) | 文字列の長さを取得 |
-| Function | [substring](../ref/substring) | 部分文字列を取得 |
+| Function | [string-to-list](ref/string-to-list) | 文字列を文字リストに変換 |
+| Function | [list-to-string](ref/list-to-string) | 文字リストを文字列に変換 |
+| Function | [string-length](ref/string-length) | 文字列の長さを取得 |
+| Function | [substring](ref/substring) | 部分文字列を取得 |

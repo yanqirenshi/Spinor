@@ -113,7 +113,7 @@ Spinor では、シンボルは内部的に Haskell の `Text` 型として表�
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Special Form | [quote](../ref/quote) | 評価を抑制しシンボルをデータとして扱う |
-| Function | [eq](../ref/eq) | ポインタレベルの同一性を比較 |
-| Function | [equal](../ref/equal) | 構造的等価性を比較 |
-| Function | [null?](../ref/null-p) | `nil` かどうかを判定 |
+| Special Form | [quote](ref/quote) | 評価を抑制しシンボルをデータとして扱う |
+| Function | [eq](ref/eq) | ポインタレベルの同一性を比較 |
+| Function | [equal](ref/equal) | 構造的等価性を比較 |
+| Function | [null?](ref/null-p) | `nil` かどうかを判定 |

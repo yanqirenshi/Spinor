@@ -95,10 +95,10 @@
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Special Form | [def](../ref/def) | トップレベル変数・関数を定義 |
-| Special Form | [fn](../ref/fn) | 無名関数 (ラムダ式) を作成 |
-| Special Form | [mac](../ref/mac) | マクロを定義 |
-| Special Form | [let](../ref/let) | ローカル変数を束縛 (クロージャで使用) |
-| Special Form | [setq](../ref/setq) | 変数の値を更新 |
-| Function | [list](../ref/list) | マクロ展開でコードを生成 |
-| Special Form | [quote](../ref/quote) | マクロでシンボルをそのまま扱う |
+| Special Form | [def](ref/def) | トップレベル変数・関数を定義 |
+| Special Form | [fn](ref/fn) | 無名関数 (ラムダ式) を作成 |
+| Special Form | [mac](ref/mac) | マクロを定義 |
+| Special Form | [let](ref/let) | ローカル変数を束縛 (クロージャで使用) |
+| Special Form | [setq](ref/setq) | 変数の値を更新 |
+| Function | [list](ref/list) | マクロ展開でコードを生成 |
+| Special Form | [quote](ref/quote) | マクロでシンボルをそのまま扱う |

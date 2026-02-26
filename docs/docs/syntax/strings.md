@@ -92,10 +92,10 @@ spinor> (string-append "a" "b")
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Function | [string-append](../ref/string-append) | 文字列を連結 |
-| Function | [string-length](../ref/string-length) | 文字列の長さを取得 |
-| Function | [string-eq](../ref/string-eq) | 文字列の等価性を比較 |
-| Function | [substring](../ref/substring) | 部分文字列を取得 |
-| Function | [string-to-list](../ref/string-to-list) | 文字列を文字リストに変換 |
-| Function | [list-to-string](../ref/list-to-string) | 文字リストを文字列に変換 |
-| Function | [print](../ref/print) | 文字列を出力 |
+| Function | [string-append](ref/string-append) | 文字列を連結 |
+| Function | [string-length](ref/string-length) | 文字列の長さを取得 |
+| Function | [string-eq](ref/string-eq) | 文字列の等価性を比較 |
+| Function | [substring](ref/substring) | 部分文字列を取得 |
+| Function | [string-to-list](ref/string-to-list) | 文字列を文字リストに変換 |
+| Function | [list-to-string](ref/list-to-string) | 文字リストを文字列に変換 |
+| Function | [print](ref/print) | 文字列を出力 |

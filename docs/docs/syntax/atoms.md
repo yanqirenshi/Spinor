@@ -55,7 +55,7 @@ calculate-sum
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Function | [eq](../ref/eq) | シンボルの同一性を比較 |
-| Function | [equal](../ref/equal) | 値の等価性を比較 |
-| Function | [null?](../ref/null-p) | `nil` かどうかを判定 |
-| Function | [print](../ref/print) | 値を出力 |
+| Function | [eq](ref/eq) | シンボルの同一性を比較 |
+| Function | [equal](ref/equal) | 値の等価性を比較 |
+| Function | [null?](ref/null-p) | `nil` かどうかを判定 |
+| Function | [print](ref/print) | 値を出力 |

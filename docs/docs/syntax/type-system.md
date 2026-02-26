@@ -66,7 +66,7 @@ id
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Special Form | [fn](../ref/fn) | 関数型 `(-> a b)` を持つ無名関数を作成 |
-| Function | [list](../ref/list) | `(List a)` 型のリストを作成 |
-| Function | [cons](../ref/cons) | リスト型の値を構築 |
-| Special Form | [def](../ref/def) | 多相型を持つ値を定義 |
+| Special Form | [fn](ref/fn) | 関数型 `(-> a b)` を持つ無名関数を作成 |
+| Function | [list](ref/list) | `(List a)` 型のリストを作成 |
+| Function | [cons](ref/cons) | リスト型の値を構築 |
+| Special Form | [def](ref/def) | 多相型を持つ値を定義 |

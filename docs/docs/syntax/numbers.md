@@ -81,10 +81,10 @@ spinor> (+ 1 2)
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Function | [+](../ref/add) | 加算 |
-| Function | [-](../ref/sub) | 減算 |
-| Function | [*](../ref/mul) | 乗算 |
-| Function | [mod](../ref/mod) | 剰余 |
-| Function | [<](../ref/lt) | 小なり比較 |
-| Function | [>](../ref/gt) | 大なり比較 |
-| Function | [=](../ref/eq-op) | 等値比較 |
+| Function | [+](ref/add) | 加算 |
+| Function | [-](ref/sub) | 減算 |
+| Function | [*](ref/mul) | 乗算 |
+| Function | [mod](ref/mod) | 剰余 |
+| Function | [<](ref/lt) | 小なり比較 |
+| Function | [>](ref/gt) | 大なり比較 |
+| Function | [=](ref/eq-op) | 等値比較 |
