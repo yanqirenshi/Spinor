@@ -59,10 +59,10 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [x] **Implementation:** `defpackage`, `in-package`, `use-package`, `export`, `current-package` の実装。
     - [x] **Documentation:** `manual/public/docs/syntax/packages.md` の更新、CLHS ドキュメント追加。
     - [x] シンボル解決順序: レキシカル → カレントパッケージ → use パッケージ → spinor コア。
-- [ ] **Step 24-C: Error Handling & Condition System (エラー捕捉と条件システム)**
-    - [ ] `handler-case` や `ignore-errors` など、送出されたエラーを捕捉して処理を継続する機能の実装。
-    - [ ] `unwind-protect`: エラー発生時にも必ず実行されるクリーンアップ処理（ファイルクローズやメモリ解放など）を保証する構文の追加。
-    - [ ] (将来タスク) Common Lisp 特有の強力なコンディションシステム (`handler-bind`, `restart-case` 等) の概念を取り入れ、Haskell カーネル上でどう実現するかの設計とプロトタイプ作成。
+- [x] **Step 24-C: Error Handling & Condition System (エラー捕捉と条件システム)**
+    - [x] `handler-case` や `ignore-errors` など、送出されたエラーを捕捉して処理を継続する機能の実装。
+    - [x] `unwind-protect`: エラー発生時にも必ず実行されるクリーンアップ処理（ファイルクローズやメモリ解放など）を保証する構文の追加。
+    - [x] (将来タスク) Common Lisp 特有の強力なコンディションシステム (`handler-bind`, `restart-case` 等) の概念を取り入れ、Haskell カーネル上でどう実現するかの設計とプロトタイプ作成。
 
 ## 📚 DevExp & Documentation (普及のための環境整備)
 ユーザーが迷わず使えるためのドキュメントとツール群。
@@ -234,15 +234,14 @@ React を用いて、CLHS ライクでモダンなリファレンスサイトを
     - [x] `docs/build.md` を新規作成（または `introduction.md` に統合）し、環境構築手順を詳細に記載する。
     - [x] **WSL2 環境:** 必要なシステムパッケージ (`libglfw3-dev`, `libgl1-mesa-dev`, `pocl-opencl-icd` 等) のインストールコマンドと `cabal build` 手順の記載。
     - [x] **Windows 11 環境:** MSYS2 の導入、`pacman` による C ライブラリ (`openblas`, `glfw` 等) のインストール、および `cabal test` 実行時に必要な DLL コピー手順の明記。
-- [ ] **Step 43-C: Documentation Restructuring**
-    - [ ] `syntax.md` をサブディレクトリ配下の複数ページに分割。
-    - [ ] React サイドバーの階層化（ネストメニュー）対応。
-    - [ ] コンテンツ間の相互リンクの整備。
-- [ ] **Step 43-C: Documentation Restructuring (マニュアルの構造化と階層化)**
-    - [ ] 単一の `syntax.md` に詰め込まれている内容を、`Atoms`, `Lists`, `Type System`, `Control Flow` などの個別の Markdown ファイルに分割し `syntax/` ディレクトリ配下に整理する。
-    - [ ] React 側のサイドバー (`Sidebar.tsx`) を改修し、カテゴリ（Syntax 等）の中にサブページがぶら下がる階層的なナビゲーション（ネストメニュー）を実装する。
-- [ ] **Step 43-D: Spinor Cookbook (逆引きレシピ集)**
-    - [ ] 実用的なサンプルコード集 (`docs/cookbook.md` 等) の作成。JSON操作、並行処理、行列計算などの具体例を記載。
+- [x] **Step 43-C: Documentation Restructuring (マニュアルの構造化と階層化)**
+    - [x] `syntax.md` を `syntax/` サブディレクトリ配下の複数ページ (atoms, control-flow, conditions 等17ファイル) に分割。
+    - [x] React サイドバー (`Sidebar.tsx`) の階層化（ネストメニュー）対応。
+    - [x] コンテンツ間の相互リンクの整備。
+- [x] **Step 43-D: Spinor Cookbook (逆引きレシピ集)**
+    - [x] **Design:** `specs/43d_cookbook_spec.md` および `tasks/43d_cookbook_task.md` の作成。
+    - [x] **Implementation:** `manual/public/docs/cookbook.md` の執筆と `Sidebar.tsx` への追加。
+    - [x] 実用的なサンプルコード集 (JSON操作、並行処理、行列計算等) の作成。
 - [ ] **Step 43-E: Architecture & Internals (内部実装の解説)**
     - [ ] Haskellカーネルでのパース・型推論や C/WASM へのトランスパイル戦略を解説する `docs/architecture.md` の作成。
 - [ ] **Step 43-F: Editor Setup Guide (エディタ環境構築ガイド)**
