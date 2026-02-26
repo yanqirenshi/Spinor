@@ -200,10 +200,10 @@ Spinor の Dual Implementation を維持しつつ、科学技術計算の強力�
     - [x] **Design:** `specs/exp_ownership_spec.md` および `tasks/exp_ownership_task.md` の作成。
     - [x] **Prototype:** `BorrowCheck.hs` による静的解析と C バックエンドでの `free` 自動挿入の実装。
     - [x] **Documentation:** `manual/public/docs/syntax/ownership.md` の作成。
-- [ ] **Region-based Memory Management**
+- [x] **Region-based Memory Management**
     - [x] **Design:** `specs/exp_regions_spec.md` および `tasks/exp_regions_task.md` の作成。
-    - [ ] **Implementation:** Arena アロケータの実装と `with-region` 構文のトランスパイル対応。
-    - [ ] **Documentation:** `manual/public/docs/syntax/regions.md` の作成。
+    - [x] **Implementation:** Arena アロケータの実装と `with-region` 構文のトランスパイル対応。
+    - [x] **Documentation:** `manual/public/docs/syntax/regions.md` の作成。
 
 ## 📦 Distribution & CI (配布・自動化)
 - [x] **Step 34: Binary Distribution (GitHub Actions)**
