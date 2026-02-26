@@ -197,6 +197,9 @@ Spinor の Dual Implementation を維持しつつ、科学技術計算の強力�
 
 ## 🧪 Experimental Features (実験的機能)
 - [ ] **Linear Types / Ownership (所有権システム)**
+    - [x] **Design:** `specs/exp_ownership_spec.md` および `tasks/exp_ownership_task.md` の作成。
+    - [ ] **Prototype:** `BorrowCheck.hs` による静的解析と C バックエンドでの `free` 自動挿入の実装。
+    - [ ] **Documentation:** `manual/public/docs/syntax/ownership.md` の作成。
 - [ ] **Region-based Memory Management**
 
 ## 📦 Distribution & CI (配布・自動化)
@@ -242,14 +245,12 @@ React を用いて、CLHS ライクでモダンなリファレンスサイトを
     - [x] **Design:** `specs/43d_cookbook_spec.md` および `tasks/43d_cookbook_task.md` の作成。
     - [x] **Implementation:** `manual/public/docs/cookbook.md` の執筆と `Sidebar.tsx` への追加。
     - [x] 実用的なサンプルコード集 (JSON操作、並行処理、行列計算等) の作成。
-- [ ] **Step 43-E: Architecture & Internals (内部実装の解説)**
+- [x] **Step 43-E: Architecture & Internals (内部実装の解説)**
     - [x] **Design:** `specs/43e_architecture_spec.md` および `tasks/43e_architecture_task.md` の作成。
-    - [ ] **Implementation:** `manual/public/docs/architecture.md` の執筆と `Sidebar.tsx` への追加。
-    - [ ] Haskellカーネルでのパース・型推論や C/WASM へのトランスパイル戦略を解説。
-- [ ] **Step 43-F: Editor Setup Guide (エディタ環境構築ガイド)**
-    - [x] **Design:** `specs/43f_editor_setup_spec.md` および `tasks/43f_editor_setup_task.md` の作成。
-    - [ ] **Implementation:** `manual/public/docs/emacs_setup.md` の執筆と `Sidebar.tsx` への追加。
-    - [ ] `spinor-mode` や LSP/SLY の連携手順を解説。
+    - [x] **Implementation:** `manual/public/docs/architecture.md` の執筆と `Sidebar.tsx` への追加。
+    - [x] Haskellカーネルでのパース・型推論や C/WASM へのトランスパイル戦略を解説。
+- [x] **Step 43-F: Editor Setup Guide (エディタ環境構築ガイド)**
+    - [x] `spinor-mode` や LSP/SLY の連携手順を解説する `docs/emacs_setup.md` の作成。
 - [x] **Step 43-G: CLHS Core Chapters Expansion**
     - [x] Numbers, Strings, Conses, Arrays 等のデータ型別解説ページの追加。
     - [x] Packages (Module System) 解説ページの追加。

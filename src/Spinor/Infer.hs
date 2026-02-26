@@ -62,6 +62,7 @@ instance Types Type where
   apply s (TList t)    = TList (apply s t)
   apply _ (TCon n)     = TCon n
   apply s (TApp t1 t2) = TApp (apply s t1) (apply s t2)
+  apply s (TLinear lin t) = TLinear lin (apply s t)  -- 線形型: 内部型に置換適用
 
   ftv (TVar n)     = Set.singleton n
   ftv TInt         = Set.empty
@@ -71,6 +72,7 @@ instance Types Type where
   ftv (TList t)    = ftv t
   ftv (TCon _)     = Set.empty
   ftv (TApp t1 t2) = ftv t1 `Set.union` ftv t2
+  ftv (TLinear _ t) = ftv t  -- 線形型: 内部型の自由変数
 
 instance Types Scheme where
   apply s (Scheme vars t) = Scheme vars (apply s' t)

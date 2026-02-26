@@ -9,14 +9,17 @@ runtime/spinor.h および runtime/spinor.c と組み合わせて使用する。
 -}
 module Spinor.Compiler.Codegen
   ( compileProgram
+  , compileProgramWithOwnership
   , compileExpr
   ) where
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Map.Strict as Map
 import Data.List (partition)
 import Data.Char (isAlphaNum)
-import Spinor.Syntax (Expr(..))
+import Spinor.Syntax (Expr(..), SourceSpan)
+import Spinor.BorrowCheck (BorrowResult(..))
 
 -- | C コードの型エイリアス
 type CCode = Text
@@ -42,6 +45,42 @@ compileProgram exprs =
         , mainStmts
         , "    return 0;"
         , "}"
+        ]
+
+-- | 所有権情報を使ってプログラムをコンパイル (Experimental)
+--
+-- BorrowResult の dropPoints に基づき、適切な位置で free() を自動挿入する。
+compileProgramWithOwnership :: [Expr] -> BorrowResult -> CCode
+compileProgramWithOwnership exprs borrowResult =
+    let (defuns, others) = partition isDefun exprs
+        funDefs = T.unlines (map compileFunDef defuns)
+        mainStmts = T.unlines (map compileStmt others)
+        freeStmts = generateFreeStatements (brDropPoints borrowResult)
+    in T.unlines
+        [ "#include <stdio.h>"
+        , "#include <stdlib.h>  /* for free() - ownership system */"
+        , "#include <stdbool.h>"
+        , "#include \"spinor.h\""
+        , ""
+        , glIncludes
+        , glHelpers
+        , funDefs
+        , "int main(void) {"
+        , mainStmts
+        , freeStmts
+        , "    return 0;"
+        , "}"
+        ]
+
+-- | 所有権情報から free() 文を生成
+generateFreeStatements :: Map.Map Text SourceSpan -> CCode
+generateFreeStatements dropPoints =
+    if Map.null dropPoints
+    then ""
+    else T.unlines $
+        [ "    /* --- Automatic memory management (ownership system) --- */" ] ++
+        [ "    sp_free(" <> mangle name <> ");  /* drop point */"
+        | (name, _) <- Map.toList dropPoints
         ]
 
 -- | defun 式かどうかを判定する

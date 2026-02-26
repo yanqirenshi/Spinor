@@ -48,6 +48,12 @@ const sections: NavItem[] = [
   { label: 'Editor Setup', to: '/docs/emacs_setup' },
   { label: 'API Reference', to: '/docs/api-index' },
   { label: 'Architecture & Internals', to: '/docs/architecture' },
+  {
+    label: 'Experimental',
+    items: [
+      { label: 'Linear Types & Ownership', to: '/docs/syntax/ownership' },
+    ],
+  },
 ]
 
 interface NavItemProps {
