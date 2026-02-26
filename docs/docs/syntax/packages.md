@@ -206,10 +206,10 @@ Spinor は起動時に `twister/core.spin` を自動的にロードし、基本�
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Special Form | [def](../ref/def) | トップレベル変数・関数を定義 |
-| Special Form | [fn](../ref/fn) | 関数を作成 |
-| Special Form | [defpackage](../ref/defpackage) | 新しいパッケージを定義 |
-| Special Form | [in-package](../ref/in-package) | カレントパッケージを切り替え |
-| Special Form | [use-package](../ref/use-package) | 他パッケージのシンボルをインポート |
-| Special Form | [export](../ref/export) | シンボルをエクスポート |
-| Function | [current-package](../ref/current-package) | カレントパッケージ名を取得 |
+| Special Form | [def](ref/def) | トップレベル変数・関数を定義 |
+| Special Form | [fn](ref/fn) | 関数を作成 |
+| Special Form | [defpackage](ref/defpackage) | 新しいパッケージを定義 |
+| Special Form | [in-package](ref/in-package) | カレントパッケージを切り替え |
+| Special Form | [use-package](ref/use-package) | 他パッケージのシンボルをインポート |
+| Special Form | [export](ref/export) | シンボルをエクスポート |
+| Function | [current-package](ref/current-package) | カレントパッケージ名を取得 |
