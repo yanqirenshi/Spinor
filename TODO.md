@@ -54,9 +54,11 @@ Common Lisp ライクな挙動を取り込み、実用性を高める（Kernel/L
     - [x] `dolist`, `dotimes`: 反復マクロ。
     - [x] `progn`: (begin のエイリアスまたはマクロとして整備)。
     - [x] `error`: エラー送出プリミティブ。
-- [ ] **Step 24-B: パッケージ操作系マクロの拡充 (Package Utilities)**
-    - [ ] Common Lisp の `defpackage`, `in-package`, `use-package`, `shadowing-import` 等に相当する、柔軟で動的なシンボル・名前空間管理機能の設計と実装。
-    - [ ] Step 19 の静的なモジュールシステムと連携し、REPL 上での動的なパッケージ切り替えや、シンボルの衝突回避 (シャドウイング) をサポートするアーキテクチャの構築。
+- [x] **Step 24-B: パッケージ操作系マクロの拡充 (Package Utilities)**
+    - [x] **Design:** `specs/24b_package_system_spec.md` および `tasks/24b_package_system_task.md` の作成。
+    - [x] **Implementation:** `defpackage`, `in-package`, `use-package`, `export`, `current-package` の実装。
+    - [x] **Documentation:** `manual/public/docs/syntax/packages.md` の更新、CLHS ドキュメント追加。
+    - [x] シンボル解決順序: レキシカル → カレントパッケージ → use パッケージ → spinor コア。
 - [ ] **Step 24-C: Error Handling & Condition System (エラー捕捉と条件システム)**
     - [ ] `handler-case` や `ignore-errors` など、送出されたエラーを捕捉して処理を継続する機能の実装。
     - [ ] `unwind-protect`: エラー発生時にも必ず実行されるクリーンアップ処理（ファイルクローズやメモリ解放など）を保証する構文の追加。
