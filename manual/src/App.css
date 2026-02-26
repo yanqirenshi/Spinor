@@ -137,6 +137,26 @@
   overflow-y: auto;
 }
 
+/* Code blocks in markdown */
+.markdown-body pre {
+  background-color: #f6f8fa;
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.markdown-body code {
+  background-color: #f6f8fa;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.markdown-body pre code {
+  padding: 0;
+  background-color: transparent;
+}
+
 /* Dark mode adjustments */
 @media (prefers-color-scheme: dark) {
   .sidebar {
@@ -154,5 +174,14 @@
   .sidebar-link.active,
   .sidebar-category-link.active {
     background-color: #1e3a5f;
+  }
+
+  .markdown-body pre,
+  .markdown-body code {
+    background-color: #2d2d2d;
+  }
+
+  .markdown-body pre code {
+    background-color: transparent;
   }
 }
