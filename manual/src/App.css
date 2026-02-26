@@ -157,6 +157,29 @@
   background-color: transparent;
 }
 
+/* Tables in markdown */
+.markdown-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid #e1e4e8;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.markdown-body th {
+  background-color: #f6f8fa;
+  font-weight: 600;
+}
+
+.markdown-body tr:hover {
+  background-color: #fafbfc;
+}
+
 /* Dark mode adjustments */
 @media (prefers-color-scheme: dark) {
   .sidebar {
@@ -183,5 +206,18 @@
 
   .markdown-body pre code {
     background-color: transparent;
+  }
+
+  .markdown-body th,
+  .markdown-body td {
+    border-color: #3d3d3d;
+  }
+
+  .markdown-body th {
+    background-color: #2d2d2d;
+  }
+
+  .markdown-body tr:hover {
+    background-color: #252525;
   }
 }
