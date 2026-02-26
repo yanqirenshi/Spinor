@@ -65,10 +65,10 @@
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Special Form | [quote](../ref/quote) | 式の評価を抑制し、データとして扱う |
-| Function | [list](../ref/list) | 引数からリストを作成 |
-| Function | [cons](../ref/cons) | 要素とリストを結合 |
-| Function | [car](../ref/car) | リストの先頭要素を取得 |
-| Function | [cdr](../ref/cdr) | リストの残りを取得 |
-| Function | [+](../ref/add) | 数値の加算 |
-| Function | [*](../ref/mul) | 数値の乗算 |
+| Special Form | [quote](ref/quote) | 式の評価を抑制し、データとして扱う |
+| Function | [list](ref/list) | 引数からリストを作成 |
+| Function | [cons](ref/cons) | 要素とリストを結合 |
+| Function | [car](ref/car) | リストの先頭要素を取得 |
+| Function | [cdr](ref/cdr) | リストの残りを取得 |
+| Function | [+](ref/add) | 数値の加算 |
+| Function | [*](ref/mul) | 数値の乗算 |

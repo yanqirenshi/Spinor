@@ -121,15 +121,15 @@ spinor> (m-mul a b)
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Function | [matrix](../ref/matrix) | 行列を作成 |
-| Function | [mdim](../ref/mdim) | 行列の次元を取得 |
-| Function | [mref](../ref/mref) | 行列の要素を取得 |
-| Function | [m-add](../ref/m-add) | 行列の加算 |
-| Function | [m-mul](../ref/m-mul) | 行列の乗算 |
-| Function | [transpose](../ref/transpose) | 転置行列 |
-| Function | [inverse](../ref/inverse) | 逆行列 |
-| Function | [cl-init](../ref/cl-init) | OpenCL 初期化 |
-| Function | [cl-compile](../ref/cl-compile) | OpenCL カーネルをコンパイル |
-| Function | [cl-enqueue](../ref/cl-enqueue) | OpenCL カーネルを実行 |
-| Function | [to-device](../ref/to-device) | GPU メモリに転送 |
-| Function | [to-host](../ref/to-host) | CPU メモリに転送 |
+| Function | [matrix](ref/matrix) | 行列を作成 |
+| Function | [mdim](ref/mdim) | 行列の次元を取得 |
+| Function | [mref](ref/mref) | 行列の要素を取得 |
+| Function | [m-add](ref/m-add) | 行列の加算 |
+| Function | [m-mul](ref/m-mul) | 行列の乗算 |
+| Function | [transpose](ref/transpose) | 転置行列 |
+| Function | [inverse](ref/inverse) | 逆行列 |
+| Function | [cl-init](ref/cl-init) | OpenCL 初期化 |
+| Function | [cl-compile](ref/cl-compile) | OpenCL カーネルをコンパイル |
+| Function | [cl-enqueue](ref/cl-enqueue) | OpenCL カーネルを実行 |
+| Function | [to-device](ref/to-device) | GPU メモリに転送 |
+| Function | [to-host](ref/to-host) | CPU メモリに転送 |

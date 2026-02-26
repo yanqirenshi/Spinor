@@ -143,6 +143,6 @@ OS の環境変数を取得します。
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Function | [print](../ref/print) | 標準出力に出力 |
-| Function | [read-file](../ref/read-file) | ファイルを読み込み |
-| Function | [write-file](../ref/write-file) | ファイルに書き込み |
+| Function | [print](ref/print) | 標準出力に出力 |
+| Function | [read-file](ref/read-file) | ファイルを読み込み |
+| Function | [write-file](ref/write-file) | ファイルに書き込み |

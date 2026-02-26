@@ -110,11 +110,11 @@ Spinor におけるコンスセルとリスト構造について解説します�
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Function | [cons](../ref/cons) | コンスセルを作成 |
-| Function | [car](../ref/car) | コンスセルの先頭要素を取得 |
-| Function | [cdr](../ref/cdr) | コンスセルの残りを取得 |
-| Function | [list](../ref/list) | リストを作成 |
-| Function | [null?](../ref/null-p) | `nil` かどうかを判定 |
-| Function | [empty?](../ref/empty-p) | 空リストかどうかを判定 |
-| Special Form | [quote](../ref/quote) | 評価を抑制してリストを作成 |
-| Special Form | [match](../ref/match) | パターンマッチでリストを分解 |
+| Function | [cons](ref/cons) | コンスセルを作成 |
+| Function | [car](ref/car) | コンスセルの先頭要素を取得 |
+| Function | [cdr](ref/cdr) | コンスセルの残りを取得 |
+| Function | [list](ref/list) | リストを作成 |
+| Function | [null?](ref/null-p) | `nil` かどうかを判定 |
+| Function | [empty?](ref/empty-p) | 空リストかどうかを判定 |
+| Special Form | [quote](ref/quote) | 評価を抑制してリストを作成 |
+| Special Form | [match](ref/match) | パターンマッチでリストを分解 |

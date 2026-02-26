@@ -155,7 +155,7 @@ Spinor はファイルの読み書きのためのプリミティブ関数を提�
 
 | Type | Name | Description |
 |:-----|:-----|:------------|
-| Function | [read-file](../ref/read-file) | ファイルを読み込み |
-| Function | [write-file](../ref/write-file) | ファイルに書き込み |
-| Function | [append-file](../ref/append-file) | ファイルに追記 |
-| Function | [file-exists?](../ref/file-exists-p) | ファイルの存在確認 |
+| Function | [read-file](ref/read-file) | ファイルを読み込み |
+| Function | [write-file](ref/write-file) | ファイルに書き込み |
+| Function | [append-file](ref/append-file) | ファイルに追記 |
+| Function | [file-exists?](ref/file-exists-p) | ファイルの存在確認 |
