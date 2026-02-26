@@ -247,7 +247,9 @@ React を用いて、CLHS ライクでモダンなリファレンスサイトを
     - [ ] **Implementation:** `manual/public/docs/architecture.md` の執筆と `Sidebar.tsx` への追加。
     - [ ] Haskellカーネルでのパース・型推論や C/WASM へのトランスパイル戦略を解説。
 - [ ] **Step 43-F: Editor Setup Guide (エディタ環境構築ガイド)**
-    - [ ] `spinor-mode` や LSP/SLY の連携手順を解説する `docs/emacs_setup.md` の作成。
+    - [x] **Design:** `specs/43f_editor_setup_spec.md` および `tasks/43f_editor_setup_task.md` の作成。
+    - [ ] **Implementation:** `manual/public/docs/emacs_setup.md` の執筆と `Sidebar.tsx` への追加。
+    - [ ] `spinor-mode` や LSP/SLY の連携手順を解説。
 - [x] **Step 43-G: CLHS Core Chapters Expansion**
     - [x] Numbers, Strings, Conses, Arrays 等のデータ型別解説ページの追加。
     - [x] Packages (Module System) 解説ページの追加。

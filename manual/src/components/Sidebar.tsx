@@ -45,6 +45,7 @@ const sections: NavItem[] = [
     ],
   },
   { label: 'Build Guide', to: '/docs/build' },
+  { label: 'Editor Setup', to: '/docs/emacs_setup' },
   { label: 'API Reference', to: '/docs/api-index' },
   { label: 'Architecture & Internals', to: '/docs/architecture' },
 ]
