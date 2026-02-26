@@ -130,6 +130,8 @@ exprToText (EData _ _ _) = "<data>"
 exprToText (EMatch _ _ _) = "<match>"
 exprToText (EModule _ _ _) = "<module>"
 exprToText (EImport _ _ _) = "<import>"
+exprToText (EWithRegion _ _ _) = "<with-region>"
+exprToText (EAllocIn _ _ _) = "<alloc-in>"
 
 -- | 文字列内の特殊文字をエスケープする
 escapeString :: Text -> Text
@@ -1315,6 +1317,10 @@ exprToLispText (EMatch _ target branches) =
     patternToText PWild = "_"
 exprToLispText (EModule _ name _) = "(module " <> name <> " ...)"
 exprToLispText (EImport _ name _) = "(import " <> name <> " ...)"
+exprToLispText (EWithRegion _ rname body) =
+    "(with-region " <> rname <> " " <> exprToLispText body <> ")"
+exprToLispText (EAllocIn _ rname expr) =
+    "(alloc-in " <> rname <> " " <> exprToLispText expr <> ")"
 
 --------------------------------------------------------------------------------
 -- MREPL Channel Handlers

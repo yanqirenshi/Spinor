@@ -52,6 +52,7 @@ const sections: NavItem[] = [
     label: 'Experimental',
     items: [
       { label: 'Linear Types & Ownership', to: '/docs/syntax/ownership' },
+      { label: 'Region-based Memory', to: '/docs/syntax/regions' },
     ],
   },
 ]

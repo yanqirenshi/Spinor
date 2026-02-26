@@ -110,6 +110,9 @@ data Expr
   | EMatch  SourceSpan Expr [(Pattern, Expr)]    -- ^ (match target (pat1 body1) (pat2 body2) ...)
   | EModule SourceSpan Text [Text]               -- ^ (module name (export sym1 sym2 ...))
   | EImport SourceSpan Text [ImportOption]       -- ^ (import module-name options...)
+  -- Experimental: Region-based memory management
+  | EWithRegion SourceSpan Text Expr             -- ^ (with-region r body): リージョン r を作成し body を評価
+  | EAllocIn    SourceSpan Text Expr             -- ^ (alloc-in r expr): リージョン r に expr の結果を割り当て
   deriving (Show, Eq)
 
 -- | 式から SourceSpan を取得
@@ -124,6 +127,8 @@ exprSpan (EData   sp _ _)   = sp
 exprSpan (EMatch  sp _ _)   = sp
 exprSpan (EModule sp _ _)   = sp
 exprSpan (EImport sp _ _)   = sp
+exprSpan (EWithRegion sp _ _) = sp
+exprSpan (EAllocIn sp _ _)  = sp
 
 type Parser = Parsec Void Text
 
@@ -215,6 +220,7 @@ pConstructorDef = between (lexeme (char '(')) (lexeme (char ')')) $ do
 --   (let name val body) は ELet に変換する
 --   (data Name (Con1 a b) (Con2)) は EData に変換する
 --   (module ...) と (import ...) は特殊形式として処理する
+--   (with-region r body) と (alloc-in r expr) は領域管理の特殊形式
 pList :: Parser Expr
 pList = withSpan $ do
   xs <- between (lexeme (char '(')) (lexeme (char ')')) (many parseExpr)
@@ -228,6 +234,11 @@ pList = withSpan $ do
     [ESym _ "let", ESym _ name, val, body] -> pure $ \sp -> ELet sp [(name, val)] body
     (ESym _ "module" : rest) -> parseModuleForm rest
     (ESym _ "import" : rest) -> parseImportForm rest
+    -- Experimental: Region-based memory management
+    [ESym _ "with-region", ESym _ regionName, body] ->
+      pure $ \sp -> EWithRegion sp regionName body
+    [ESym _ "alloc-in", ESym _ regionName, expr] ->
+      pure $ \sp -> EAllocIn sp regionName expr
     _ -> pure $ \sp -> EList sp xs
 
 -- | let 式の束縛リストをパースする

@@ -296,6 +296,13 @@ infer _ (EModule _ _ _) = pure (nullSubst, TCon "Unit")
 -- import 宣言: Unit を返す
 infer _ (EImport _ _ _) = pure (nullSubst, TCon "Unit")
 
+-- Experimental: Region-based memory management
+-- with-region: 本体の型を返す
+infer env (EWithRegion _ _ body) = infer env body
+
+-- alloc-in: 内部式の型を返す
+infer env (EAllocIn _ _ expr) = infer env expr
+
 -- 関数適用: (func arg1 arg2 ...)
 --   多引数はカリー化として扱う
 infer env (EList _ (func : args)) = inferApp env func args

@@ -196,11 +196,14 @@ Spinor の Dual Implementation を維持しつつ、科学技術計算の強力�
     - [x] **Verification:** ブラウザの Canvas 上でのリアルタイム可視化の実現。
 
 ## 🧪 Experimental Features (実験的機能)
-- [ ] **Linear Types / Ownership (所有権システム)**
+- [x] **Linear Types / Ownership (所有権システム)**
     - [x] **Design:** `specs/exp_ownership_spec.md` および `tasks/exp_ownership_task.md` の作成。
-    - [ ] **Prototype:** `BorrowCheck.hs` による静的解析と C バックエンドでの `free` 自動挿入の実装。
-    - [ ] **Documentation:** `manual/public/docs/syntax/ownership.md` の作成。
+    - [x] **Prototype:** `BorrowCheck.hs` による静的解析と C バックエンドでの `free` 自動挿入の実装。
+    - [x] **Documentation:** `manual/public/docs/syntax/ownership.md` の作成。
 - [ ] **Region-based Memory Management**
+    - [x] **Design:** `specs/exp_regions_spec.md` および `tasks/exp_regions_task.md` の作成。
+    - [ ] **Implementation:** Arena アロケータの実装と `with-region` 構文のトランスパイル対応。
+    - [ ] **Documentation:** `manual/public/docs/syntax/regions.md` の作成。
 
 ## 📦 Distribution & CI (配布・自動化)
 - [x] **Step 34: Binary Distribution (GitHub Actions)**

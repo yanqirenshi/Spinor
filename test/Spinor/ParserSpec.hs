@@ -19,6 +19,9 @@ normalizeSpan (EData _ name ctors) = EData dummySpan name ctors
 normalizeSpan (EMatch _ target branches) = EMatch dummySpan (normalizeSpan target) [(normalizePat p, normalizeSpan e) | (p, e) <- branches]
 normalizeSpan (EModule _ name exports) = EModule dummySpan name exports
 normalizeSpan (EImport _ name opts) = EImport dummySpan name opts
+-- Experimental: Region-based memory management
+normalizeSpan (EWithRegion _ name body) = EWithRegion dummySpan name (normalizeSpan body)
+normalizeSpan (EAllocIn _ name expr) = EAllocIn dummySpan name (normalizeSpan expr)
 
 -- | パターン内の PLit の Expr も正規化
 normalizePat :: Pattern -> Pattern

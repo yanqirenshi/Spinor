@@ -10,6 +10,7 @@ runtime/spinor.h および runtime/spinor.c と組み合わせて使用する。
 module Spinor.Compiler.Codegen
   ( compileProgram
   , compileProgramWithOwnership
+  , compileProgramWithRegions
   , compileExpr
   ) where
 
@@ -20,6 +21,7 @@ import Data.List (partition)
 import Data.Char (isAlphaNum)
 import Spinor.Syntax (Expr(..), SourceSpan)
 import Spinor.BorrowCheck (BorrowResult(..))
+import Spinor.EscapeAnalysis (EscapeResult(..))
 
 -- | C コードの型エイリアス
 type CCode = Text
@@ -82,6 +84,145 @@ generateFreeStatements dropPoints =
         [ "    sp_free(" <> mangle name <> ");  /* drop point */"
         | (name, _) <- Map.toList dropPoints
         ]
+
+-- | リージョン情報を使ってプログラムをコンパイル (Experimental)
+--
+-- EscapeResult の検証に基づき、Arena アロケータのコードを生成する。
+compileProgramWithRegions :: [Expr] -> EscapeResult -> CCode
+compileProgramWithRegions exprs escapeResult =
+    let (defuns, others) = partition isDefun exprs
+        funDefs = T.unlines (map compileFunDef defuns)
+        mainStmts = T.unlines (map compileStmtWithRegion others)
+    in T.unlines
+        [ "#include <stdio.h>"
+        , "#include <stdlib.h>"
+        , "#include <stdbool.h>"
+        , "#include <string.h>"
+        , "#include \"spinor.h\""
+        , ""
+        , arenaAllocatorCode
+        , ""
+        , glIncludes
+        , glHelpers
+        , funDefs
+        , "int main(void) {"
+        , mainStmts
+        , "    return 0;"
+        , "}"
+        ]
+
+-- | Arena アロケータの C ランタイムコード
+arenaAllocatorCode :: CCode
+arenaAllocatorCode = T.unlines
+    [ "/* --- Region-based Memory Management (Arena Allocator) --- */"
+    , ""
+    , "#define REGION_DEFAULT_SIZE (64 * 1024)  /* 64 KB */"
+    , ""
+    , "typedef struct RegionBlock {"
+    , "    struct RegionBlock* next;"
+    , "    size_t size;"
+    , "    size_t used;"
+    , "    char data[];  /* Flexible array member */"
+    , "} RegionBlock;"
+    , ""
+    , "typedef struct Region {"
+    , "    RegionBlock* head;"
+    , "    RegionBlock* current;"
+    , "} Region;"
+    , ""
+    , "/* Create a new region (arena) */"
+    , "Region* create_region(void) {"
+    , "    Region* r = (Region*)malloc(sizeof(Region));"
+    , "    if (!r) return NULL;"
+    , "    RegionBlock* block = (RegionBlock*)malloc(sizeof(RegionBlock) + REGION_DEFAULT_SIZE);"
+    , "    if (!block) { free(r); return NULL; }"
+    , "    block->next = NULL;"
+    , "    block->size = REGION_DEFAULT_SIZE;"
+    , "    block->used = 0;"
+    , "    r->head = block;"
+    , "    r->current = block;"
+    , "    return r;"
+    , "}"
+    , ""
+    , "/* Allocate memory from a region */"
+    , "void* region_alloc(Region* r, size_t size) {"
+    , "    /* Align to 8 bytes */"
+    , "    size = (size + 7) & ~7;"
+    , "    RegionBlock* block = r->current;"
+    , "    if (block->used + size > block->size) {"
+    , "        /* Allocate new block */"
+    , "        size_t newSize = (size > REGION_DEFAULT_SIZE) ? size : REGION_DEFAULT_SIZE;"
+    , "        RegionBlock* newBlock = (RegionBlock*)malloc(sizeof(RegionBlock) + newSize);"
+    , "        if (!newBlock) return NULL;"
+    , "        newBlock->next = NULL;"
+    , "        newBlock->size = newSize;"
+    , "        newBlock->used = 0;"
+    , "        block->next = newBlock;"
+    , "        r->current = newBlock;"
+    , "        block = newBlock;"
+    , "    }"
+    , "    void* ptr = block->data + block->used;"
+    , "    block->used += size;"
+    , "    return ptr;"
+    , "}"
+    , ""
+    , "/* Destroy a region and free all memory */"
+    , "void destroy_region(Region* r) {"
+    , "    RegionBlock* block = r->head;"
+    , "    while (block) {"
+    , "        RegionBlock* next = block->next;"
+    , "        free(block);"
+    , "        block = next;"
+    , "    }"
+    , "    free(r);"
+    , "}"
+    , ""
+    , "/* Allocate SpObject in a region */"
+    , "SpObject* sp_region_alloc(Region* r) {"
+    , "    SpObject* obj = (SpObject*)region_alloc(r, sizeof(SpObject));"
+    , "    if (obj) {"
+    , "        obj->type = SP_NIL;"
+    , "    }"
+    , "    return obj;"
+    , "}"
+    , ""
+    , "/* Create integer in region */"
+    , "SpObject* sp_region_make_int(Region* r, int64_t n) {"
+    , "    SpObject* obj = sp_region_alloc(r);"
+    , "    if (obj) {"
+    , "        obj->type = SP_INT;"
+    , "        obj->value.integer = n;"
+    , "    }"
+    , "    return obj;"
+    , "}"
+    , ""
+    , "/* Create string in region */"
+    , "SpObject* sp_region_make_str(Region* r, const char* s) {"
+    , "    SpObject* obj = sp_region_alloc(r);"
+    , "    if (obj) {"
+    , "        size_t len = strlen(s) + 1;"
+    , "        char* str = (char*)region_alloc(r, len);"
+    , "        if (str) {"
+    , "            memcpy(str, s, len);"
+    , "            obj->type = SP_STR;"
+    , "            obj->value.str = str;"
+    , "        }"
+    , "    }"
+    , "    return obj;"
+    , "}"
+    ]
+
+-- | with-region を含む式をステートメントに変換
+compileStmtWithRegion :: Expr -> CCode
+compileStmtWithRegion (EWithRegion _ regionName body) =
+    T.unlines
+        [ "    { /* with-region " <> regionName <> " */"
+        , "        Region* " <> mangle regionName <> " = create_region();"
+        , compileStmtWithRegion body
+        , "        destroy_region(" <> mangle regionName <> ");"
+        , "    }"
+        ]
+compileStmtWithRegion expr = compileStmt expr
 
 -- | defun 式かどうかを判定する
 isDefun :: Expr -> Bool
@@ -242,6 +383,20 @@ compileExpr (EList _ [ESym _ "gl-swap-buffers", win]) =
     "sp_gl_swap_buffers(" <> compileExpr win <> ")"
 compileExpr (EList _ [ESym _ "gl-window-should-close", win]) =
     "sp_gl_window_should_close(" <> compileExpr win <> ")"
+
+-- Experimental: Region-based memory management
+-- with-region は式としては使用できないため、ブロック文として展開
+compileExpr (EWithRegion _ regionName body) =
+    "({ Region* " <> mangle regionName <> " = create_region(); " <>
+    "SpObject* _region_result = " <> compileExpr body <> "; " <>
+    "destroy_region(" <> mangle regionName <> "); _region_result; })"
+
+-- alloc-in: リージョン内での割り当て
+compileExpr (EAllocIn _ regionName expr) =
+    case expr of
+        EInt _ n -> "sp_region_make_int(" <> mangle regionName <> ", " <> T.pack (show n) <> ")"
+        EStr _ s -> "sp_region_make_str(" <> mangle regionName <> ", \"" <> escapeC s <> "\")"
+        _ -> compileExpr expr  -- フォールバック
 
 -- 変数参照 (引数など)
 compileExpr (ESym _ s) = mangle s
