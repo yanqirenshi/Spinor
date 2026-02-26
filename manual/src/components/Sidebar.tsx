@@ -46,6 +46,7 @@ const sections: NavItem[] = [
   },
   { label: 'Build Guide', to: '/docs/build' },
   { label: 'API Reference', to: '/docs/api-index' },
+  { label: 'Architecture & Internals', to: '/docs/architecture' },
 ]
 
 interface NavItemProps {

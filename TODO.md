@@ -243,7 +243,9 @@ React を用いて、CLHS ライクでモダンなリファレンスサイトを
     - [x] **Implementation:** `manual/public/docs/cookbook.md` の執筆と `Sidebar.tsx` への追加。
     - [x] 実用的なサンプルコード集 (JSON操作、並行処理、行列計算等) の作成。
 - [ ] **Step 43-E: Architecture & Internals (内部実装の解説)**
-    - [ ] Haskellカーネルでのパース・型推論や C/WASM へのトランスパイル戦略を解説する `docs/architecture.md` の作成。
+    - [x] **Design:** `specs/43e_architecture_spec.md` および `tasks/43e_architecture_task.md` の作成。
+    - [ ] **Implementation:** `manual/public/docs/architecture.md` の執筆と `Sidebar.tsx` への追加。
+    - [ ] Haskellカーネルでのパース・型推論や C/WASM へのトランスパイル戦略を解説。
 - [ ] **Step 43-F: Editor Setup Guide (エディタ環境構築ガイド)**
     - [ ] `spinor-mode` や LSP/SLY の連携手順を解説する `docs/emacs_setup.md` の作成。
 - [x] **Step 43-G: CLHS Core Chapters Expansion**
