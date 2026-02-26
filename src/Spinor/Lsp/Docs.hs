@@ -418,6 +418,123 @@ primitiveDocs = Map.fromList
       , docNotes = "`defpackage` の `:export` オプションでも定義時にエクスポートを指定できます。"
       })
 
+  -- ========================================
+  -- エラーハンドリング (Error Handling)
+  -- ========================================
+  , ("ignore-errors", DocEntry
+      { docSignature = "(Expr...) -> Val | nil"
+      , docDescription = "本体の評価中にエラーが発生した場合、そのエラーを無視して `nil` を返します。エラーが発生しなければ最後の式の結果を返します。"
+      , docKind = CompletionItemKind_Keyword
+      , docSlug = "ignore-errors"
+      , docSyntax = "(ignore-errors body...)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `body` -- 評価する式 (0個以上)"
+          , "- 戻り値: 成功時は最後の式の値、エラー時は `nil`"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; ゼロ除算エラーを無視"
+          , "(ignore-errors (/ 1 0))  ; => nil"
+          , ""
+          , ";; 正常時は値を返す"
+          , "(ignore-errors (+ 1 2))  ; => 3"
+          , ""
+          , ";; 複数の式"
+          , "(ignore-errors"
+          , "  (print \"start\")"
+          , "  (error \"fail\")"
+          , "  (print \"end\"))  ; => nil (\"start\" のみ出力)"
+          , "```"
+          ]
+      , docSideEffects = "本体の副作用はエラー発生前まで実行されます。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "None. (全てのエラーを捕捉します)"
+      , docSeeAlso = ["handler-case", "unwind-protect"]
+      , docNotes = "Common Lisp の `ignore-errors` に相当します。詳細なエラー処理が必要な場合は `handler-case` を使用してください。"
+      })
+
+  , ("handler-case", DocEntry
+      { docSignature = "(Expr, Handler) -> Val"
+      , docDescription = "式を評価し、エラーが発生した場合は指定されたハンドラを実行します。エラーメッセージは指定した変数に束縛されます。"
+      , docKind = CompletionItemKind_Keyword
+      , docSlug = "handler-case"
+      , docSyntax = "(handler-case expression (error (var) handler-body...))"
+      , docArgumentsAndValues = T.unlines
+          [ "- `expression` -- 評価する式"
+          , "- `error` -- エラーハンドラのキーワード (現在は全エラーを捕捉)"
+          , "- `var` -- エラーメッセージが束縛される変数名"
+          , "- `handler-body` -- エラー時に評価される式"
+          , "- 戻り値: 成功時は `expression` の値、エラー時はハンドラの結果"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; エラーメッセージを取得"
+          , "(handler-case"
+          , "  (error \"something went wrong\")"
+          , "  (error (msg)"
+          , "    (string-append \"Caught: \" msg)))"
+          , "; => \"Caught: something went wrong\""
+          , ""
+          , ";; 正常時はそのまま値を返す"
+          , "(handler-case"
+          , "  (+ 1 2)"
+          , "  (error (e) \"error occurred\"))"
+          , "; => 3"
+          , ""
+          , ";; デフォルト値を返す"
+          , "(handler-case"
+          , "  (/ 10 0)"
+          , "  (error (_) 0))  ; => 0"
+          , "```"
+          ]
+      , docSideEffects = "ハンドラ内の副作用が実行される可能性があります。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "ハンドラ形式が不正な場合、エラーを返します。"
+      , docSeeAlso = ["ignore-errors", "unwind-protect"]
+      , docNotes = "Common Lisp の `handler-case` の簡易版です。現時点では全てのエラーを `error` キーワードで捕捉します。将来的にエラー型による分岐をサポート予定です。"
+      })
+
+  , ("unwind-protect", DocEntry
+      { docSignature = "(Expr, Expr...) -> Val"
+      , docDescription = "保護フォームを評価し、その成否に関わらずクリーンアップフォームを必ず実行します。ファイル入出力やリソース解放に必須の構文です。"
+      , docKind = CompletionItemKind_Keyword
+      , docSlug = "unwind-protect"
+      , docSyntax = "(unwind-protect protected-form cleanup-form...)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `protected-form` -- 保護される式 (1つ)"
+          , "- `cleanup-form` -- 必ず実行されるクリーンアップ式 (0個以上)"
+          , "- 戻り値: `protected-form` の結果 (エラー時は再送出)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; 必ずクリーンアップが実行される"
+          , "(def cleaned nil)"
+          , "(ignore-errors"
+          , "  (unwind-protect"
+          , "    (error \"fail\")"
+          , "    (setq cleaned t)))"
+          , "cleaned  ; => t"
+          , ""
+          , ";; ファイル操作の典型例"
+          , "(unwind-protect"
+          , "  (begin"
+          , "    (def data (read-file \"input.txt\"))"
+          , "    (process data))"
+          , "  (print \"cleanup completed\"))"
+          , ""
+          , ";; 正常終了時も実行"
+          , "(unwind-protect"
+          , "  (+ 1 2)"
+          , "  (print \"done\"))  ; \"done\" が出力され、3 を返す"
+          , "```"
+          ]
+      , docSideEffects = "クリーンアップフォームの副作用が必ず実行されます。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "クリーンアップ中のエラーは無視されます。保護フォームでエラーが発生した場合、クリーンアップ後にエラーが再送出されます。"
+      , docSeeAlso = ["ignore-errors", "handler-case"]
+      , docNotes = "Common Lisp の `unwind-protect` と同様の動作をします。リソースリークを防ぐために、ファイルハンドルやロックの解放には必ずこの構文を使用してください。"
+      })
+
   , ("print", DocEntry
       { docSignature = "(a) -> a"
       , docDescription = "値を標準出力に表示し、その値をそのまま返します。デバッグに便利です。"

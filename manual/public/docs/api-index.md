@@ -11,7 +11,9 @@ Spinor の組み込み関数・特殊形式のリファレンスです。
 - [defpackage](ref/defpackage)
 - [export](ref/export)
 - [fn](ref/fn)
+- [handler-case](ref/handler-case)
 - [if](ref/if)
+- [ignore-errors](ref/ignore-errors)
 - [in-package](ref/in-package)
 - [let](ref/let)
 - [mac](ref/mac)
@@ -19,6 +21,7 @@ Spinor の組み込み関数・特殊形式のリファレンスです。
 - [progn](ref/progn)
 - [quote](ref/quote)
 - [setq](ref/setq)
+- [unwind-protect](ref/unwind-protect)
 - [use-package](ref/use-package)
 
 ## Arithmetic

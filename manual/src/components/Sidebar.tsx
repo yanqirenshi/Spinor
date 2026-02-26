@@ -19,6 +19,7 @@ const sections: NavItem[] = [
       { label: 'Evaluation', to: '/docs/syntax/evaluation' },
       { label: 'Definitions', to: '/docs/syntax/definitions' },
       { label: 'Control Flow', to: '/docs/syntax/control-flow' },
+      { label: 'Conditions & Errors', to: '/docs/syntax/conditions' },
       { label: 'Iteration', to: '/docs/syntax/iteration' },
       { label: 'Algebraic Types', to: '/docs/syntax/data-types' },
     ],

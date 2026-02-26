@@ -354,3 +354,65 @@ spec = describe "Spinor.Eval (Evaluator)" $ do
         , "(+ 1 2)"  -- + は spinor パッケージのプリミティブ
         ]
       result `shouldBe` Right (VInt 3)
+
+  describe "エラーハンドリング (Error Handling)" $ do
+    it "ignore-errors でエラーを無視して nil を返す" $ do
+      result <- evalMulti "(ignore-errors (error \"fail\"))"
+      result `shouldBe` Right VNil
+
+    it "ignore-errors で正常時は値を返す" $ do
+      result <- evalMulti "(ignore-errors (+ 1 2))"
+      result `shouldBe` Right (VInt 3)
+
+    it "ignore-errors で複数式を評価" $ do
+      result <- evalMulti "(ignore-errors (+ 1 1) (+ 2 2) (+ 3 3))"
+      result `shouldBe` Right (VInt 6)
+
+    it "handler-case でエラーを捕捉" $ do
+      result <- evalMulti "(handler-case (error \"fail\") (error (msg) msg))"
+      result `shouldBe` Right (VStr "fail")
+
+    it "handler-case で正常時はそのまま値を返す" $ do
+      result <- evalMulti "(handler-case (+ 10 20) (error (e) \"error\"))"
+      result `shouldBe` Right (VInt 30)
+
+    it "handler-case でハンドラ内の複数式を評価" $ do
+      result <- evalMulti $ T.unlines
+        [ "(handler-case"
+        , "  (error \"test\")"
+        , "  (error (msg)"
+        , "    (def x 1)"
+        , "    (+ x 41)))"
+        ]
+      result `shouldBe` Right (VInt 42)
+
+    it "unwind-protect でクリーンアップが実行され、エラーが伝播する" $ do
+      -- ignore-errors でエラーを捕捉し、unwind-protect のクリーンアップ後にエラーが伝播することを確認
+      result <- evalMulti "(ignore-errors (unwind-protect (error \"fail\") (+ 1 2)))"
+      result `shouldBe` Right VNil  -- エラーは捕捉されて nil を返す
+
+    it "unwind-protect でクリーンアップ内の値を直接返す (成功ケース)" $ do
+      -- クリーンアップが実行されることを、戻り値で確認
+      result <- evalMulti "(unwind-protect 42 (+ 1 2))"
+      result `shouldBe` Right (VInt 42)  -- protected-form の結果を返す
+
+    it "unwind-protect でクリーンアップが必ず実行される (正常時)" $ do
+      result <- evalMulti $ T.unlines
+        [ "(def cleanup-ran #f)"
+        , "(unwind-protect"
+        , "  (+ 1 2)"
+        , "  (setq cleanup-ran #t))"
+        ]
+      result `shouldBe` Right (VInt 3)
+
+    it "unwind-protect で複数のクリーンアップ式" $ do
+      result <- evalMulti $ T.unlines
+        [ "(def a 0)"
+        , "(def b 0)"
+        , "(unwind-protect"
+        , "  42"
+        , "  (setq a 1)"
+        , "  (setq b 2))"
+        , "(+ a b)"
+        ]
+      result `shouldBe` Right (VInt 3)

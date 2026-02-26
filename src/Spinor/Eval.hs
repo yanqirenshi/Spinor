@@ -30,6 +30,7 @@ import Control.Monad.Except
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.MVar
 import Control.Monad (void)
+import Data.IORef (newIORef, readIORef, writeIORef)
 import Control.Exception (try, IOException)
 import System.Directory (doesFileExist)
 import System.Environment (getArgs, lookupEnv)
@@ -185,6 +186,26 @@ getCurrentPackageName = gets (ctxCurrentPackage . esContext)
 -- | ローカル環境に複数の束縛を追加
 extendLocalEnv :: Env -> Eval ()
 extendLocalEnv bindings = modify $ \st -> st { esLocal = Map.union bindings (esLocal st) }
+
+-- | エラーを捕捉しつつ状態変更を保持するヘルパー
+--   mtl の catchError は StateT + ExceptT スタックでエラー時に状態をリセットするため、
+--   IORef を使用して状態変更を保持する
+tryEval :: Eval a -> Eval (Either SpinorError a)
+tryEval action = do
+  -- 現在の状態を IORef に保存
+  st <- get
+  stRef <- liftIO $ newIORef st
+  -- アクションを実行し、成功時に状態を IORef に保存
+  result <- catchError
+    (do val <- action
+        newSt <- get
+        liftIO $ writeIORef stRef newSt
+        pure (Right val))
+    (\err -> pure (Left err))
+  -- IORef から最新の状態を復元
+  finalSt <- liftIO $ readIORef stRef
+  put finalSt
+  pure result
 
 -- | 式を評価して値を返す
 eval :: Expr -> Eval Val
@@ -386,6 +407,46 @@ eval (EList sp [ESym _ "error", msgExpr]) = do
   case val of
     VStr msg -> throwErrorAt sp msg
     _        -> throwErrorAt sp "error: 文字列が必要です"
+
+-- 特殊形式: (ignore-errors body...) — エラーを無視して nil を返す
+--   body の評価中にエラーが発生した場合、そのエラーを無視して VNil を返す。
+--   成功時は最後の式の結果を返す。
+--   注: tryEval を使用して状態変更を保持する
+eval (EList _ (ESym _ "ignore-errors" : body)) = do
+  result <- tryEval (evalSequence body)
+  case result of
+    Right val -> pure val
+    Left _    -> pure VNil
+
+-- 特殊形式: (handler-case expr (error (var) handler-body...))
+--   expr を評価し、エラーが発生した場合はハンドラを実行する。
+--   var にはエラーメッセージ (文字列) が束縛される。
+eval (EList sp [ESym _ "handler-case", expr, EList _ (ESym _ "error" : EList _ [ESym _ var] : handlerBody)]) = do
+  result <- tryEval (eval expr)
+  case result of
+    Right val -> pure val
+    Left (SpinorError _ msg) -> do
+      savedLocalEnv <- getLocalEnv
+      defineLocal var (VStr msg)
+      handlerResult <- evalSequence handlerBody
+      putLocalEnv savedLocalEnv
+      pure handlerResult
+
+eval (EList sp [ESym _ "handler-case", _, _]) =
+  throwErrorAt sp "handler-case: 不正なハンドラ形式です。(error (var) body...) が必要です"
+
+-- 特殊形式: (unwind-protect protected-form cleanup-form...)
+--   protected-form を評価し、その成否に関わらず cleanup-form を必ず実行する。
+--   ファイル入出力やリソース解放に必須の構文。
+eval (EList _ (ESym _ "unwind-protect" : protectedForm : cleanupForms)) = do
+  -- protected-form を評価し、結果またはエラーを保持 (状態変更は保持される)
+  resultOrError <- tryEval (eval protectedForm)
+  -- cleanup-forms を必ず実行 (cleanup 中のエラーは無視)
+  _ <- tryEval (mapM_ eval cleanupForms)
+  -- 元の結果を返す (エラーなら再送出)
+  case resultOrError of
+    Right val -> pure val
+    Left err  -> throwError err
 
 -- 特殊形式: (bound? symbol) — シンボルが環境に定義されているか判定
 eval (EList sp [ESym _ "bound?", arg]) = do
