@@ -8,6 +8,7 @@ module Spinor.Server
   , normalizeForm
   , extractTraceSpec
   , exprToText
+  , exprToLispText
     -- * Response builders (for testing)
   , mkOkResponse
   , mkAbortResponse

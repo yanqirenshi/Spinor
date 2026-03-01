@@ -25,6 +25,7 @@ import Spinor.Server    (runServer)
 import Spinor.Lsp.Server (runLspServer)
 import Spinor.DocGen    (generateDocs)
 import Spinor.Template  (mainSpin, testSpin, gitignore, claudeMd)
+import Spinor.MCP       (runMcpServer)
 
 -- | Twister ファイル一覧 (ロード順)
 twisterFiles :: [FilePath]
@@ -54,6 +55,7 @@ helpMessage = unlines
   , "  compile <file>         Transpile to C source code only"
   , "  server [--port <n>]    Start Swank server for SLY/SLIME (default: 4005)"
   , "  lsp                    Start LSP server (for editor integration)"
+  , "  mcp                    Start MCP server (for AI agent integration)"
   , "  docgen                 Generate Markdown reference documentation"
   , ""
   , "Options:"
@@ -87,6 +89,7 @@ main = do
     ["build", "--wasm", file]    -> buildWasmMode file
     ("server" : rest)   -> serverMode rest
     ["lsp"]             -> lspMode
+    ["mcp"]             -> mcpMode
     ["docgen"]          -> generateDocs
     [file]              -> batchMode file
     _                   -> putStr helpMessage
@@ -108,6 +111,10 @@ lspMode = do
   if exitCode == 0
     then exitSuccess
     else exitFailure
+
+-- | MCP モード: Model Context Protocol サーバーとして起動
+mcpMode :: IO ()
+mcpMode = runMcpServer
 
 -- | Init モード: 新しいプロジェクトを生成
 initMode :: String -> IO ()
