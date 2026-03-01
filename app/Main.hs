@@ -6,13 +6,15 @@ import qualified Data.Text    as T
 import qualified Data.Text.IO as TIO
 import qualified Data.Text.Encoding as TE
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy.Char8 as BL
+import Data.Aeson (ToJSON(..), object, (.=), encode)
 import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF, hSetEncoding, utf8)
 import System.Directory (doesFileExist, getCurrentDirectory, removeFile, createDirectoryIfMissing)
 import System.Environment (getArgs)
 import System.Exit (exitFailure, exitSuccess, ExitCode(..))
 import System.FilePath (takeDirectory, takeBaseName, replaceExtension)
 import System.Process (readProcessWithExitCode)
-import Spinor.Syntax    (Expr(..), readExpr, parseFile, formatError)
+import Spinor.Syntax    (Expr(..), readExpr, parseFile, formatError, SpinorError(..), dummySpan)
 import Spinor.Type      (TypeEnv, showType)
 import Spinor.Val       (Env)
 import Spinor.Eval      (Eval, eval, runEval)
@@ -24,7 +26,7 @@ import Spinor.Compiler.Codegen (compileProgram)
 import Spinor.Server    (runServer)
 import Spinor.Lsp.Server (runLspServer)
 import Spinor.DocGen    (generateDocs)
-import Spinor.Template  (mainSpin, testSpin, gitignore, claudeMd)
+import Spinor.Template  (mainSpin, testSpin, gitignore, claudeMd, teamsMd, sampleTaskMd)
 import Spinor.MCP       (runMcpServer)
 
 -- | Twister ファイル一覧 (ロード順)
@@ -49,6 +51,7 @@ helpMessage = unlines
   , "Commands:"
   , "  (default)              Start the interactive REPL"
   , "  <file>                 Execute a Spinor file"
+  , "  check <file>           Parse and type-check only (no execution)"
   , "  init <name>            Create a new Spinor project"
   , "  build <file>           Compile to native binary (via C + GCC)"
   , "  build <file> --wasm    Compile to WASM (via C + Emscripten)"
@@ -59,6 +62,7 @@ helpMessage = unlines
   , "  docgen                 Generate Markdown reference documentation"
   , ""
   , "Options:"
+  , "  --json                 Output results in JSON format (for AI agents)"
   , "  --help, -h             Show this help message"
   , "  --version, -v          Show version information"
   , ""
@@ -76,13 +80,16 @@ main = do
   hSetEncoding stdout utf8
   hSetEncoding stdin utf8
   args <- getArgs
-  case args of
+  -- Parse --json flag
+  let (jsonMode, restArgs) = parseJsonFlag args
+  case restArgs of
     []                  -> replMode
     ["--help"]          -> putStr helpMessage
     ["-h"]              -> putStr helpMessage
     ["--version"]       -> putStrLn $ "spinor " ++ version
     ["-v"]              -> putStrLn $ "spinor " ++ version
     ["init", name]      -> initMode name
+    ["check", file]     -> checkMode jsonMode file
     ["compile", file]   -> compileMode file
     ["build", file]              -> buildMode file
     ["build", file, "--wasm"]    -> buildWasmMode file
@@ -93,6 +100,11 @@ main = do
     ["docgen"]          -> generateDocs
     [file]              -> batchMode file
     _                   -> putStr helpMessage
+
+-- | Parse --json flag from arguments
+parseJsonFlag :: [String] -> (Bool, [String])
+parseJsonFlag args = (hasJson, filter (/= "--json") args)
+  where hasJson = "--json" `elem` args
 
 -- | サーバーモード: TCP ソケットで REPL サービスを提供
 serverMode :: [String] -> IO ()
@@ -116,17 +128,110 @@ lspMode = do
 mcpMode :: IO ()
 mcpMode = runMcpServer
 
+-- | Check モード: パースと型推論のみを実行 (評価なし)
+--   AI エージェントによる自己検証用
+checkMode :: Bool -> FilePath -> IO ()
+checkMode jsonOutput file = do
+  content <- readFileUtf8 file
+  case parseFile content of
+    Left err -> do
+      -- Parse error
+      let parseErr = SpinorError
+            { errorSpan = Spinor.Syntax.dummySpan
+            , errorMsg = T.pack err
+            }
+      outputCheckError jsonOutput [parseErr]
+      exitFailure
+    Right exprs -> do
+      -- Load boot environment for type checking
+      (env, tyEnv) <- loadBootQuiet primitiveBindings baseTypeEnv
+      -- Type check all expressions
+      checkResult <- checkExprs env tyEnv exprs file
+      case checkResult of
+        Left errors -> do
+          outputCheckError jsonOutput errors
+          exitFailure
+        Right count -> do
+          outputCheckSuccess jsonOutput count
+          exitSuccess
+
+-- | Load boot environment without output messages
+loadBootQuiet :: Env -> TypeEnv -> IO (Env, TypeEnv)
+loadBootQuiet env tyEnv = do
+  allExist <- mapM doesFileExist twisterFiles
+  if not (and allExist)
+    then pure (env, tyEnv)
+    else foldlM' loadSpinFile (env, tyEnv) twisterFiles
+
+-- | Check all expressions for type errors
+checkExprs :: Env -> TypeEnv -> [Expr] -> FilePath -> IO (Either [SpinorError] Int)
+checkExprs env tyEnv exprs _file = do
+  go env tyEnv exprs [] 0
+  where
+    go _ _ [] [] count = pure $ Right count
+    go _ _ [] errs _   = pure $ Left (reverse errs)
+    go e te (expr:rest) errs count = case expr of
+      EModule _ _ _ -> go e te rest errs count
+      EImport _ _ _ -> go e te rest errs count
+      _ -> do
+        -- Macro expand
+        expandResult <- runEval e (expand expr)
+        case expandResult of
+          Left err -> go e te rest (err:errs) count
+          Right (expanded, envAfterExpand) -> do
+            -- Type inference
+            case runInfer (inferTop te expanded) of
+              Left tyErr -> go envAfterExpand te rest (tyErr:errs) count
+              Right (te', _, _) -> go envAfterExpand te' rest errs (count + 1)
+
+-- | Output check success in JSON or text format
+outputCheckSuccess :: Bool -> Int -> IO ()
+outputCheckSuccess True count = do
+  let result = object
+        [ "status"  .= ("success" :: T.Text)
+        , "command" .= ("check" :: T.Text)
+        , "message" .= ("Type check passed. " <> T.pack (show count) <> " expressions analyzed." :: T.Text)
+        ]
+  BL.putStrLn (encode result)
+outputCheckSuccess False count = do
+  putStrLn $ "Type check passed. " ++ show count ++ " expressions analyzed."
+
+-- | Output check error in JSON or text format
+outputCheckError :: Bool -> [SpinorError] -> IO ()
+outputCheckError True errors = do
+  let result = object
+        [ "status" .= ("error" :: T.Text)
+        , "errors" .= errors
+        ]
+  BL.putStrLn (encode result)
+outputCheckError False errors = do
+  mapM_ (TIO.putStrLn . formatError) errors
+
 -- | Init モード: 新しいプロジェクトを生成
 initMode :: String -> IO ()
 initMode projectName = do
   let projectDir = projectName
       srcDir     = projectDir ++ "/src"
       testDir    = projectDir ++ "/test"
+      -- Agent Teams directories
+      agentsDir       = projectDir ++ "/.agents"
+      todoDir         = agentsDir ++ "/tasks/todo"
+      inProgressDir   = agentsDir ++ "/tasks/in-progress"
+      reviewDir       = agentsDir ++ "/tasks/review"
+      doneDir         = agentsDir ++ "/tasks/done"
+      mailboxesDir    = agentsDir ++ "/mailboxes"
 
   -- ディレクトリを作成
   putStrLn $ "Creating project: " ++ projectName
   createDirectoryIfMissing True srcDir
   createDirectoryIfMissing True testDir
+
+  -- Agent Teams directories
+  createDirectoryIfMissing True todoDir
+  createDirectoryIfMissing True inProgressDir
+  createDirectoryIfMissing True reviewDir
+  createDirectoryIfMissing True doneDir
+  createDirectoryIfMissing True mailboxesDir
 
   -- ファイルを書き出し
   TIO.writeFile (srcDir ++ "/main.spin") mainSpin
@@ -141,6 +246,13 @@ initMode projectName = do
   TIO.writeFile (projectDir ++ "/CLAUDE.md") claudeMd
   putStrLn $ "  Created: " ++ projectDir ++ "/CLAUDE.md"
 
+  -- Agent Teams files
+  TIO.writeFile (agentsDir ++ "/TEAMS.md") teamsMd
+  putStrLn $ "  Created: " ++ agentsDir ++ "/TEAMS.md"
+
+  TIO.writeFile (todoDir ++ "/task-001.md") sampleTaskMd
+  putStrLn $ "  Created: " ++ todoDir ++ "/task-001.md"
+
   putStrLn ""
   putStrLn "Project created successfully!"
   putStrLn ""
@@ -148,6 +260,9 @@ initMode projectName = do
   putStrLn $ "  cd " ++ projectName
   putStrLn "  spinor src/main.spin    # Run the application"
   putStrLn "  spinor test/test.spin   # Run tests"
+  putStrLn ""
+  putStrLn "Agent Teams workflow:"
+  putStrLn $ "  See " ++ agentsDir ++ "/TEAMS.md for collaboration rules"
 
 -- | REPL モード (引数なし)
 replMode :: IO ()

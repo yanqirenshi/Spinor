@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric     #-}
 
 module Spinor.Syntax
   ( Expr(..)
@@ -24,6 +25,7 @@ import Data.List.NonEmpty (NonEmpty(..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
+import Data.Aeson (ToJSON(..), object, (.=))
 import Text.Megaparsec hiding (SourcePos)
 import qualified Text.Megaparsec as MP
 import Text.Megaparsec.Char
@@ -72,6 +74,44 @@ data SpinorError = SpinorError
   { errorSpan    :: SourceSpan  -- ^ エラー発生位置
   , errorMsg     :: Text        -- ^ エラーメッセージ
   } deriving (Show, Eq)
+
+-- | ToJSON instance for SourcePos
+instance ToJSON SourcePos where
+  toJSON pos = object
+    [ "file"   .= posFile pos
+    , "line"   .= posLine pos
+    , "column" .= posColumn pos
+    ]
+
+-- | ToJSON instance for SourceSpan
+instance ToJSON SourceSpan where
+  toJSON span = object
+    [ "start" .= spanStart span
+    , "end"   .= spanEnd span
+    ]
+
+-- | ToJSON instance for SpinorError
+--   Output format for AI agents (Claude Code, etc.)
+instance ToJSON SpinorError where
+  toJSON err = object
+    [ "file"    .= posFile start
+    , "line"    .= posLine start
+    , "col"     .= posColumn start
+    , "message" .= errorMsg err
+    , "code"    .= errorCode (errorMsg err)
+    ]
+    where
+      start = spanStart (errorSpan err)
+      -- Determine error code from message prefix
+      errorCode :: Text -> Text
+      errorCode msg
+        | "未定義" `T.isInfixOf` msg        = "UNDEFINED_SYMBOL"
+        | "型が一致" `T.isInfixOf` msg      = "TYPE_ERROR"
+        | "Type" `T.isInfixOf` msg          = "TYPE_ERROR"
+        | "パース" `T.isInfixOf` msg        = "PARSE_ERROR"
+        | "Parse" `T.isInfixOf` msg         = "PARSE_ERROR"
+        | "引数" `T.isInfixOf` msg          = "ARITY_ERROR"
+        | otherwise                         = "ERROR"
 
 -- | SpinorError を人間が読みやすい形式に整形する
 --   形式: <ファイル名>:<行>:<列>: <エラーメッセージ>
