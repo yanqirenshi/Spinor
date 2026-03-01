@@ -49,6 +49,12 @@ const sections: NavItem[] = [
   { label: 'API Reference', to: '/docs/api-index' },
   { label: 'Architecture & Internals', to: '/docs/architecture' },
   {
+    label: 'AI Integration',
+    items: [
+      { label: 'AI-Native Workflow', to: '/docs/ai_workflow' },
+    ],
+  },
+  {
     label: 'Experimental',
     items: [
       { label: 'Linear Types & Ownership', to: '/docs/syntax/ownership' },
