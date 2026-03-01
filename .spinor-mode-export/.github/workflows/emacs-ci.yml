@@ -1,0 +1,76 @@
+name: Emacs CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        emacs-version:
+          - '27.2'
+          - '28.2'
+          - '29.1'
+      fail-fast: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Emacs
+        uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs-version }}
+
+      - name: Byte Compile
+        run: |
+          emacs -Q --batch \
+            --eval "(setq byte-compile-error-on-warn t)" \
+            -f batch-byte-compile spinor-mode.el
+
+      - name: Check for Warnings
+        run: |
+          emacs -Q --batch \
+            -l spinor-mode.el \
+            --eval "(message \"Package loaded successfully\")"
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Emacs
+        uses: purcell/setup-emacs@master
+        with:
+          version: '29.1'
+
+      - name: Install package-lint
+        run: |
+          emacs -Q --batch \
+            --eval "(require 'package)" \
+            --eval "(add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\") t)" \
+            --eval "(package-initialize)" \
+            --eval "(package-refresh-contents)" \
+            --eval "(package-install 'package-lint)"
+
+      - name: Run package-lint
+        run: |
+          emacs -Q --batch \
+            --eval "(require 'package)" \
+            --eval "(add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\") t)" \
+            --eval "(package-initialize)" \
+            --eval "(require 'package-lint)" \
+            -f package-lint-batch-and-exit spinor-mode.el
+
+      - name: Run checkdoc
+        run: |
+          emacs -Q --batch \
+            --eval "(require 'checkdoc)" \
+            --eval "(setq checkdoc-force-docstrings-flag nil)" \
+            --eval "(checkdoc-file \"spinor-mode.el\")"
