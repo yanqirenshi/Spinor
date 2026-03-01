@@ -289,18 +289,17 @@ Claude Code などの AI エージェントが、Spinor プロジェクトを自
     - [x] `CLAUDE.md` を通じた AI エージェントの自己検証ワークフローの統合。
 - [x] **Step 56: Spinor MCP Server (Model Context Protocol 統合)**
     - [x] **Design:** `specs/56_mcp_server_spec.md` および `tasks/56_mcp_server_task.md` の作成。
-    - [ ] **Implementation:** stdio 経由の JSON-RPC ハンドラとツールの実装。
+    - [x] **Implementation:** stdio 経由の JSON-RPC ハンドラとツールの実装。
     - [x] Claude Code が MCP 経由で型環境やマクロ展開結果を取得できるようにし、AI のハルシネーションを防ぐ。
 - [x] **Step 57: Agent Teams Workflow (自律型マルチエージェント開発基盤)**
     - [x] **Design:** `specs/57_agent_teams_workflow_spec.md` および `tasks/57_agent_teams_workflow_task.md` の作成。
     - [x] **Implementation:** `.agents` ディレクトリ構成と `TEAMS.md` テンプレートの自動生成。
     - [x] ファイルロックや Mailbox メッセージングを利用し、エージェント同士が互いのコードを自律的にレビュー・修正し合える Spinor 独自のワークフロー基盤を構築する。
-- [ ] **Step 57-B: AI-Native Workflow Documentation (AI協調開発ガイドの執筆)**
+- [x] **Step 57-B: AI-Native Workflow Documentation (AI協調開発ガイドの執筆)**
     - [x] **Design:** `specs/57b_ai_workflow_doc_spec.md` および `tasks/57b_ai_workflow_doc_task.md` の作成。
-    - [ ] **Implementation:** `manual/public/docs/ai_workflow.md` の執筆と `Sidebar.tsx` への追加。
+    - [x] **Implementation:** `manual/public/docs/ai_workflow.md` の執筆と `Sidebar.tsx` への追加。
 - [ ] **Step 58: Emacs Package Spin-off (spinor-mode の独立リポジトリ化)**
-    - [ ] `spinor-mode.el` を現在の言語コアリポジトリから切り離し、専用の GitHub リポジトリ (`spinor-mode` 等) を作成・移行する。
-    - [ ] MELPA 等への公式パッケージ登録を見据え、ソースコードのヘッダコメント (`Package-Requires`, `Version` 等) を Emacs Lisp の標準フォーマットに従って整備する。
-    - [ ] リポジトリの `README.md` を作成し、`use-package` を用いたインストール方法や、LSP (`spinor lsp`)・SLY (`spinor server`) との連携設定の具体例を執筆する。
-    - [ ] GitHub Actions を設定し、複数バージョンの Emacs でのバイトコンパイルテストや `package-lint`, `checkdoc` による静的解析を自動化する CI を構築する。
+    - [x] **Design:** `specs/58_emacs_package_spinoff_spec.md` および `tasks/58_emacs_package_spinoff_task.md` の作成。
+    - [ ] **Implementation:** `.spinor-mode-export/` への抽出と MELPA 準拠のリファクタリング。
+    - [ ] GitHub Actions による Emacs Lisp テスト自動化の設定。
 
