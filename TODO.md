@@ -298,8 +298,14 @@ Claude Code などの AI エージェントが、Spinor プロジェクトを自
 - [x] **Step 57-B: AI-Native Workflow Documentation (AI協調開発ガイドの執筆)**
     - [x] **Design:** `specs/57b_ai_workflow_doc_spec.md` および `tasks/57b_ai_workflow_doc_task.md` の作成。
     - [x] **Implementation:** `manual/public/docs/ai_workflow.md` の執筆と `Sidebar.tsx` への追加。
-- [ ] **Step 58: Emacs Package Spin-off (spinor-mode の独立リポジトリ化)**
+- [x] **Step 58: Emacs Package Spin-off (spinor-mode の独立リポジトリ化)**
     - [x] **Design:** `specs/58_emacs_package_spinoff_spec.md` および `tasks/58_emacs_package_spinoff_task.md` の作成。
-    - [ ] **Implementation:** `.spinor-mode-export/` への抽出と MELPA 準拠のリファクタリング。
-    - [ ] GitHub Actions による Emacs Lisp テスト自動化の設定。
-
+    - [x] **Implementation:** `.spinor-mode-export/` への抽出と MELPA 準拠のリファクタリング。
+    - [x] GitHub Actions による Emacs Lisp テスト自動化の設定。
+- [ ] **Step 58-B: GitHub Repository Creation & Migration (公式リポジトリへの移行)**
+    - [x] GitHub 上に `spinor-mode` という新しい公開リポジトリを作成する。
+    - [x] `.spinor-mode-export/` 内のファイル群を新しいリポジトリに `git init` して Push する。
+    - [x] GitHub Actions が正しく動作し、バッジ (CI Status) が緑になることを確認する。
+    - [ ] **Cleanup:** Spinor 本体リポジトリから古い `editors/emacs/spinor-mode.el` およびステージング用 `.spinor-mode-export/` を削除する。
+    - [ ] **Documentation Update:** マニュアル (`docs/emacs_setup.md` 等) を更新し、新しい `spinor-mode` リポジトリからのインストール手順 (Git 経由での `use-package` などの設定) に書き換える。
+    - [ ] (将来タスク) リポジトリが安定稼働したら、MELPA の `recipes/` に Pull Request を投げて公式パッケージとして登録申請を行う。

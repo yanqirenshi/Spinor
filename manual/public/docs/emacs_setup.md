@@ -16,29 +16,53 @@ Spinor の開発環境を構築するためのガイドです。Emacs を中心�
 
 ## 1. Emacs & spinor-mode
 
-### インストール
+`spinor-mode` は独立したパッケージとして [GitHub リポジトリ](https://github.com/yanqirenshi/spinor-mode) で公開されています。
 
-`spinor-mode.el` は Spinor リポジトリの `editors/emacs/` に含まれています。
-
-```elisp
-;; load-path に追加
-(add-to-list 'load-path "/path/to/Spinor/editors/emacs")
-(require 'spinor-mode)
-```
-
-### use-package を使用した設定
+### use-package + straight.el (推奨)
 
 ```elisp
 (use-package spinor-mode
-  :load-path "/path/to/Spinor/editors/emacs"
-  :mode ("\\.spin\\'" . spinor-mode)
+  :straight (spinor-mode :type git
+                         :host github
+                         :repo "yanqirenshi/spinor-mode")
+  :mode "\\.spin\\'"
   :custom
-  (spinor-program "cabal")
-  (spinor-program-args '("-v0" "run" "spinor"))
-  :bind (:map spinor-mode-map
-         ("C-x C-e" . spinor-eval-last-sexp)
-         ("C-c C-k" . spinor-load-file)
-         ("C-c C-z" . spinor-switch-to-repl)))
+  (spinor-program "spinor"))
+```
+
+### use-package + quelpa
+
+```elisp
+(use-package spinor-mode
+  :quelpa (spinor-mode :fetcher github
+                       :repo "yanqirenshi/spinor-mode")
+  :mode "\\.spin\\'"
+  :custom
+  (spinor-program "spinor"))
+```
+
+### use-package + vc (Emacs 29+)
+
+Emacs 29 以降では、組み込みの `vc` パッケージマネージャが使用できます:
+
+```elisp
+(use-package spinor-mode
+  :vc (:url "https://github.com/yanqirenshi/spinor-mode"
+       :branch "main")
+  :mode "\\.spin\\'"
+  :custom
+  (spinor-program "spinor"))
+```
+
+### 手動インストール
+
+```bash
+git clone https://github.com/yanqirenshi/spinor-mode.git ~/.emacs.d/site-lisp/spinor-mode
+```
+
+```elisp
+(add-to-list 'load-path "~/.emacs.d/site-lisp/spinor-mode")
+(require 'spinor-mode)
 ```
 
 ### 基本的なキーバインド
@@ -68,10 +92,10 @@ SLY は Common Lisp 用の対話的開発環境ですが、Spinor も Swank プ�
 
 ```bash
 # デフォルトポート (4005) で起動
-cabal run spinor -- server
+spinor server
 
 # ポートを指定する場合
-cabal run spinor -- server --port 4006
+spinor server --port 4006
 ```
 
 ### SLY からの接続
@@ -126,7 +150,7 @@ Spinor は Language Server Protocol (LSP) をサポートしており、リア�
 
 ```bash
 # LSP サーバーとして起動 (stdio モード)
-cabal run spinor -- lsp
+spinor lsp
 ```
 
 ### lsp-mode の設定
@@ -144,9 +168,7 @@ cabal run spinor -- lsp
 
     (lsp-register-client
      (make-lsp-client
-      :new-connection (lsp-stdio-connection
-                       (lambda ()
-                         '("cabal" "-v0" "run" "spinor" "--" "lsp")))
+      :new-connection (lsp-stdio-connection '("spinor" "lsp"))
       :major-modes '(spinor-mode)
       :server-id 'spinor-lsp
       :priority -1)))
@@ -164,7 +186,7 @@ cabal run spinor -- lsp
   :hook (spinor-mode . eglot-ensure)
   :config
   (add-to-list 'eglot-server-programs
-               '(spinor-mode . ("cabal" "-v0" "run" "spinor" "--" "lsp"))))
+               '(spinor-mode . ("spinor" "lsp"))))
 ```
 
 ### LSP 機能
@@ -220,7 +242,7 @@ Org-babel の設定:
     (with-temp-file tmp-file
       (insert body))
     (shell-command-to-string
-     (format "cabal -v0 run spinor -- %s" tmp-file))))
+     (format "spinor %s" tmp-file))))
 
 (add-to-list 'org-src-lang-modes '("spinor" . spinor))
 ```
@@ -274,7 +296,7 @@ claude
 ## ビルドコマンド
 - `cabal build` - ビルド
 - `cabal test` - テスト実行
-- `cabal run spinor` - REPL 起動
+- `spinor` - REPL 起動
 
 ## ディレクトリ構成
 - `src/Spinor/` - Haskell カーネル
@@ -297,7 +319,7 @@ Google の Gemini CLI も同様のワークフローで使用できます。
 
 ```bash
 # インストール
-npm install -g @anthropic-ai/gemini-cli
+npm install -g @google/gemini-cli
 
 # 使用
 cd /path/to/Spinor
@@ -342,13 +364,14 @@ gemini
 ```elisp
 ;;; Spinor Development Environment
 
-;; spinor-mode
+;; spinor-mode (GitHub から直接インストール)
 (use-package spinor-mode
-  :load-path "/path/to/Spinor/editors/emacs"
+  :straight (spinor-mode :type git
+                         :host github
+                         :repo "yanqirenshi/spinor-mode")
   :mode ("\\.spin\\'" . spinor-mode)
   :custom
-  (spinor-program "cabal")
-  (spinor-program-args '("-v0" "run" "spinor")))
+  (spinor-program "spinor"))
 
 ;; LSP support
 (use-package lsp-mode
@@ -360,8 +383,7 @@ gemini
                  '(spinor-mode . "spinor"))
     (lsp-register-client
      (make-lsp-client
-      :new-connection (lsp-stdio-connection
-                       '("cabal" "-v0" "run" "spinor" "--" "lsp"))
+      :new-connection (lsp-stdio-connection '("spinor" "lsp"))
       :major-modes '(spinor-mode)
       :server-id 'spinor-lsp))))
 
@@ -391,19 +413,15 @@ gemini
 ### REPL が起動しない
 
 ```elisp
-;; cabal のパスを確認
-(setq spinor-program "/path/to/cabal")
-
-;; または直接 spinor バイナリを指定
+;; spinor のパスを確認
 (setq spinor-program "/path/to/spinor")
-(setq spinor-program-args nil)
 ```
 
 ### LSP が接続できない
 
 ```bash
 # LSP サーバーが正常に起動するか確認
-cabal run spinor -- lsp
+spinor lsp
 
 # ログを有効にしてデバッグ
 ```
@@ -419,7 +437,7 @@ cabal run spinor -- lsp
 netstat -an | grep 4005
 
 # サーバーを再起動
-cabal run spinor -- server
+spinor server
 ```
 
 ---
@@ -428,5 +446,6 @@ cabal run spinor -- server
 
 - [Introduction](introduction) - インストールと入門ガイド
 - [Build Guide](build) - ビルド環境の構築
+- [AI-Native Workflow](ai_workflow) - AI 協調開発ガイド
 - [Architecture](architecture) - 内部アーキテクチャ
 - [API Reference](api-index) - 全プリミティブ一覧
