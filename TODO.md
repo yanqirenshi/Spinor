@@ -280,7 +280,8 @@ Spinor を単なるアプリケーションレベルの処理系から、ハー�
 Claude Code などの AI エージェントが、Spinor プロジェクトを自律的に理解・開発・テストできるためのエコシステムを構築する。
 
 - [ ] **Step 54: Project Template & `claude.md` (AI 用コンテキストの定義)**
-    - [ ] `spinor init` コマンドを拡張し、新規プロジェクト作成時に `.spin` ファイルの雛形と同時に `claude.md` を自動生成する機能を追加。
+    - [x] **Design:** `specs/54_ai_project_template_spec.md` および `tasks/54_ai_project_template_task.md` の作成。
+    - [ ] **Implementation:** `spinor init` コマンドの実装と `CLAUDE.md` 自動生成。
     - [ ] `claude.md` 内に、Spinor の言語仕様、ビルド方法、型システムの特徴を AI 向けに簡潔に記述する。
 - [ ] **Step 55: Claude Code Skills Integration (カスタムスキルの整備)**
     - [ ] Claude Code が Spinor のコードベースを操作・検証しやすいように、CLI (`spinor check`, `spinor fmt` 等) の出力を AI がパースしやすい形式 (JSON 等) で出力するオプションを追加。

@@ -7,7 +7,7 @@ import qualified Data.Text.IO as TIO
 import qualified Data.Text.Encoding as TE
 import qualified Data.ByteString as BS
 import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF, hSetEncoding, utf8)
-import System.Directory (doesFileExist, getCurrentDirectory, removeFile)
+import System.Directory (doesFileExist, getCurrentDirectory, removeFile, createDirectoryIfMissing)
 import System.Environment (getArgs)
 import System.Exit (exitFailure, exitSuccess, ExitCode(..))
 import System.FilePath (takeDirectory, takeBaseName, replaceExtension)
@@ -24,6 +24,7 @@ import Spinor.Compiler.Codegen (compileProgram)
 import Spinor.Server    (runServer)
 import Spinor.Lsp.Server (runLspServer)
 import Spinor.DocGen    (generateDocs)
+import Spinor.Template  (mainSpin, testSpin, gitignore, claudeMd)
 
 -- | Twister ファイル一覧 (ロード順)
 twisterFiles :: [FilePath]
@@ -47,8 +48,9 @@ helpMessage = unlines
   , "Commands:"
   , "  (default)              Start the interactive REPL"
   , "  <file>                 Execute a Spinor file"
+  , "  init <name>            Create a new Spinor project"
   , "  build <file>           Compile to native binary (via C + GCC)"
-  , "  build <file> --wasm   Compile to WASM (via C + Emscripten)"
+  , "  build <file> --wasm    Compile to WASM (via C + Emscripten)"
   , "  compile <file>         Transpile to C source code only"
   , "  server [--port <n>]    Start Swank server for SLY/SLIME (default: 4005)"
   , "  lsp                    Start LSP server (for editor integration)"
@@ -60,6 +62,7 @@ helpMessage = unlines
   , ""
   , "Examples:"
   , "  spinor                 Start REPL"
+  , "  spinor init myapp      Create new project 'myapp'"
   , "  spinor hello.spin      Run hello.spin"
   , "  spinor build main.spin Compile main.spin to executable"
   , "  spinor server          Start Swank server on port 4005"
@@ -77,6 +80,7 @@ main = do
     ["-h"]              -> putStr helpMessage
     ["--version"]       -> putStrLn $ "spinor " ++ version
     ["-v"]              -> putStrLn $ "spinor " ++ version
+    ["init", name]      -> initMode name
     ["compile", file]   -> compileMode file
     ["build", file]              -> buildMode file
     ["build", file, "--wasm"]    -> buildWasmMode file
@@ -104,6 +108,39 @@ lspMode = do
   if exitCode == 0
     then exitSuccess
     else exitFailure
+
+-- | Init モード: 新しいプロジェクトを生成
+initMode :: String -> IO ()
+initMode projectName = do
+  let projectDir = projectName
+      srcDir     = projectDir ++ "/src"
+      testDir    = projectDir ++ "/test"
+
+  -- ディレクトリを作成
+  putStrLn $ "Creating project: " ++ projectName
+  createDirectoryIfMissing True srcDir
+  createDirectoryIfMissing True testDir
+
+  -- ファイルを書き出し
+  TIO.writeFile (srcDir ++ "/main.spin") mainSpin
+  putStrLn $ "  Created: " ++ srcDir ++ "/main.spin"
+
+  TIO.writeFile (testDir ++ "/test.spin") testSpin
+  putStrLn $ "  Created: " ++ testDir ++ "/test.spin"
+
+  TIO.writeFile (projectDir ++ "/.gitignore") gitignore
+  putStrLn $ "  Created: " ++ projectDir ++ "/.gitignore"
+
+  TIO.writeFile (projectDir ++ "/CLAUDE.md") claudeMd
+  putStrLn $ "  Created: " ++ projectDir ++ "/CLAUDE.md"
+
+  putStrLn ""
+  putStrLn "Project created successfully!"
+  putStrLn ""
+  putStrLn "Next steps:"
+  putStrLn $ "  cd " ++ projectName
+  putStrLn "  spinor src/main.spin    # Run the application"
+  putStrLn "  spinor test/test.spin   # Run tests"
 
 -- | REPL モード (引数なし)
 replMode :: IO ()
