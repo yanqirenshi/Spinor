@@ -1,49 +1,49 @@
-# AI-Native Development with Spinor
+# Spinor による AI ネイティブ開発
 
-Spinor is designed from the ground up to work seamlessly with AI coding assistants like Claude Code, Gemini CLI, and other LLM-powered tools. This guide explains how to leverage Spinor's AI-native features for a revolutionary development experience.
+Spinor は、Claude Code、Gemini CLI などの AI コーディングアシスタントとシームレスに連携するよう、ゼロから設計されています。このガイドでは、Spinor の AI ネイティブ機能を活用した革新的な開発体験について解説します。
 
-## Why AI-Native?
+## なぜ AI ネイティブなのか？
 
-### The Perfect Match: Lisp Syntax + Static Types
+### 最高の組み合わせ：Lisp 構文 + 静的型
 
-Spinor combines two properties that make it uniquely suited for AI-assisted development:
+Spinor は、AI 支援開発に最適な2つの特性を兼ね備えています：
 
-1. **S-expression syntax**: The uniform, parenthesized structure of Lisp is trivially parseable and unambiguous. AI models can generate and manipulate code without getting confused by complex syntax rules.
+1. **S 式構文**: Lisp の一貫した括弧ベースの構造は、パースが容易で曖昧さがありません。AI モデルは複雑な構文規則に混乱することなく、コードを生成・操作できます。
 
-2. **Static type system**: Hindley-Milner type inference catches errors at compile time. When an AI writes incorrect code, the type checker immediately identifies the problem—no need to run the code and discover bugs at runtime.
+2. **静的型システム**: Hindley-Milner 型推論により、コンパイル時にエラーを検出します。AI が誤ったコードを書いても、型チェッカーが即座に問題を特定します—実行時にバグを発見する必要はありません。
 
-This combination enables a powerful workflow:
+この組み合わせにより、強力なワークフローが実現します：
 
-> **Humans express intent through types. AI implements the code. The compiler verifies correctness.**
+> **人間が型で意図を表現し、AI がコードを実装し、コンパイラが正しさを検証する。**
 
-### The Traditional Problem
+### 従来の問題点
 
-With dynamically typed languages, AI-generated code might look correct but fail at runtime with cryptic errors. With complex syntax languages, AI might generate syntactically invalid code that requires manual fixing.
+動的型付け言語では、AI が生成したコードは一見正しく見えても、実行時に暗号のようなエラーで失敗することがあります。複雑な構文を持つ言語では、AI が構文的に無効なコードを生成し、手動での修正が必要になることがあります。
 
-Spinor eliminates both problems: the simple syntax prevents parsing errors, and the type system catches logical errors before execution.
+Spinor は両方の問題を解決します：シンプルな構文によりパースエラーを防ぎ、型システムが実行前に論理エラーを検出します。
 
 ---
 
-## Getting Started with `spinor init`
+## `spinor init` で始める
 
-### Creating an AI-Ready Project
+### AI 対応プロジェクトの作成
 
 ```bash
 spinor init my-project
 cd my-project
 ```
 
-This creates:
+以下の構造が作成されます：
 
 ```
 my-project/
   src/
-    main.spin          # Entry point
+    main.spin          # エントリーポイント
   test/
-    test.spin          # Test suite
-  CLAUDE.md            # AI context file
-  .agents/             # Agent Teams directory
-    TEAMS.md           # Multi-agent protocol
+    test.spin          # テストスイート
+  CLAUDE.md            # AI コンテキストファイル
+  .agents/             # Agent Teams ディレクトリ
+    TEAMS.md           # マルチエージェントプロトコル
     tasks/
       todo/
       in-progress/
@@ -53,36 +53,36 @@ my-project/
   .gitignore
 ```
 
-### The `CLAUDE.md` File
+### `CLAUDE.md` ファイル
 
-The `CLAUDE.md` file is crucial for AI assistants. When an AI opens your project, it reads this file to understand:
+`CLAUDE.md` ファイルは AI アシスタントにとって極めて重要です。AI がプロジェクトを開くと、このファイルを読んで以下を理解します：
 
-- How to build and run the project
-- The language syntax and type system
-- Coding conventions and best practices
-- Available commands for verification
+- プロジェクトのビルド方法と実行方法
+- 言語の構文と型システム
+- コーディング規約とベストプラクティス
+- 検証に使用できるコマンド
 
-**Key insight**: The AI doesn't need to learn Spinor from scratch—`CLAUDE.md` provides all the context it needs.
+**重要なポイント**: AI は Spinor をゼロから学ぶ必要はありません—`CLAUDE.md` が必要なすべてのコンテキストを提供します。
 
 ---
 
-## The Self-Healing Loop
+## 自己修復ループ
 
-### Machine-Readable Error Output
+### 機械可読なエラー出力
 
-The `spinor check` command performs type checking without execution:
+`spinor check` コマンドは、実行せずに型チェックのみを行います：
 
 ```bash
 spinor check src/main.spin
 ```
 
-For AI consumption, use the `--json` flag:
+AI が利用する場合は、`--json` フラグを使用します：
 
 ```bash
 spinor check --json src/main.spin
 ```
 
-### Success Response
+### 成功時のレスポンス
 
 ```json
 {
@@ -92,7 +92,7 @@ spinor check --json src/main.spin
 }
 ```
 
-### Error Response
+### エラー時のレスポンス
 
 ```json
 {
@@ -109,47 +109,47 @@ spinor check --json src/main.spin
 }
 ```
 
-### The Loop in Action
+### ループの動作
 
-When an AI assistant modifies your code, it should:
+AI アシスタントがコードを修正する際は、以下の手順に従います：
 
-1. **Write** the code changes
-2. **Run** `spinor check --json <file>`
-3. **Parse** the JSON response
-4. **Fix** any errors at the reported line/column
-5. **Repeat** until `status: "success"`
+1. コードの変更を **書く**
+2. `spinor check --json <file>` を **実行する**
+3. JSON レスポンスを **パースする**
+4. 報告された行/列のエラーを **修正する**
+5. `status: "success"` になるまで **繰り返す**
 
-This creates an autonomous correction cycle where the AI iteratively improves its output until the type system is satisfied.
+これにより、AI が型システムが満足するまで出力を反復的に改善する自律的な修正サイクルが生まれます。
 
-### Error Codes
+### エラーコード
 
-| Code | Description |
-|------|-------------|
-| `PARSE_ERROR` | Syntax error (unbalanced parens, etc.) |
-| `UNDEFINED_SYMBOL` | Reference to undefined variable |
-| `TYPE_ERROR` | Type mismatch |
-| `ARITY_ERROR` | Wrong number of arguments |
-| `ERROR` | Other errors |
+| コード | 説明 |
+|--------|------|
+| `PARSE_ERROR` | 構文エラー（括弧の不一致など） |
+| `UNDEFINED_SYMBOL` | 未定義の変数への参照 |
+| `TYPE_ERROR` | 型の不一致 |
+| `ARITY_ERROR` | 引数の数が不正 |
+| `ERROR` | その他のエラー |
 
 ---
 
-## MCP Server Integration
+## MCP サーバー連携
 
-### What is MCP?
+### MCP とは？
 
-MCP (Model Context Protocol) allows AI assistants to interact with external tools in real-time. Spinor's MCP server lets AI query the language runtime directly, preventing hallucinations about types and behavior.
+MCP（Model Context Protocol）により、AI アシスタントは外部ツールとリアルタイムで対話できます。Spinor の MCP サーバーを使用すると、AI は言語ランタイムに直接問い合わせることができ、型や動作に関するハルシネーションを防止できます。
 
-### Starting the MCP Server
+### MCP サーバーの起動
 
 ```bash
 spinor mcp
 ```
 
-The server communicates via JSON-RPC 2.0 over stdio.
+サーバーは stdio 経由の JSON-RPC 2.0 で通信します。
 
-### Configuring Claude Code
+### Claude Code の設定
 
-Add this to your Claude Code MCP settings (`~/.config/claude-code/settings.json` or project-local):
+Claude Code の MCP 設定（`~/.config/claude-code/settings.json` またはプロジェクトローカル）に以下を追加します：
 
 ```json
 {
@@ -162,9 +162,9 @@ Add this to your Claude Code MCP settings (`~/.config/claude-code/settings.json`
 }
 ```
 
-### Available Tools
+### 利用可能なツール
 
-#### `eval` - Execute Spinor Code
+#### `eval` - Spinor コードの実行
 
 ```json
 {
@@ -178,7 +178,7 @@ Add this to your Claude Code MCP settings (`~/.config/claude-code/settings.json`
 }
 ```
 
-Response:
+レスポンス：
 ```json
 {
   "jsonrpc": "2.0",
@@ -189,7 +189,7 @@ Response:
 }
 ```
 
-#### `typecheck` - Infer Expression Type
+#### `typecheck` - 式の型推論
 
 ```json
 {
@@ -200,7 +200,7 @@ Response:
 }
 ```
 
-Response:
+レスポンス：
 ```json
 {
   "result": {
@@ -209,7 +209,7 @@ Response:
 }
 ```
 
-#### `macroexpand` - Expand Macros
+#### `macroexpand` - マクロ展開
 
 ```json
 {
@@ -220,9 +220,9 @@ Response:
 }
 ```
 
-Returns the fully expanded S-expression.
+完全に展開された S 式を返します。
 
-#### `list-symbols` - List Package Symbols
+#### `list-symbols` - パッケージシンボルの一覧
 
 ```json
 {
@@ -233,63 +233,63 @@ Returns the fully expanded S-expression.
 }
 ```
 
-Lists all symbols in the specified package.
+指定されたパッケージ内のすべてのシンボルを一覧表示します。
 
-### Benefits
+### メリット
 
-- **No hallucination**: AI can verify types and behavior in real-time
-- **Interactive exploration**: AI can experiment with code before writing
-- **Accurate documentation**: AI can query actual function signatures
+- **ハルシネーションなし**: AI はリアルタイムで型と動作を検証できる
+- **インタラクティブな探索**: AI はコードを書く前に実験できる
+- **正確なドキュメント**: AI は実際の関数シグネチャを問い合わせできる
 
 ---
 
-## Multi-Agent Development (Agent Teams)
+## マルチエージェント開発（Agent Teams）
 
-### Overview
+### 概要
 
-For complex projects, multiple AI agents can work in parallel using the Agent Teams workflow. This file-based system coordinates work between a **Team Lead** and multiple **Teammates**.
+複雑なプロジェクトでは、Agent Teams ワークフローを使用して複数の AI エージェントが並行して作業できます。このファイルベースのシステムは、**Team Lead** と複数の **Teammate** 間の作業を調整します。
 
-### Directory Structure
+### ディレクトリ構造
 
 ```
 .agents/
-  TEAMS.md              # Protocol documentation
+  TEAMS.md              # プロトコルドキュメント
   tasks/
-    todo/               # Unassigned tasks
-    in-progress/        # Currently being worked on
-    review/             # Completed, awaiting review
-    done/               # Finished tasks
-  mailboxes/            # Inter-agent messaging
+    todo/               # 未割り当てのタスク
+    in-progress/        # 現在作業中
+    review/             # 完了、レビュー待ち
+    done/               # 完了したタスク
+  mailboxes/            # エージェント間メッセージング
 ```
 
-### Roles
+### 役割
 
 #### Team Lead
 
-- **Breaks down** project goals into task files in `todo/`
-- **Reviews** completed work in `review/`
-- Runs `spinor check --json` to verify submissions
-- Moves approved tasks to `done/` or rejects with comments
+- プロジェクト目標を `todo/` 内のタスクファイルに **分解する**
+- `review/` 内の完了した作業を **レビューする**
+- `spinor check --json` を実行して提出物を検証する
+- 承認したタスクを `done/` に移動するか、コメント付きでリジェクトする
 
-#### Teammate (Developer)
+#### Teammate（開発者）
 
-- **Claims** a task by moving it from `todo/` to `in-progress/`
-- **Implements** the required functionality
-- **Self-verifies** with `spinor check --json`
-- **Submits** by moving the task to `review/`
+- `todo/` から `in-progress/` にファイルを移動してタスクを **取得する**
+- 必要な機能を **実装する**
+- `spinor check --json` で **自己検証する**
+- タスクを `review/` に移動して **提出する**
 
-### Task File Format
+### タスクファイル形式
 
 ```markdown
-# Task: Implement map function
+# Task: map 関数の実装
 
 ## Description
-Create a map function that applies f to each element of a list.
+リストの各要素に f を適用する map 関数を作成する。
 
 ## Acceptance Criteria
-- [ ] Works with empty lists
-- [ ] Works with non-empty lists
-- [ ] Type checks pass
+- [ ] 空リストで動作する
+- [ ] 非空リストで動作する
+- [ ] 型チェックが通る
 
 ## Assigned To
 teammate-1
@@ -298,128 +298,128 @@ teammate-1
 in-progress
 
 ## Notes
-Using recursion with pattern matching.
+パターンマッチを使った再帰で実装。
 ```
 
-### Lock Protocol
+### ロックプロトコル
 
-The file system provides atomic locking:
+ファイルシステムがアトミックなロックを提供します：
 
-1. Task files in `todo/` are available for claiming
-2. Moving a file to `in-progress/` is atomic (only one agent succeeds)
-3. This prevents duplicate work
+1. `todo/` 内のタスクファイルは取得可能
+2. ファイルを `in-progress/` に移動する操作はアトミック（1つのエージェントのみ成功）
+3. これにより重複作業を防止
 
-### Starting a Team Session
+### チームセッションの開始
 
-1. Launch the Team Lead agent:
+1. Team Lead エージェントを起動：
    ```bash
    claude --agent-mode
-   # "You are the Team Lead. Read .agents/TEAMS.md and manage tasks."
+   # "あなたは Team Lead です。.agents/TEAMS.md を読んでタスクを管理してください。"
    ```
 
-2. Launch Teammate agents:
+2. Teammate エージェントを起動：
    ```bash
    claude --agent-mode
-   # "You are a Teammate. Check .agents/tasks/todo/ for available work."
+   # "あなたは Teammate です。.agents/tasks/todo/ で利用可能な作業を確認してください。"
    ```
 
-Each agent operates independently, communicating through the file system.
+各エージェントは独立して動作し、ファイルシステムを通じて通信します。
 
 ---
 
-## Best Practices
+## ベストプラクティス
 
-### 1. Trust the Type System
+### 1. 型システムを信頼する
 
-Don't add runtime checks for things the type system already guarantees. Let the AI write code freely and rely on `spinor check` to catch errors.
+型システムが既に保証していることに対して、ランタイムチェックを追加しないでください。AI に自由にコードを書かせ、エラーの検出は `spinor check` に任せましょう。
 
-### 2. Write Types First
+### 2. 型を先に書く
 
-Define your data types and function signatures before implementation:
+実装の前にデータ型と関数シグネチャを定義します：
 
 ```lisp
-;; Define the shape of data
+;; データの形を定義
 (data Tree
   (Leaf a)
   (Node (Tree a) a (Tree a)))
 
-;; Define function signature via type annotation (optional but helpful)
-(defun tree-sum (t)  ; AI will infer: Tree Int -> Int
+;; 型注釈で関数シグネチャを定義（オプションだが有用）
+(defun tree-sum (t)  ; AI が推論: Tree Int -> Int
   (match t
     ((Leaf x) x)
     ((Node l v r) (+ (tree-sum l) (+ v (tree-sum r))))))
 ```
 
-### 3. Use MCP for Complex Queries
+### 3. 複雑なクエリには MCP を使用
 
-When unsure about behavior, have the AI use MCP to test hypotheses:
+動作が不明な場合は、AI に MCP を使って仮説をテストさせます：
 
 ```
-AI: "Let me check what type this expression has..."
+AI: "この式の型を確認させてください..."
     -> MCP typecheck: (map (fn (x) (+ x 1)) '(1 2 3))
-    -> Result: List Int
+    -> 結果: List Int
 ```
 
-### 4. Iterate with the Self-Healing Loop
+### 4. 自己修復ループで反復
 
-Encourage AI to run `spinor check --json` after every change. This creates a tight feedback loop:
+変更のたびに `spinor check --json` を実行するよう AI に促します。これにより緊密なフィードバックループが生まれます：
 
 ```
-Write -> Check -> Fix -> Check -> Success
+書く -> チェック -> 修正 -> チェック -> 成功
 ```
 
-### 5. Leverage Agent Teams for Large Projects
+### 5. 大規模プロジェクトには Agent Teams を活用
 
-For multi-file changes or feature development:
-- Break work into small, independent tasks
-- Let agents work in parallel
-- Use the review step for quality control
+複数ファイルの変更や機能開発の場合：
+- 作業を小さな独立したタスクに分割
+- エージェントを並行して動作させる
+- レビューステップで品質管理
 
 ---
 
-## Troubleshooting
+## トラブルシューティング
 
-### AI generates code that doesn't parse
+### AI がパースできないコードを生成する
 
-Check for:
-- Unbalanced parentheses
-- Missing quotes around strings
-- Invalid escape sequences
+以下を確認：
+- 括弧の不一致
+- 文字列を囲む引用符の欠落
+- 無効なエスケープシーケンス
 
-The `PARSE_ERROR` code in JSON output will indicate the problem location.
+JSON 出力の `PARSE_ERROR` コードが問題の場所を示します。
 
-### AI can't find functions
+### AI が関数を見つけられない
 
-Ensure:
-- The function is defined before use
-- The package is properly imported with `(:use :package-name)`
-- The function is exported from its defining package
+以下を確認：
+- 関数が使用前に定義されている
+- パッケージが `(:use :package-name)` で正しくインポートされている
+- 関数が定義元パッケージからエクスポートされている
 
-### MCP server doesn't respond
+### MCP サーバーが応答しない
 
-Check:
-- The server is running (`spinor mcp`)
-- The JSON-RPC request format is correct
-- The tool name is spelled correctly (`eval`, `typecheck`, etc.)
+以下を確認：
+- サーバーが実行中（`spinor mcp`）
+- JSON-RPC リクエスト形式が正しい
+- ツール名のスペルが正しい（`eval`、`typecheck` など）
 
-### Agent Teams tasks getting stuck
+### Agent Teams のタスクが停滞する
 
-Verify:
-- Task files are valid Markdown
-- Agents are reading `TEAMS.md` for the protocol
-- No agent is holding a task without working on it
+以下を確認：
+- タスクファイルが有効な Markdown である
+- エージェントがプロトコルのために `TEAMS.md` を読んでいる
+- 作業せずにタスクを保持しているエージェントがいない
 
 ---
 
-## Summary
+## まとめ
 
-Spinor's AI-native design enables a new paradigm of software development:
+Spinor の AI ネイティブ設計は、ソフトウェア開発の新しいパラダイムを実現します：
 
-| Feature | Human Role | AI Role |
-|---------|------------|---------|
-| Type System | Define intent | Generate implementation |
-| Self-Healing Loop | Review results | Iterate on errors |
-| MCP Server | Configure | Query in real-time |
-| Agent Teams | Set goals | Parallel execution |
+| 機能 | 人間の役割 | AI の役割 |
+|------|-----------|----------|
+| 型システム | 意図を定義 | 実装を生成 |
+| 自己修復ループ | 結果をレビュー | エラーを反復修正 |
+| MCP サーバー | 設定する | リアルタイムで問い合わせ |
+| Agent Teams | 目標を設定 | 並行実行 |
 
-The future of programming is collaborative. Spinor makes that collaboration seamless.
+プログラミングの未来は協調的です。Spinor はその協調をシームレスにします。
