@@ -1,9 +1,9 @@
-# null?
-**Kind:** Function  
+# nil?
+**Kind:** Function
 **Signature:** `(a) -> Bool`
 ### Syntax:
 ```lisp
-(null? x)
+(nil? x)
 ```
 ### Arguments and Values:
 - `x` -- 判定する値
@@ -12,9 +12,9 @@
 引数が空リスト (nil) かどうかを判定します。
 ### Examples:
 ```lisp
-(null? nil)       ; => t
-(null? '())       ; => t
-(null? '(1 2))    ; => nil
+(nil? nil)       ; => t
+(nil? '())       ; => t
+(nil? '(1 2))    ; => nil
 ```
 ### See Also:
 [empty-p](ref/empty-p), [cons](ref/cons)

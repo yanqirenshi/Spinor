@@ -127,10 +127,10 @@ spec = describe "Spinor.Eval (Evaluator)" $ do
       "(car (cons 1 (list 2 3)))" `shouldEvalTo` VInt 1
     it "cdr でリストの残り取得" $
       "(cdr (list 1 2 3))" `shouldEvalTo` VList [VInt 2, VInt 3]
-    it "null? で空リスト判定" $
-      "(null? (list))" `shouldEvalTo` VBool True
-    it "null? で非空リスト判定" $
-      "(null? (list 1))" `shouldEvalTo` VBool False
+    it "nil? で空リスト判定" $
+      "(nil? (list))" `shouldEvalTo` VBool True
+    it "nil? で非空リスト判定" $
+      "(nil? (list 1))" `shouldEvalTo` VBool False
 
   describe "quote" $ do
     it "数値の quote" $

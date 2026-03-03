@@ -46,7 +46,7 @@ Spinor の組み込み関数・特殊形式のリファレンスです。
 - [eq](ref/eq)
 - [equal](ref/equal)
 - [list](ref/list)
-- [null?](ref/null-p)
+- [nil?](ref/nil-p)
 
 ## String Operations
 

@@ -62,7 +62,7 @@ testSpin = T.unlines
   , ";; Test list operations"
   , "(test \"list operations work\""
   , "  (assert (= (car (list 1 2 3)) 1))"
-  , "  (assert (null? (list))))"
+  , "  (assert (nil? (list))))"
   ]
 
 -- | Template for .gitignore
@@ -310,7 +310,7 @@ claudeMd = T.unlines
   , "(car lst)           ; First element"
   , "(cdr lst)           ; Rest of list"
   , "(cons x lst)        ; Prepend element"
-  , "(null? lst)         ; Check if empty"
+  , "(nil? lst)          ; Check if empty"
   , "(list 1 2 3)        ; Create list"
   , ""
   , ";; Higher-order functions"

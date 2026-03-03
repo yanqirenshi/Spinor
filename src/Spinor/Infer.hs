@@ -472,7 +472,7 @@ baseTypeEnv = Map.fromList
   , ("car",    Scheme ["a"] (TArr (TList (TVar "a")) (TVar "a")))
   , ("cdr",    Scheme ["a"] (TArr (TList (TVar "a")) (TList (TVar "a"))))
   , ("list",   Scheme [] (TArr (TVar "_") (TList (TVar "_"))))  -- 簡易版: 単引数として扱う
-  , ("null?",  Scheme ["a"] (TArr (TList (TVar "a")) TBool))
+  , ("nil?",   Scheme ["a"] (TArr (TList (TVar "a")) TBool))
   , ("empty?", Scheme ["a"] (TArr (TList (TVar "a")) TBool))
     -- 出力
   , ("print",  Scheme ["a"] (TArr (TVar "a") (TVar "a")))

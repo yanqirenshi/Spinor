@@ -23,11 +23,11 @@
 ; If body is missing, the predicate's value is returned.
 (def cond
   (mac args
-    (if (null? args)
+    (if (nil? args)
         '#f
         (list 'if
               (car (car args))
-              (if (null? (cdr (car args)))
+              (if (nil? (cdr (car args)))
                   (car (car args))
                   (cons 'begin (cdr (car args))))
               (cons 'cond (cdr args))))))
@@ -35,18 +35,18 @@
 ; (and form1 form2 ...)
 (def and
   (mac args
-    (if (null? args)
+    (if (nil? args)
         '#t
-        (if (null? (cdr args))
+        (if (nil? (cdr args))
             (car args)
             (list 'if (car args) (cons 'and (cdr args)) '#f)))))
 
 ; (or form1 form2 ...)
 (def or
   (mac args
-    (if (null? args)
+    (if (nil? args)
         '#f
-        (if (null? (cdr args))
+        (if (nil? (cdr args))
             (car args)
             (list 'if (car args) (car args) (cons 'or (cdr args)))))))
 
@@ -54,7 +54,7 @@
 ;   順次束縛: 前の変数を後の定義で参照できる。ネストした let に展開。
 (def let*
   (mac (bindings . body)
-    (if (null? bindings)
+    (if (nil? bindings)
         (cons 'begin body)
         (list 'let (list (car bindings))
               (cons 'let* (cons (cdr bindings) body))))))

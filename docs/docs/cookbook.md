@@ -106,7 +106,7 @@ JSON 文字列をパースし、必要なデータを抽出するパターンで
 ;; ネストしたデータへのアクセス
 (def get-nested
   (fn (data . keys)
-    (if (null? keys)
+    (if (nil? keys)
         data
         (let ((current (get-value data (car keys))))
           (if current

@@ -154,7 +154,7 @@ renderIndex entries = T.unlines $
 
     isKeyword entry = docKind entry == CompletionItemKind_Keyword
 
-    isListOp name = name `elem` ["cons", "car", "cdr", "list", "null?", "empty?", "eq", "equal"]
+    isListOp name = name `elem` ["cons", "car", "cdr", "list", "nil?", "empty?", "eq", "equal"]
     isStringOp name = "string" `T.isPrefixOf` name || name `elem` ["list->string", "substring"]
     isIOOp name = name `elem` ["read-file", "write-file", "append-file", "file-exists?", "print"]
     isConcurrencyOp name = name `elem` ["spawn", "sleep", "new-mvar", "take-mvar", "put-mvar"]

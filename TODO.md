@@ -153,6 +153,9 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [ ] **Comparison:** 現行の C言語トランスパイル方式とのパフォーマンス・ビルド時間の比較。
 
 ## 📦 Standard Library Expansion (標準ライブラリ拡充)
+- [x] **Step 61: Rename `null?` to `nil?` (Refactoring)**
+    - [x] **Design:** `specs/refactor_nil_p_spec.md` および `tasks/refactor_nil_p_task.md` の作成、GitHub Issue #1 へのコメント。
+    - [x] **Implementation:** カーネル、ライブラリ、テスト、ドキュメントの全置換。
 - [x] **Step 35: Standard Library Expansion (String & I/O)**
     - [x] **String Operations:** `string-append`, `string-length`, `substring`, `string=?` の実装。
     - [x] **File I/O:** `read-file`, `write-file`, `append-file` の実装。
@@ -306,6 +309,6 @@ Claude Code などの AI エージェントが、Spinor プロジェクトを自
     - [x] GitHub 上に `spinor-mode` という新しい公開リポジトリを作成する。
     - [x] `.spinor-mode-export/` 内のファイル群を新しいリポジトリに `git init` して Push する。
     - [x] GitHub Actions が正しく動作し、バッジ (CI Status) が緑になることを確認する。
-    - [ ] **Cleanup:** Spinor 本体リポジトリから古い `editors/emacs/spinor-mode.el` およびステージング用 `.spinor-mode-export/` を削除する。
-    - [ ] **Documentation Update:** マニュアル (`docs/emacs_setup.md` 等) を更新し、新しい `spinor-mode` リポジトリからのインストール手順 (Git 経由での `use-package` などの設定) に書き換える。
+    - [x] **Cleanup:** Spinor 本体リポジトリから古い `editors/emacs/spinor-mode.el` およびステージング用 `.spinor-mode-export/` を削除する。
+    - [x] **Documentation Update:** マニュアル (`docs/emacs_setup.md` 等) を更新し、新しい `spinor-mode` リポジトリからのインストール手順 (Git 経由での `use-package` などの設定) に書き換える。
     - [ ] (将来タスク) リポジトリが安定稼働したら、MELPA の `recipes/` に Pull Request を投げて公式パッケージとして登録申請を行う。

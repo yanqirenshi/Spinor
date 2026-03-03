@@ -699,25 +699,25 @@ primitiveDocs = Map.fromList
       "```lisp\n(list 1 2 3)      ; => (1 2 3)\n(list 'a 'b)      ; => (a b)\n(list)            ; => nil\n```"
       ["cons", "quote"])
 
-  , ("null?", mkDoc
+  , ("nil?", mkDoc
       "(a) -> Bool"
       "引数が空リスト (nil) かどうかを判定します。"
       CompletionItemKind_Function
-      "null-p"
-      "(null? x)"
+      "nil-p"
+      "(nil? x)"
       "- `x` -- 判定する値\n- 戻り値: `nil` なら `t`、それ以外は `nil`"
-      "```lisp\n(null? nil)       ; => t\n(null? '())       ; => t\n(null? '(1 2))    ; => nil\n```"
+      "```lisp\n(nil? nil)       ; => t\n(nil? '())       ; => t\n(nil? '(1 2))    ; => nil\n```"
       ["empty-p", "cons"])
 
   , ("empty?", mkDoc
       "(a) -> Bool"
-      "`null?` のエイリアス。"
+      "`nil?` のエイリアス。"
       CompletionItemKind_Function
       "empty-p"
       "(empty? x)"
       "- `x` -- 判定する値\n- 戻り値: 空なら `t`"
       "```lisp\n(empty? nil)  ; => t\n```"
-      ["null-p"])
+      ["nil-p"])
 
   , ("eq", mkDoc
       "(a, a) -> Bool"

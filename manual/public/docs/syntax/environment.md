@@ -49,7 +49,7 @@ $ cabal run spinor -- script.spin arg1 arg2 arg3
 (def args (command-line-args))
 
 ;; 引数の数をチェック
-(if (null? args)
+(if (nil? args)
     (print "Usage: script.spin <input-file>")
     (begin
       (def input-file (car args))

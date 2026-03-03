@@ -91,7 +91,7 @@ spec = describe "Spinor.Syntax (Parser)" $ do
     it "英字シンボル" $
       "foo" `parseShouldBe` eSym "foo"
     it "記号を含むシンボル" $
-      "null?" `parseShouldBe` eSym "null?"
+      "nil?" `parseShouldBe` eSym "nil?"
     it "演算子シンボル" $
       "+" `parseShouldBe` eSym "+"
 
