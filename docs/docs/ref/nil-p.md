@@ -1,5 +1,5 @@
 # nil?
-**Kind:** Function
+**Kind:** Function  
 **Signature:** `(a) -> Bool`
 ### Syntax:
 ```lisp
