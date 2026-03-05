@@ -1360,6 +1360,143 @@ primitiveDocs = Map.fromList
       , docSeeAlso = ["json-parse"]
       , docNotes = "Alist として認識されるには、リストの全要素が `(\"key\" value)` の形式である必要があります。"
       })
+
+  -- ========================================
+  -- HTTP クライアント (HTTP Client)
+  -- ========================================
+  , ("core-http-request", DocEntry
+      { docSignature = "(String, String, Alist|nil, String|nil) -> Alist"
+      , docDescription = "低レベル HTTP リクエストを実行します。curl コマンドを内部的に使用します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "core-http-request"
+      , docSyntax = "(core-http-request method url headers body)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `method` -- HTTP メソッド (\"GET\", \"POST\", \"PUT\", \"DELETE\" など)"
+          , "- `url` -- リクエスト先 URL"
+          , "- `headers` -- ヘッダーの Alist (例: `((:Content-Type \"application/json\"))`) または `nil`"
+          , "- `body` -- リクエストボディ (文字列) または `nil`"
+          , "- 戻り値: レスポンスの Alist"
+          , "    - `(:status-code <int>)` -- HTTP ステータスコード"
+          , "    - `(:headers nil)` -- レスポンスヘッダー (現在は常に nil)"
+          , "    - `(:body <string>)` -- レスポンスボディ"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; GET リクエスト"
+          , "(core-http-request \"GET\" \"https://api.example.com/data\" nil nil)"
+          , "; => ((:status-code 200) (:headers nil) (:body \"...\"))"
+          , ""
+          , ";; POST リクエスト (JSON)"
+          , "(core-http-request \"POST\" \"https://api.example.com/users\""
+          , "  '((:Content-Type \"application/json\"))"
+          , "  \"{\\\"name\\\": \\\"Alice\\\"}\")"
+          , "; => ((:status-code 201) (:headers nil) (:body \"...\"))"
+          , "```"
+          ]
+      , docSideEffects = "ネットワーク通信を行います。"
+      , docAffectedBy = "ネットワーク接続状態、curl コマンドの可用性に依存します。"
+      , docExceptionalSituations = T.unlines
+          [ "- 引数の数や型が不正な場合、エラーを返します。"
+          , "- curl コマンドの実行に失敗した場合、エラーを返します。"
+          , "- ネットワークエラーの場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["http-get", "http-post", "http-request"]
+      , docNotes = "高レベル API として `http-get`, `http-post` (twister/http.spin) を使用することを推奨します。"
+      })
+
+  , ("http-get", DocEntry
+      { docSignature = "(String, &key headers) -> Alist"
+      , docDescription = "HTTP GET リクエストを実行します。twister/http モジュールで定義されています。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "http-get"
+      , docSyntax = "(http-get url &key headers)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `url` -- リクエスト先 URL (必須)"
+          , "- `:headers` -- ヘッダーの Alist (キーワード引数、オプション)"
+          , "- 戻り値: レスポンスの Alist (status-code, headers, body)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(require 'twister/http)"
+          , ""
+          , ";; シンプルな GET"
+          , "(http-get \"https://api.example.com/data\")"
+          , ""
+          , ";; ヘッダー付き"
+          , "(http-get \"https://api.example.com/data\""
+          , "  :headers '((:Authorization \"Bearer token\")))"
+          , "```"
+          ]
+      , docSideEffects = "ネットワーク通信を行います。"
+      , docAffectedBy = "ネットワーク接続状態に依存します。"
+      , docExceptionalSituations = "ネットワークエラーや curl 実行失敗時にエラーを返します。"
+      , docSeeAlso = ["http-post", "http-request", "core-http-request"]
+      , docNotes = "キーワード引数 `&key` を使用したユーザーフレンドリーな API です。"
+      })
+
+  , ("http-post", DocEntry
+      { docSignature = "(String, &key body headers) -> Alist"
+      , docDescription = "HTTP POST リクエストを実行します。twister/http モジュールで定義されています。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "http-post"
+      , docSyntax = "(http-post url &key body headers)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `url` -- リクエスト先 URL (必須)"
+          , "- `:body` -- リクエストボディ (キーワード引数、オプション)"
+          , "- `:headers` -- ヘッダーの Alist (キーワード引数、オプション)"
+          , "- 戻り値: レスポンスの Alist (status-code, headers, body)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(require 'twister/http)"
+          , ""
+          , ";; JSON POST"
+          , "(http-post \"https://api.example.com/users\""
+          , "  :body (json-stringify '((\"name\" \"Alice\") (\"age\" 30)))"
+          , "  :headers '((:Content-Type \"application/json\")))"
+          , "```"
+          ]
+      , docSideEffects = "ネットワーク通信を行います。"
+      , docAffectedBy = "ネットワーク接続状態に依存します。"
+      , docExceptionalSituations = "ネットワークエラーや curl 実行失敗時にエラーを返します。"
+      , docSeeAlso = ["http-get", "http-request", "core-http-request", "json-stringify"]
+      , docNotes = "キーワード引数 `&key` を使用したユーザーフレンドリーな API です。"
+      })
+
+  , ("http-request", DocEntry
+      { docSignature = "(String, &key method headers body) -> Alist"
+      , docDescription = "汎用 HTTP リクエストを実行します。twister/http モジュールで定義されています。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "http-request"
+      , docSyntax = "(http-request url &key method headers body)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `url` -- リクエスト先 URL (必須)"
+          , "- `:method` -- HTTP メソッド (デフォルト: \"GET\")"
+          , "- `:headers` -- ヘッダーの Alist (オプション)"
+          , "- `:body` -- リクエストボディ (オプション)"
+          , "- 戻り値: レスポンスの Alist (status-code, headers, body)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(require 'twister/http)"
+          , ""
+          , ";; PUT リクエスト"
+          , "(http-request \"https://api.example.com/users/1\""
+          , "  :method \"PUT\""
+          , "  :body \"{\\\"name\\\": \\\"Bob\\\"}\""
+          , "  :headers '((:Content-Type \"application/json\")))"
+          , ""
+          , ";; DELETE リクエスト"
+          , "(http-request \"https://api.example.com/users/1\""
+          , "  :method \"DELETE\")"
+          , "```"
+          ]
+      , docSideEffects = "ネットワーク通信を行います。"
+      , docAffectedBy = "ネットワーク接続状態に依存します。"
+      , docExceptionalSituations = "ネットワークエラーや curl 実行失敗時にエラーを返します。"
+      , docSeeAlso = ["http-get", "http-post", "core-http-request"]
+      , docNotes = "任意の HTTP メソッドをサポートする汎用的な関数です。"
+      })
   ]
 
 lookupDoc :: Text -> Maybe DocEntry
