@@ -244,7 +244,122 @@ JSON 文字列をパースし、必要なデータを抽出するパターンで
 
 ---
 
-## 4. 科学技術計算と GPU 演算 (Matrix & OpenCL)
+## 4. HTTP クライアント (Web API 連携)
+
+HTTP/HTTPS リクエストを送信して Web API と連携するパターンです。
+
+### 基本パターン: GET リクエスト
+
+```lisp
+;; twister/http モジュールをロード
+(require 'twister/http)
+
+;; シンプルな GET リクエスト
+(def response (http-get "https://httpbin.org/get"))
+
+;; レスポンスからステータスコードとボディを取得
+(http-status response)  ; => 200
+(http-body response)    ; => "{\"args\": {}, ...}"
+
+;; JSON レスポンスのパース
+(def data (json-parse (http-body response)))
+```
+
+### 応用例: POST リクエスト (JSON 送信)
+
+```lisp
+(require 'twister/http)
+
+;; JSON データを POST
+(def user-data '(("name" "Alice") ("age" 30)))
+(def response
+  (http-post "https://httpbin.org/post"
+    :body (json-stringify user-data)
+    :headers '((:Content-Type "application/json"))))
+
+;; レスポンスを確認
+(if (= (http-status response) 200)
+    (print "成功!")
+    (print "エラー発生"))
+```
+
+### 実践例: REST API クライアント
+
+```lisp
+(require 'twister/http)
+
+;; 汎用 API クライアント
+(def api-client
+  (fn (base-url)
+    (list
+      ;; GET メソッド
+      (cons 'get
+        (fn (path &key headers)
+          (def url (string-append base-url path))
+          (http-get url :headers headers)))
+
+      ;; POST メソッド
+      (cons 'post
+        (fn (path data &key headers)
+          (def url (string-append base-url path))
+          (def all-headers
+            (cons '(:Content-Type "application/json") headers))
+          (http-post url
+            :body (json-stringify data)
+            :headers all-headers)))
+
+      ;; DELETE メソッド
+      (cons 'delete
+        (fn (path &key headers)
+          (def url (string-append base-url path))
+          (http-request url :method "DELETE" :headers headers))))))
+
+;; 使用例
+(def client (api-client "https://api.example.com"))
+(def get-fn (cdr (assoc 'get client)))
+(def post-fn (cdr (assoc 'post client)))
+
+;; ユーザー一覧を取得
+(get-fn "/users")
+
+;; 新しいユーザーを作成
+(post-fn "/users" '(("name" "Bob") ("email" "bob@example.com")))
+```
+
+### 実践例: エラーハンドリング付き API 呼び出し
+
+```lisp
+(require 'twister/http)
+
+;; 安全な API 呼び出し
+(def safe-api-call
+  (fn (url &key (retries 3))
+    (handler-case
+      (begin
+        (def response (http-get url))
+        (def status (http-status response))
+        (if (>= status 400)
+            ;; HTTP エラー
+            (error (string-append "HTTP error: " (number->string status)))
+            ;; 成功
+            (json-parse (http-body response))))
+      (error (msg)
+        (if (> retries 0)
+            (begin
+              (print (string-append "リトライ中... 残り: " (number->string retries)))
+              (sleep 1000)
+              (safe-api-call url :retries (- retries 1)))
+            (begin
+              (print (string-append "最終エラー: " msg))
+              nil))))))
+
+;; 使用例
+(safe-api-call "https://api.example.com/data" :retries 3)
+```
+
+---
+
+## 6. 科学技術計算と GPU 演算 (Matrix & OpenCL)
 
 行列の基本演算と、OpenCL を用いた高速並列計算のパターンです。
 
