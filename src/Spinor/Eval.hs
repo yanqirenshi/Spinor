@@ -220,11 +220,14 @@ eval (EBool _ b) = pure $ VBool b
 eval (EStr _ s) = pure $ VStr s
 
 -- アトム: シンボル → 環境から検索
-eval (ESym sp name) = do
-  result <- lookupSymbol name
-  case result of
-    Just val -> pure val
-    Nothing  -> throwErrorAt sp $ "未定義のシンボル: " <> name
+--   キーワードシンボル (`:` で始まる) は自己評価: 環境検索せず即座に VSym を返す
+eval (ESym sp name)
+  | T.isPrefixOf ":" name = pure (VSym name)
+  | otherwise = do
+      result <- lookupSymbol name
+      case result of
+        Just val -> pure val
+        Nothing  -> throwErrorAt sp $ "未定義のシンボル: " <> name
 
 -- 空リスト → VNil
 eval (EList _ []) = pure VNil

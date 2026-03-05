@@ -36,6 +36,47 @@ calculate-sum
 
 詳細は [Strings](strings) を参照してください。
 
+## キーワードシンボル (Keyword Symbols)
+
+コロン `:` で始まるシンボルは「キーワードシンボル」と呼ばれ、自己評価します。通常のシンボルとは異なり、環境から値を検索せずに、そのシンボル自身を返します。
+
+```lisp
+:foo          ; => :foo (自己評価)
+:headers      ; => :headers
+:emacs-rex    ; => :emacs-rex
+
+;; 通常のシンボルは環境から値を検索
+x             ; 環境で x が定義されていなければエラー
+
+;; キーワードは未定義でもエラーにならない
+:undefined    ; => :undefined (自己評価)
+```
+
+### 用途
+
+キーワードシンボルは以下の用途に適しています：
+
+- **連想リストのキー**: `((:name . "Alice") (:age . 30))`
+- **オプション引数**: `(http-request url :headers headers-alist)`
+- **プロトコルメッセージ**: `(:emacs-rex ...)`
+
+```lisp
+;; 連想リストでの使用例
+(def person (list (cons :name "Alice")
+                  (cons :age 30)))
+
+;; if 式での使用 (quote 不要)
+(if condition :yes :no)
+```
+
+### 型
+
+キーワードシンボルは `Keyword` 型を持ちます。
+
+```lisp
+:foo    ; :: Keyword
+```
+
 ## 特殊シンボル
 
 | シンボル | 意味 |

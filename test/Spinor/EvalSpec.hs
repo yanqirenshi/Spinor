@@ -140,6 +140,21 @@ spec = describe "Spinor.Eval (Evaluator)" $ do
     it "quote 略記" $
       "'(1 2)" `shouldEvalTo` VList [VInt 1, VInt 2]
 
+  describe "キーワードシンボル (Keyword Symbols)" $ do
+    it ":foo は自己評価して :foo を返す" $
+      ":foo" `shouldEvalTo` VSym ":foo"
+    it ":headers は自己評価して :headers を返す" $
+      ":headers" `shouldEvalTo` VSym ":headers"
+    it ":emacs-rex は自己評価して :emacs-rex を返す" $
+      ":emacs-rex" `shouldEvalTo` VSym ":emacs-rex"
+    it "キーワードをリスト内で使用" $
+      "(list :a :b :c)" `shouldEvalTo` VList [VSym ":a", VSym ":b", VSym ":c"]
+    it "キーワードを quote せずに使用" $
+      "(if #t :yes :no)" `shouldEvalTo` VSym ":yes"
+    it "キーワードは通常のシンボルと異なり未定義エラーにならない" $ do
+      result <- evalStr ":undefined-keyword"
+      result `shouldBe` Right (VSym ":undefined-keyword")
+
   describe "ユーザー定義データ型 (ADT)" $ do
     it "0引数コンストラクタ: Nothing → VData" $ do
       result <- evalMulti "(data Maybe (Just a) (Nothing))\nNothing"

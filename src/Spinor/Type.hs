@@ -26,6 +26,7 @@ data Type
   | TInt             -- ^ 整数型
   | TBool            -- ^ 真偽値型
   | TStr             -- ^ 文字列型
+  | TKeyword         -- ^ キーワード型: :foo, :bar など (自己評価シンボル)
   | TArr  Type Type  -- ^ 関数型: t1 -> t2
   | TList Type       -- ^ リスト型: [t]
   | TCon  Text       -- ^ 型コンストラクタ名 (例: "Maybe")
@@ -53,6 +54,7 @@ showType (TVar n)     = n
 showType TInt         = "Int"
 showType TBool        = "Bool"
 showType TStr         = "Str"
+showType TKeyword     = "Keyword"
 showType (TArr t1 t2) = "(" <> showType t1 <> " -> " <> showType t2 <> ")"
 showType (TList t)    = "[" <> showType t <> "]"
 showType (TCon n)     = n

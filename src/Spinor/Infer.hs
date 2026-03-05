@@ -18,7 +18,7 @@ module Spinor.Infer
   , baseTypeEnv
   ) where
 
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, isPrefixOf)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Control.Monad (foldM, when)
@@ -58,6 +58,7 @@ instance Types Type where
   apply _ TInt         = TInt
   apply _ TBool        = TBool
   apply _ TStr         = TStr
+  apply _ TKeyword     = TKeyword
   apply s (TArr t1 t2) = TArr (apply s t1) (apply s t2)
   apply s (TList t)    = TList (apply s t)
   apply _ (TCon n)     = TCon n
@@ -68,6 +69,7 @@ instance Types Type where
   ftv TInt         = Set.empty
   ftv TBool        = Set.empty
   ftv TStr         = Set.empty
+  ftv TKeyword     = Set.empty
   ftv (TArr t1 t2) = ftv t1 `Set.union` ftv t2
   ftv (TList t)    = ftv t
   ftv (TCon _)     = Set.empty
@@ -94,9 +96,10 @@ instance {-# OVERLAPPING #-} Types TypeEnv where
 
 unify :: Type -> Type -> Either Text Subst
 
-unify TInt  TInt  = Right nullSubst
-unify TBool TBool = Right nullSubst
-unify TStr  TStr  = Right nullSubst
+unify TInt     TInt     = Right nullSubst
+unify TBool    TBool    = Right nullSubst
+unify TStr     TStr     = Right nullSubst
+unify TKeyword TKeyword = Right nullSubst
 
 unify (TVar a) t = varBind a t
 unify t (TVar a) = varBind a t
@@ -198,12 +201,15 @@ infer _ (EBool _ _) = pure (nullSubst, TBool)
 infer _ (EStr _ _) = pure (nullSubst, TStr)
 
 -- シンボル → 型環境から検索して instantiate
-infer env (ESym sp x) =
-  case Map.lookup x env of
-    Just scheme -> do
-      t <- instantiate scheme
-      pure (nullSubst, t)
-    Nothing -> throwErrorAt sp $ "未定義のシンボル: " <> x
+--   キーワードシンボル (`:` で始まる) は自己評価: TKeyword を返す
+infer env (ESym sp x)
+  | ":" `isPrefixOf` x = pure (nullSubst, TKeyword)
+  | otherwise =
+      case Map.lookup x env of
+        Just scheme -> do
+          t <- instantiate scheme
+          pure (nullSubst, t)
+        Nothing -> throwErrorAt sp $ "未定義のシンボル: " <> x
 
 -- 空リスト → フレッシュな要素型の空リスト
 infer _ (EList _ []) = do
