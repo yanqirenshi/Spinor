@@ -78,6 +78,22 @@ spec = describe "Spinor.Eval (Evaluator)" $ do
     it "多引数: ((fn (x y) (+ x y)) 3 4)" $
       "((fn (x y) (+ x y)) 3 4)" `shouldEvalTo` VInt 7
 
+  describe "キーワード引数 (&key)" $ do
+    it "基本的なキーワード引数: (fn (x &key y) (+ x y))" $
+      "((fn (x &key y) (+ x y)) 10 :y 5)" `shouldEvalTo` VInt 15
+    it "キーワード引数のデフォルト値: (fn (x &key (y 100)) (+ x y))" $
+      "((fn (x &key (y 100)) (+ x y)) 10)" `shouldEvalTo` VInt 110
+    it "キーワード引数を明示的に指定してデフォルト値を上書き" $
+      "((fn (x &key (y 100)) (+ x y)) 10 :y 50)" `shouldEvalTo` VInt 60
+    it "複数のキーワード引数: (fn (x &key a b) (list x a b))" $
+      "((fn (x &key a b) (list x a b)) 1 :b 3 :a 2)" `shouldEvalTo` VList [VInt 1, VInt 2, VInt 3]
+    it "キーワード引数の順序は任意" $
+      "((fn (&key a b c) (list a b c)) :c 3 :a 1 :b 2)" `shouldEvalTo` VList [VInt 1, VInt 2, VInt 3]
+    it "キーワード引数が指定されない場合は nil" $
+      "((fn (x &key y) y) 10)" `shouldEvalTo` VNil
+    it "キーワード引数とデフォルト値の組み合わせ" $
+      "((fn (&key (a 1) (b 2) (c 3)) (list a b c)) :b 20)" `shouldEvalTo` VList [VInt 1, VInt 20, VInt 3]
+
   describe "let 式" $ do
     it "(let x 5 (+ x 3)) → 8 (旧形式)" $
       "(let x 5 (+ x 3))" `shouldEvalTo` VInt 8

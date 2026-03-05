@@ -2,6 +2,7 @@
 
 module Spinor.Val
   ( Val(..)
+  , Param(..)
   , Env
   , Package(..)
   , Context(..)
@@ -20,6 +21,14 @@ import Foreign.Ptr (Ptr)
 import qualified Graphics.UI.GLFW as GLFW
 
 import Spinor.Syntax (Expr)
+
+-- | 引数の種類を表現する型
+--   キーワード引数 (&key) をサポートするために、引数の種類を区別する。
+data Param
+  = PRequired Text          -- ^ 必須引数 (位置引数)
+  | PRest Text              -- ^ 可変長引数 (&rest または既存の ".")
+  | PKey Text (Maybe Expr)  -- ^ キーワード引数 (名前と、デフォルト値となる未評価の式)
+  deriving (Eq, Show)
 
 -- | 変数環境: シンボル名 → 値
 --   ローカル束縛 (let, fn 引数など) に使用。
@@ -68,8 +77,8 @@ data Val
   | VFloat Double                              -- 浮動小数点数
   | VBool Bool                                 -- 真偽値
   | VPrim Text ([Val] -> Either Text Val)      -- プリミティブ関数 (名前, 実装)
-  | VFunc  [Text] Expr Env                     -- ユーザー定義関数 (引数名, 本体, クロージャ環境)
-  | VMacro [Text] Expr Env                     -- マクロ (引数名, 本体, クロージャ環境)
+  | VFunc  [Param] Expr Env                    -- ユーザー定義関数 (引数, 本体, クロージャ環境)
+  | VMacro [Param] Expr Env                    -- マクロ (引数, 本体, クロージャ環境)
   | VList [Val]                                -- リスト
   | VNil                                       -- 空リスト / nil
   | VSym  Text                                 -- シンボル (quote 用)

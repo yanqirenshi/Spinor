@@ -63,6 +63,48 @@
 
 クロージャにより、関数は自身が定義された環境の変数にアクセスし続けることができます。
 
+## キーワード引数: `&key`
+
+関数やマクロにキーワード引数を定義できます。キーワード引数は `:name value` の形式で名前付きで指定します。
+
+```lisp
+;; キーワード引数を持つ関数
+(def make-rect (fn (&key width height)
+  (list width height)))
+
+(make-rect :width 100 :height 50)  ; => (100 50)
+(make-rect :height 50 :width 100)  ; => (100 50)  順序は任意
+```
+
+### デフォルト値
+
+キーワード引数にはデフォルト値を指定できます。
+
+```lisp
+(def http-request (fn (url &key (method "GET") (timeout 30))
+  (list url method timeout)))
+
+(http-request "https://example.com")
+; => ("https://example.com" "GET" 30)
+
+(http-request "https://example.com" :method "POST" :timeout 60)
+; => ("https://example.com" "POST" 60)
+```
+
+デフォルト値を指定しない場合、引数が渡されなかったときは `nil` になります。
+
+### 必須引数との組み合わせ
+
+必須引数とキーワード引数を組み合わせることができます。
+
+```lisp
+(def send-email (fn (to subject &key (from "noreply@example.com") (cc nil))
+  (list :to to :subject subject :from from :cc cc)))
+
+(send-email "user@example.com" "Hello" :cc "admin@example.com")
+; => (:to "user@example.com" :subject "Hello" :from "noreply@example.com" :cc "admin@example.com")
+```
+
 ## マクロ定義: `mac`
 
 コンパイル時に展開されるマクロを定義します。

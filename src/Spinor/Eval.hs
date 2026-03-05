@@ -2,6 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE LambdaCase                 #-}
 
 module Spinor.Eval
   ( Eval
@@ -29,14 +30,14 @@ import Control.Monad.State.Strict
 import Control.Monad.Except
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.MVar
-import Control.Monad (void)
+import Control.Monad (void, forM, when)
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Control.Exception (try, IOException)
 import System.Directory (doesFileExist)
 import System.Environment (getArgs, lookupEnv)
 
 import Spinor.Syntax (Expr(..), Pattern(..), ConstructorDef(..), SourceSpan, SpinorError(..), dummySpan, exprSpan, formatError)
-import Spinor.Val    (Val(..), Env, Package(..), Context(..), showVal, emptyPackage, initialContext)
+import Spinor.Val    (Val(..), Param(..), Env, Package(..), Context(..), showVal, emptyPackage, initialContext)
 
 -- | 評価状態: ローカル環境とパッケージコンテキスト
 data EvalState = EvalState
@@ -364,29 +365,32 @@ eval (EList sp [ESym _ "put-mvar", mvarExpr, valExpr]) = do
       pure $ VBool True
     _ -> throwErrorAt sp "put-mvar: 第1引数には MVar が必要です"
 
--- 特殊形式: (fn (params...) body) — 固定長 / ドット記法可変長
+-- 特殊形式: (fn (params...) body) — 固定長 / ドット記法可変長 / キーワード引数
 --   現在のローカル環境をキャプチャしてクロージャを生成する。
 --   パッケージ内のシンボルは実行時に解決される。
+--   例: (fn (x y) body)       — 固定長
+--       (fn (x . rest) body)  — 可変長
+--       (fn (x &key y z) body) — キーワード引数
 eval (EList _ [ESym _ "fn", EList _ params, body]) = do
-  paramNames <- mapM extractSym params
+  parsedParams <- parseParams params
   closureEnv <- getLocalEnv
-  pure $ VFunc paramNames body closureEnv
+  pure $ VFunc parsedParams body closureEnv
 
 -- 特殊形式: (fn name body) — 全引数を1つのシンボルにキャプチャ
 eval (EList _ [ESym _ "fn", ESym _ param, body]) = do
   closureEnv <- getLocalEnv
-  pure $ VFunc [".", param] body closureEnv
+  pure $ VFunc [PRest param] body closureEnv
 
--- 特殊形式: (mac (params...) body) — 固定長 / ドット記法可変長
+-- 特殊形式: (mac (params...) body) — 固定長 / ドット記法可変長 / キーワード引数
 eval (EList _ [ESym _ "mac", EList _ params, body]) = do
-  paramNames <- mapM extractSym params
+  parsedParams <- parseParams params
   closureEnv <- getLocalEnv
-  pure $ VMacro paramNames body closureEnv
+  pure $ VMacro parsedParams body closureEnv
 
 -- 特殊形式: (mac name body) — 全引数を1つのシンボルにキャプチャ
 eval (EList _ [ESym _ "mac", ESym _ param, body]) = do
   closureEnv <- getLocalEnv
-  pure $ VMacro [".", param] body closureEnv
+  pure $ VMacro [PRest param] body closureEnv
 
 -- 特殊形式: (dotimes (var count-expr) body...) — カウンタループ
 --   setq の副作用がクロージャ境界を超えないため、特殊形式として実装
@@ -671,39 +675,100 @@ apply other _ =
   throwErrorAt dummySpan $ "関数ではない値を適用しようとしました: " <> pack (showVal other)
 
 -- | VFunc / VMacro 共通のクロージャ適用ロジック
-applyClosureBody :: [Text] -> Expr -> Env -> [Val] -> Eval Val
+applyClosureBody :: [Param] -> Expr -> Env -> [Val] -> Eval Val
 applyClosureBody params body closureEnv args = do
-  case bindArgs params args of
-    Left err -> throwErrorAt (exprSpan body) err
-    Right bindings -> do
-      savedLocalEnv <- getLocalEnv
-      -- クロージャ環境 + 引数束縛をローカル環境として設定
-      let localEnv = Map.union bindings closureEnv
-      putLocalEnv localEnv
-      result <- eval body
-      putLocalEnv savedLocalEnv
-      pure result
+  bindings <- bindArgs params args body closureEnv
+  savedLocalEnv <- getLocalEnv
+  -- クロージャ環境 + 引数束縛をローカル環境として設定
+  let localEnv = Map.union bindings closureEnv
+  putLocalEnv localEnv
+  result <- eval body
+  putLocalEnv savedLocalEnv
+  pure result
 
--- | 仮引数と実引数の束縛 (固定長 / ドット記法可変長対応)
---   ["a", "b"]          — 固定長: 引数の数が一致する必要がある
---   ["a", ".", "rest"]  — 可変長: a に1つ束縛し、残りを rest にリストで束縛
---   [".", "args"]       — 全キャプチャ: 全引数を args にリストで束縛
-bindArgs :: [Text] -> [Val] -> Either Text Env
-bindArgs params args = case break (== ".") params of
-  (fixed, []) ->
-    -- 固定長引数
-    if length fixed /= length args
-    then Left $ "引数の数が不正です (期待: " <> pack (show (length fixed))
-             <> ", 実際: " <> pack (show (length args)) <> ")"
-    else Right $ Map.fromList (zip fixed args)
-  (fixed, [".", rest]) ->
-    -- 可変長引数: 固定部分 + 残り
-    if length args < length fixed
-    then Left $ "引数の数が不正です (最低: " <> pack (show (length fixed))
-             <> ", 実際: " <> pack (show (length args)) <> ")"
-    else let (fixedArgs, restArgs) = splitAt (length fixed) args
-         in Right $ Map.fromList ((rest, VList restArgs) : zip fixed fixedArgs)
-  _ -> Left "不正な引数リスト: '.' の後にはパラメータが1つ必要です"
+-- | 仮引数と実引数の束縛 (固定長 / 可変長 / キーワード引数対応)
+--   [PRequired "a", PRequired "b"]  — 固定長引数
+--   [PRequired "a", PRest "rest"]   — 可変長引数
+--   [PRequired "a", PKey "y" Nothing, PKey "z" (Just expr)] — キーワード引数
+bindArgs :: [Param] -> [Val] -> Expr -> Env -> Eval Env
+bindArgs params args bodyExpr closureEnv = do
+  -- 引数の種類を分離
+  let (required, maybeRest, keys) = splitParams params
+      numRequired = length required
+
+  -- 実引数を位置引数とキーワード引数に分離
+  let (positionalArgs, keywordPairs) = splitActualArgs args
+
+  -- 必須引数の検証とバインディング
+  when (length positionalArgs < numRequired) $
+    throwErrorAt (exprSpan bodyExpr) $
+      "引数の数が不正です (最低: " <> pack (show numRequired)
+      <> ", 実際: " <> pack (show (length positionalArgs)) <> ")"
+
+  let (reqArgs, restArgs) = splitAt numRequired positionalArgs
+      requiredBindings = Map.fromList
+        [(name, val) | (PRequired name, val) <- zip required reqArgs]
+
+  -- 可変長引数のバインディング
+  restBindings <- case maybeRest of
+    Nothing -> do
+      -- &key がない場合、余った位置引数はエラー
+      when (not (null restArgs) && null keys) $
+        throwErrorAt (exprSpan bodyExpr) $
+          "引数の数が不正です (期待: " <> pack (show numRequired)
+          <> ", 実際: " <> pack (show (length positionalArgs)) <> ")"
+      pure Map.empty
+    Just (PRest restName) ->
+      pure $ Map.singleton restName (VList restArgs)
+    Just _ -> throwErrorAt (exprSpan bodyExpr) "内部エラー: 不正な PRest"
+
+  -- キーワード引数のバインディング
+  keyBindings <- bindKeyArgs keys keywordPairs bodyExpr closureEnv
+
+  pure $ Map.unions [requiredBindings, restBindings, keyBindings]
+
+-- | パラメータリストを (必須引数, 可変長引数, キーワード引数) に分離
+splitParams :: [Param] -> ([Param], Maybe Param, [Param])
+splitParams = go [] Nothing []
+  where
+    go req rest keys [] = (reverse req, rest, reverse keys)
+    go req rest keys (p:ps) = case p of
+      PRequired _ -> go (p:req) rest keys ps
+      PRest _     -> go req (Just p) keys ps
+      PKey _ _    -> go req rest (p:keys) ps
+
+-- | 実引数を (位置引数, キーワード引数ペア) に分離
+--   キーワード引数は :key value の形式でペアとして扱う
+splitActualArgs :: [Val] -> ([Val], [(Text, Val)])
+splitActualArgs = go []
+  where
+    go posArgs [] = (reverse posArgs, [])
+    go posArgs (VSym key : val : rest)
+      | T.isPrefixOf ":" key =
+          let keyName = T.drop 1 key  -- ":" を除去
+              (_, keyPairs) = go [] rest
+          in (reverse posArgs, (keyName, val) : keyPairs)
+    go posArgs (v : rest) = go (v : posArgs) rest
+
+-- | キーワード引数のバインディング
+--   指定されたキーワードの値を使用し、指定されていない場合はデフォルト値を評価
+bindKeyArgs :: [Param] -> [(Text, Val)] -> Expr -> Env -> Eval Env
+bindKeyArgs keys keywordPairs bodyExpr closureEnv = do
+  bindings <- forM keys $ \case
+    PKey name maybeDefault -> do
+      case lookup name keywordPairs of
+        Just val -> pure (name, val)
+        Nothing -> case maybeDefault of
+          Just defaultExpr -> do
+            -- デフォルト値をクロージャ環境で評価
+            savedLocalEnv <- getLocalEnv
+            putLocalEnv closureEnv
+            val <- eval defaultExpr
+            putLocalEnv savedLocalEnv
+            pure (name, val)
+          Nothing -> pure (name, VNil)  -- デフォルトなしは nil
+    _ -> throwErrorAt (exprSpan bodyExpr) "内部エラー: bindKeyArgs に非キーワード引数"
+  pure $ Map.fromList bindings
 
 -- | Expr を評価せずに Val に変換する (quote / マクロ引数用)
 exprToVal :: Expr -> Val
@@ -789,3 +854,31 @@ extractSym :: Expr -> Eval Text
 extractSym (ESym _ s) = pure s
 extractSym other      = throwErrorAt (exprSpan other) $ "引数にはシンボルが必要です: "
                                   <> pack (show other)
+
+-- | 引数リストを [Param] に変換する
+--   (x y)               → [PRequired "x", PRequired "y"]
+--   (x . rest)          → [PRequired "x", PRest "rest"]
+--   (x &key y z)        → [PRequired "x", PKey "y" Nothing, PKey "z" Nothing]
+--   (x &key (y 10) z)   → [PRequired "x", PKey "y" (Just (EInt _ 10)), PKey "z" Nothing]
+parseParams :: [Expr] -> Eval [Param]
+parseParams = go []
+  where
+    go acc [] = pure (reverse acc)
+    go acc (ESym _ "." : ESym _ restName : rest)
+      | null rest = pure (reverse (PRest restName : acc))
+      | otherwise = throwErrorAt dummySpan "不正な引数リスト: '.' の後にはパラメータが1つだけ必要です"
+    go acc (ESym _ "&key" : rest) = parseKeyParams acc rest
+    go acc (ESym _ name : rest) = go (PRequired name : acc) rest
+    go _ (other : _) = throwErrorAt (exprSpan other) $ "引数にはシンボルが必要です: " <> pack (show other)
+
+-- | &key 以降のキーワード引数をパースする
+--   (&key x y)          → [PKey "x" Nothing, PKey "y" Nothing]
+--   (&key (x 10) y)     → [PKey "x" (Just (EInt 10)), PKey "y" Nothing]
+parseKeyParams :: [Param] -> [Expr] -> Eval [Param]
+parseKeyParams acc [] = pure (reverse acc)
+parseKeyParams acc (ESym _ name : rest) =
+  parseKeyParams (PKey name Nothing : acc) rest
+parseKeyParams acc (EList _ [ESym _ name, defaultExpr] : rest) =
+  parseKeyParams (PKey name (Just defaultExpr) : acc) rest
+parseKeyParams _ (other : _) =
+  throwErrorAt (exprSpan other) $ "&key: シンボルまたは (シンボル デフォルト値) が必要です: " <> pack (show other)

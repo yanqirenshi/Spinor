@@ -41,7 +41,7 @@ import Numeric (readHex)
 
 import Spinor.Syntax (Expr(..), Pattern(..), ConstructorDef(..), TypeExpr(..), readExpr, dummySpan, formatError)
 import Spinor.Eval (Eval, runEval, eval, valToExpr, exprToVal, applyClosureBody, lookupSymbol)
-import Spinor.Val (Env, Val(..))
+import Spinor.Val (Env, Val(..), Param(..))
 import Spinor.Expander (expand)
 import Spinor.Lsp.Docs (primitiveDocs, DocEntry(..))
 import qualified Data.Map.Strict as Map
@@ -828,13 +828,13 @@ getAutodocInfo env forms =
                     -- primitiveDocs になければ Env を検索
                     case Map.lookup funcName env of
                         Just (VFunc args _ _) ->
-                            let argStr = "(" <> funcName <> " " <> T.intercalate " " args <> ")"
+                            let argStr = "(" <> funcName <> " " <> showParamsText args <> ")"
                             in EList dummySpan [EStr dummySpan argStr, ESym dummySpan "t"]
                         Just (VPrim name _) ->
                             let argStr = "(" <> name <> " ...)"
                             in EList dummySpan [EStr dummySpan argStr, ESym dummySpan "t"]
                         Just (VMacro args _ _) ->
-                            let argStr = "(" <> funcName <> " " <> T.intercalate " " args <> ")"
+                            let argStr = "(" <> funcName <> " " <> showParamsText args <> ")"
                             in EList dummySpan [EStr dummySpan argStr, ESym dummySpan "t"]
                         _ -> EList dummySpan [ESym dummySpan ":not-available", ESym dummySpan "t"]
 
@@ -856,10 +856,10 @@ getArglist env funcName =
             -- primitiveDocs になければ Env を検索
             case Map.lookup funcName env of
                 Just (VFunc args _ _) ->
-                    let argStr = "(" <> T.intercalate " " args <> ")"
+                    let argStr = "(" <> showParamsText args <> ")"
                     in EStr dummySpan argStr
                 Just (VMacro args _ _) ->
-                    let argStr = "(" <> T.intercalate " " args <> ")"
+                    let argStr = "(" <> showParamsText args <> ")"
                     in EStr dummySpan argStr
                 Just (VPrim _ _) -> EStr dummySpan "(...)"
                 _ -> EStr dummySpan ""
@@ -1055,7 +1055,7 @@ disassembleSymbol env name =
 formatValForDisassembly :: Val -> Text
 formatValForDisassembly (VFunc args body closureEnv) = T.unlines
     [ "; Function"
-    , "; Arguments: (" <> T.intercalate " " args <> ")"
+    , "; Arguments: (" <> showParamsText args <> ")"
     , "; Closure environment: " <> T.pack (show (length (Map.keys closureEnv))) <> " bindings"
     , ";"
     , "; Body:"
@@ -1063,7 +1063,7 @@ formatValForDisassembly (VFunc args body closureEnv) = T.unlines
     ]
 formatValForDisassembly (VMacro args body closureEnv) = T.unlines
     [ "; Macro"
-    , "; Arguments: (" <> T.intercalate " " args <> ")"
+    , "; Arguments: (" <> showParamsText args <> ")"
     , "; Closure environment: " <> T.pack (show (length (Map.keys closureEnv))) <> " bindings"
     , ";"
     , "; Body:"
@@ -1156,11 +1156,11 @@ valContentText (VList xs) = T.unlines $
     ("Length: " <> T.pack (show (length xs))) :
     map (\(i, v) -> "  [" <> T.pack (show i) <> "] " <> valTitle v) (zip [(0::Int)..] xs)
 valContentText (VFunc args _ _) = T.unlines
-    [ "Arguments: (" <> T.intercalate " " args <> ")"
+    [ "Arguments: (" <> showParamsText args <> ")"
     , "Type: User-defined function"
     ]
 valContentText (VMacro args _ _) = T.unlines
-    [ "Arguments: (" <> T.intercalate " " args <> ")"
+    [ "Arguments: (" <> showParamsText args <> ")"
     , "Type: User-defined macro"
     ]
 valContentText (VPrim name _) = T.unlines
@@ -1181,6 +1181,32 @@ valContentText (VCLBuffer _ n) = "Size: " <> T.pack (show n) <> " elements"
 valContentText (VCLKernel _ name) = "Kernel: " <> name
 valContentText (VWindow _) = "Type: GLFW Window"
 
+-- | Param を Text に変換
+showParamText :: Param -> Text
+showParamText (PRequired name) = name
+showParamText (PRest name) = ". " <> name
+showParamText (PKey name Nothing) = "&key " <> name
+showParamText (PKey name (Just _)) = "&key (" <> name <> " ...)"
+
+-- | [Param] を表示用文字列に変換
+showParamsText :: [Param] -> Text
+showParamsText params = formatParams params False
+  where
+    formatParams [] _ = ""
+    formatParams (p:ps) inKey = case p of
+      PRequired name ->
+        if null ps then name else name <> " " <> formatParams ps False
+      PRest name ->
+        ". " <> name
+      PKey name _ ->
+        let prefix = if inKey then "" else "&key "
+            formatted = formatKeyParam p
+            rest = formatParams ps True
+        in prefix <> formatted <> (if T.null rest then "" else " " <> rest)
+    formatKeyParam (PKey name Nothing) = name
+    formatKeyParam (PKey name (Just _)) = "(" <> name <> " ...)"
+    formatKeyParam _ = ""
+
 -- | 値のタイトルを取得
 valTitle :: Val -> Text
 valTitle (VInt n) = T.pack (show n)
@@ -1190,8 +1216,8 @@ valTitle (VStr s) = "\"" <> s <> "\""
 valTitle (VSym s) = s
 valTitle VNil = "nil"
 valTitle (VList xs) = "(" <> T.pack (show (length xs)) <> " elements)"
-valTitle (VFunc args _ _) = "(fn (" <> T.intercalate " " args <> ") ...)"
-valTitle (VMacro args _ _) = "(macro (" <> T.intercalate " " args <> ") ...)"
+valTitle (VFunc args _ _) = "(fn (" <> showParamsText args <> ") ...)"
+valTitle (VMacro args _ _) = "(macro (" <> showParamsText args <> ") ...)"
 valTitle (VPrim name _) = "<primitive: " <> name <> ">"
 valTitle (VData name _) = "<" <> name <> ">"
 valTitle (VMVar _) = "<mvar>"
