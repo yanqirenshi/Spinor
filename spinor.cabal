@@ -17,6 +17,7 @@ library
     Spinor.EscapeAnalysis
     Spinor.Loader
     Spinor.Compiler.Codegen
+    Spinor.Compiler.LLVM
     Spinor.Server
     Spinor.DocGen
     Spinor.Lsp.Docs
@@ -49,7 +50,9 @@ library
     OpenGL     >= 3.0  && < 4,
     aeson      >= 2.0  && < 3,
     scientific >= 0.3  && < 1,
-    process    >= 1.6  && < 2
+    process    >= 1.6  && < 2,
+    llvm-hs-pure >= 9.0 && < 10,
+    llvm-hs      >= 9.0 && < 10
   extra-libraries:  OpenCL
   default-language: Haskell2010
   ghc-options:      -Wall
