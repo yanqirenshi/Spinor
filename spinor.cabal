@@ -28,6 +28,7 @@ library
     Spinor.Template
     Spinor.MCP
     Spinor.Core.Http
+    Spinor.Core.Socket
   build-depends:
     base       >= 4.14 && < 5,
     containers >= 0.6  && < 1,
@@ -80,6 +81,7 @@ test-suite spinor-test
     Spinor.BorrowCheckSpec
     Spinor.RegionSpec
     Spinor.HttpSpec
+    Spinor.SocketSpec
   build-depends:
     base           >= 4.14 && < 5,
     hspec          >= 2.7  && < 3,

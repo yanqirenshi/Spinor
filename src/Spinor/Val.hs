@@ -19,6 +19,7 @@ import Control.Concurrent.MVar (MVar)
 import qualified Data.Vector.Storable as VS
 import Foreign.Ptr (Ptr)
 import qualified Graphics.UI.GLFW as GLFW
+import Network.Socket (Socket)
 
 import Spinor.Syntax (Expr)
 
@@ -90,6 +91,7 @@ data Val
   | VCLBuffer  (Ptr ()) Int                    -- OpenCL バッファ (Mem, 要素数)
   | VCLKernel  (Ptr ()) Text                   -- OpenCL カーネル (Kernel, カーネル名)
   | VWindow    GLFW.Window                     -- GLFW ウィンドウハンドル
+  | VSocket    Socket                          -- TCP ソケットハンドル
 
 -- | テスト用の構造的等値比較
 --   VPrim, VFunc, VMacro, VMVar は関数/参照を含むため常に不等
@@ -108,6 +110,7 @@ instance Eq Val where
   VCLBuffer m1 s1  == VCLBuffer m2 s2  = m1 == m2 && s1 == s2
   VCLKernel k1 n1  == VCLKernel k2 n2  = k1 == k2 && n1 == n2
   VWindow w1       == VWindow w2       = w1 == w2
+  VSocket _        == VSocket _        = False  -- Socket は参照のため常に不等
   _         == _         = False
 
 instance Show Val where
@@ -136,3 +139,4 @@ showVal (VCLContext _ _)  = "<CLContext>"
 showVal (VCLBuffer _ n)   = "<CLBuffer:size=" ++ show n ++ ">"
 showVal (VCLKernel _ name) = "<CLKernel:" ++ T.unpack name ++ ">"
 showVal (VWindow _)        = "<Window>"
+showVal (VSocket _)        = "<socket>"
