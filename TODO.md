@@ -153,9 +153,9 @@ Spinor / Twister の魅力を伝えるための Web プレゼンス。
     - [ ] **Comparison:** 現行の C言語トランスパイル方式とのパフォーマンス・ビルド時間の比較。
 
 ## 📦 Standard Library Expansion (標準ライブラリ拡充)
-- [x] **Step 61: Rename `null?` to `nil?` (Refactoring)**
+- [ ] **Step 61: Rename `null?` to `nil?` (Refactoring)**
     - [x] **Design:** `specs/refactor_nil_p_spec.md` および `tasks/refactor_nil_p_task.md` の作成、GitHub Issue #1 へのコメント。
-    - [x] **Implementation:** カーネル、ライブラリ、テスト、ドキュメントの全置換。
+    - [ ] **Implementation:** カーネル、ライブラリ、テスト、ドキュメントの全置換。
 - [x] **Step 35: Standard Library Expansion (String & I/O)**
     - [x] **String Operations:** `string-append`, `string-length`, `substring`, `string=?` の実装。
     - [x] **File I/O:** `read-file`, `write-file`, `append-file` の実装。
