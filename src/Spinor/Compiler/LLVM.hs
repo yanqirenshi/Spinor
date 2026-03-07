@@ -1,13 +1,17 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | LLVM Backend for Spinor
 --
--- This module provides LLVM IR generation and JIT execution capabilities.
--- Currently supports only integer literals, addition, and multiplication.
+-- Provides LLVM IR generation and JIT execution for integer arithmetic.
+-- Enabled via @cabal build -f llvm@.
+--
+-- Supported expressions:
+--   - Integer literals
+--   - @(+ e1 e2)@, @(- e1 e2)@, @(* e1 e2)@
 module Spinor.Compiler.LLVM
-  ( codegen
-  , runJIT
+  ( runJIT
   ) where
 
 import Data.Text (Text)
@@ -15,70 +19,66 @@ import qualified Data.Text as T
 
 import Spinor.Syntax (Expr(..))
 
--- Import LLVM pure (for IR generation)
-import qualified LLVM.AST as AST
-import qualified LLVM.AST.Type as AST
-import qualified LLVM.AST.Constant as C
-import qualified LLVM.AST.IntegerPredicate as IP
-import LLVM.AST.Name (Name(..))
-import LLVM.IRBuilder.Module
-import LLVM.IRBuilder.Monad
-import LLVM.IRBuilder.Instruction
+#ifdef USE_LLVM
 
--- Import LLVM (for JIT execution)
-import LLVM.Context
-import LLVM.Module
-import LLVM.Target
-import LLVM.ExecutionEngine
+import Data.Int (Int64)
+import Control.Exception (try, SomeException)
 
-import Foreign.Ptr (FunPtr, castFunPtr)
+import qualified LLVM.Core as LC
+import qualified LLVM.ExecutionEngine as EE
 
--- | Generate LLVM IR Module from a Spinor expression
-codegen :: Expr -> AST.Module
-codegen expr = buildModule "spinor_jit" $ do
-  -- Define main function that evaluates the expression and returns result
-  function "main" [] AST.i64 $ \[] -> mdo
-    result <- codegenExpr expr
-    ret result
+-- | Compile a Spinor expression to LLVM IR and JIT-execute it.
+-- Returns the integer result or an error message.
+runJIT :: Expr -> IO (Either Text Integer)
+runJIT expr = do
+  result <- try $ EE.simpleFunction (buildModule expr)
+  case result of
+    Left (e :: SomeException) ->
+      return $ Left (T.pack $ "JIT error: " ++ show e)
+    Right fn -> do
+      n <- fn
+      return $ Right (fromIntegral (n :: Int64))
 
--- | Generate LLVM IR for a single expression
-codegenExpr :: (MonadIRBuilder m) => Expr -> m AST.Operand
+-- | Build a CodeGenModule that defines a single function evaluating the expression.
+buildModule :: Expr -> LC.CodeGenModule (LC.Function (IO Int64))
+buildModule expr =
+  LC.createFunction LC.ExternalLinkage (buildFunction expr)
+
+-- | Build the function body that evaluates the expression and returns the result.
+buildFunction :: Expr -> LC.CodeGenFunction Int64 ()
+buildFunction expr = do
+  result <- codegenExpr expr
+  LC.ret result
+
+-- | Generate LLVM IR for a single Spinor expression.
+codegenExpr :: Expr -> LC.CodeGenFunction r (LC.Value Int64)
 codegenExpr (EInt _ n) =
-  pure $ AST.ConstantOperand $ C.Int 64 n
+  return $ LC.valueOf (fromIntegral n :: Int64)
 
 codegenExpr (EList _ [ESym _ "+", e1, e2]) = do
   v1 <- codegenExpr e1
   v2 <- codegenExpr e2
-  add v1 v2
-
-codegenExpr (EList _ [ESym _ "*", e1, e2]) = do
-  v1 <- codegenExpr e1
-  v2 <- codegenExpr e2
-  mul v1 v2
+  LC.add v1 v2
 
 codegenExpr (EList _ [ESym _ "-", e1, e2]) = do
   v1 <- codegenExpr e1
   v2 <- codegenExpr e2
-  sub v1 v2
+  LC.sub v1 v2
 
-codegenExpr other =
-  -- For unsupported expressions, return 0
-  pure $ AST.ConstantOperand $ C.Int 64 0
+codegenExpr (EList _ [ESym _ "*", e1, e2]) = do
+  v1 <- codegenExpr e1
+  v2 <- codegenExpr e2
+  LC.mul v1 v2
 
--- | Foreign import for calling the JIT-compiled function
-foreign import ccall "dynamic"
-  mkMain :: FunPtr (IO Int) -> IO Int
+codegenExpr _other =
+  -- Unsupported expression: return 0
+  return $ LC.valueOf (0 :: Int64)
 
--- | Execute LLVM IR via JIT and return the result
-runJIT :: AST.Module -> IO (Either Text Integer)
-runJIT llvmModule = do
-  withContext $ \ctx ->
-    withModuleFromAST ctx llvmModule $ \m -> do
-      withHostTargetMachineDefault $ \tm ->
-        withExecutionEngine tm m $ \ee -> do
-          maybeFn <- getFunction ee (Name "main")
-          case maybeFn of
-            Nothing -> return $ Left "Failed to find main function"
-            Just fn -> do
-              result <- mkMain (castFunPtr fn)
-              return $ Right (fromIntegral result)
+#else
+
+-- | Stub: LLVM is disabled in this build.
+-- Build with @cabal build -f llvm@ to enable.
+runJIT :: Expr -> IO (Either Text Integer)
+runJIT _ = return $ Left "LLVM is disabled in this build. Use: cabal build -f llvm"
+
+#endif

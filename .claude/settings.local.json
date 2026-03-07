@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:yanqirenshi.github.io)"
+      "WebFetch(domain:yanqirenshi.github.io)",
+      "WebFetch(domain:hackage.haskell.org)"
     ]
   }
 }

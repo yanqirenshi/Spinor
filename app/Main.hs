@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main (main) where
@@ -23,6 +24,7 @@ import Spinor.Infer     (Types(..), runInfer, inferTop, baseTypeEnv)
 import Spinor.Primitive (primitiveBindings)
 import Spinor.Loader    (LoaderConfig(..), newModuleRegistry, evalFileWithModules)
 import Spinor.Compiler.Codegen (compileProgram)
+import qualified Spinor.Compiler.LLVM as LLVM
 import Spinor.Server    (runServer)
 import Spinor.Lsp.Server (runLspServer)
 import Spinor.DocGen    (generateDocs)
@@ -58,6 +60,7 @@ helpMessage = unlines
   , "  build <file>           Compile to native binary (via C + GCC)"
   , "  build <file> --wasm    Compile to WASM (via C + Emscripten)"
   , "  compile <file>         Transpile to C source code only"
+  , "  jit <file>             JIT compile and execute via LLVM (requires -f llvm)"
   , "  server [--port <n>]    Start Swank server for SLY/SLIME (default: 4005)"
   , "  lsp                    Start LSP server (for editor integration)"
   , "  mcp                    Start MCP server (for AI agent integration)"
@@ -93,6 +96,7 @@ main = do
     ["init", name]      -> initMode name
     ["check", file]     -> checkMode jsonMode file
     ["compile", file]   -> compileMode file
+    ["jit", file]       -> jitMode file
     ["build", file]              -> buildMode file
     ["build", file, "--wasm"]    -> buildWasmMode file
     ["build", "--wasm", file]    -> buildWasmMode file
@@ -314,6 +318,29 @@ compileMode file = do
       let cCode = compileProgram exprs
       TIO.writeFile "output.c" cCode
       putStrLn "Compiled to output.c"
+
+-- | JIT モード: LLVM JIT で式を実行
+jitMode :: FilePath -> IO ()
+jitMode file = do
+  content <- readFileUtf8 file
+  case parseFile content of
+    Left err -> do
+      putStrLn $ "Parse error: " ++ err
+      exitFailure
+    Right exprs -> do
+      if null exprs
+        then do
+          putStrLn "No expressions found."
+          exitFailure
+        else do
+          let lastExpr = last exprs
+          result <- LLVM.runJIT lastExpr
+          case result of
+            Left err -> do
+              TIO.putStrLn $ "JIT error: " <> err
+              exitFailure
+            Right n -> do
+              print n
 
 -- | ビルドモード: .spin ファイルからネイティブバイナリを生成
 buildMode :: FilePath -> IO ()
