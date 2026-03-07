@@ -608,6 +608,157 @@ __kernel void vector_add(__global const float *a,
 
 ---
 
+## 7. CLI ツールの作成 (Command Line Interface)
+
+コマンドライン引数を受け取り、外部 API と連携する実用的な CLI ツールのパターンです。
+
+### 基本パターン: コマンドライン引数の処理
+
+```lisp
+;; コマンドライン引数を取得
+(def args (command-line-args))
+
+;; 引数の確認
+(if (empty? args)
+    (print "Usage: spinor script.spin <arg1> <arg2>")
+    (print (string-append "引数: " (car args))))
+
+;; 複数の引数を処理
+(def process-args
+  (fn (args)
+    (if (empty? args)
+        nil
+        (begin
+          (print (string-append "処理中: " (car args)))
+          (process-args (cdr args))))))
+
+(process-args args)
+```
+
+### 応用例: オプション引数の解析
+
+```lisp
+;; --key=value 形式のオプションをパース
+(def parse-option
+  (fn (arg)
+    (let ((parts (string-split arg "=")))
+      (if (> (length parts) 1)
+          (list (car parts) (car (cdr parts)))
+          (list arg nil)))))
+
+;; オプションを解析して alist に変換
+(def parse-options
+  (fn (args)
+    (if (empty? args)
+        nil
+        (cons (parse-option (car args))
+              (parse-options (cdr args))))))
+
+;; 使用例
+(def options (parse-options (command-line-args)))
+(print options)
+; spinor script.spin --name=Alice --verbose
+; => (("--name" "Alice") ("--verbose" nil))
+```
+
+### 実践例: はてなブックマーク件数取得 CLI
+
+```lisp
+; hatena-b.spin - Hatena Bookmark Count CLI Tool
+;
+; Usage:
+;   spinor app/hatena-b.spin <URL>
+;
+; Example:
+;   spinor app/hatena-b.spin https://github.com/yanqirenshi/Spinor
+
+; Show usage message
+(def show-usage
+  (fn ()
+    (begin
+      (print "Usage: spinor app/hatena-b.spin <URL>")
+      (print "")
+      (print "Example:")
+      (print "  spinor app/hatena-b.spin https://github.com/yanqirenshi/Spinor")
+      (print "")
+      (print "This tool fetches the Hatena Bookmark count for a given URL."))))
+
+; Fetch bookmark count from Hatena API
+(def fetch-bookmark-count
+  (fn (url)
+    (let ((api-url (string-append "https://bookmark.hatenaapis.com/count/entry?url=" url)))
+      (http-get api-url))))
+
+; Display result from response
+(def display-result
+  (fn (url response)
+    (let ((status (http-status response))
+          (body   (http-body response)))
+      (if (= status 200)
+          (print (string-append "[Hatena] " (string-trim body) " bookmarks: " url))
+          (begin
+            (print (string-append "[Error] HTTP status: " (http-int->string status)))
+            (print (string-append "        URL: " url)))))))
+
+; Main entry point
+(def main
+  (fn ()
+    (let ((args (command-line-args)))
+      (if (empty? args)
+          (show-usage)
+          (let ((url (car args)))
+            (let ((response (fetch-bookmark-count url)))
+              (display-result url response)))))))
+
+; Run
+(main)
+```
+
+### 実行例
+
+```bash
+$ spinor app/hatena-b.spin https://www.google.com
+Loading Twister environment...
+Twister loaded.
+[Hatena] 1508 bookmarks: https://www.google.com
+
+$ spinor app/hatena-b.spin
+Loading Twister environment...
+Twister loaded.
+Usage: spinor app/hatena-b.spin <URL>
+
+Example:
+  spinor app/hatena-b.spin https://github.com/yanqirenshi/Spinor
+
+This tool fetches the Hatena Bookmark count for a given URL.
+```
+
+### CLI ツール作成のポイント
+
+```lisp
+;; 1. 引数がない場合は必ず使い方を表示
+(if (empty? args)
+    (show-usage)
+    (main-logic args))
+
+;; 2. エラー時は適切なメッセージを表示
+(handler-case
+  (do-something)
+  (error (msg)
+    (begin
+      (print (string-append "[Error] " msg))
+      (exit 1))))
+
+;; 3. 複数行の関数本体は begin でラップ
+(def my-func
+  (fn ()
+    (begin
+      (print "Line 1")
+      (print "Line 2"))))
+```
+
+---
+
 ## Tips & ベストプラクティス
 
 ### エラーハンドリングの組み合わせ
