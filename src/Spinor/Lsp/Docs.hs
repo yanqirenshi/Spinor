@@ -1497,6 +1497,408 @@ primitiveDocs = Map.fromList
       , docSeeAlso = ["http-get", "http-post", "core-http-request"]
       , docNotes = "任意の HTTP メソッドをサポートする汎用的な関数です。"
       })
+
+  -- ========================================
+  -- Socket API (低レベルソケット操作)
+  -- ========================================
+  , ("socket-listen", DocEntry
+      { docSignature = "(Int) -> Socket"
+      , docDescription = "指定されたポートで TCP サーバーソケットを作成し、接続待ち受け状態にします。SO_REUSEADDR オプションが自動的に設定されます。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "socket-listen"
+      , docSyntax = "(socket-listen port)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `port` -- 待ち受けポート番号 (整数、1-65535)"
+          , "- 戻り値: サーバーソケットハンドル (`Socket`)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; ポート 8080 でサーバーを起動"
+          , "(def server (socket-listen 8080))"
+          , "server  ; => <socket>"
+          , ""
+          , ";; クライアント接続を待ち受け"
+          , "(def client-info (socket-accept server))"
+          , "```"
+          ]
+      , docSideEffects = "TCP ソケットを作成し、指定ポートにバインドして listen 状態にします。"
+      , docAffectedBy = "ポートがすでに使用中の場合、エラーが発生します。"
+      , docExceptionalSituations = T.unlines
+          [ "- 引数がない場合、エラーを返します。"
+          , "- 引数が整数でない場合、エラーを返します。"
+          , "- ポートが使用中の場合、ソケットエラーを返します。"
+          ]
+      , docSeeAlso = ["socket-accept", "socket-close", "socket-connect"]
+      , docNotes = "バックログは 5 に設定されています。HTTP サーバーの構築に使用できます。"
+      })
+
+  , ("socket-accept", DocEntry
+      { docSignature = "(Socket) -> (Socket, String)"
+      , docDescription = "サーバーソケットでクライアント接続を待ち受け (ブロッキング)、接続が確立したらクライアントソケットとピアアドレスを返します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "socket-accept"
+      , docSyntax = "(socket-accept server-socket)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `server-socket` -- `socket-listen` で作成したサーバーソケット"
+          , "- 戻り値: リスト `(client-socket peer-address)`"
+          , "    - `client-socket` -- クライアントとの通信用ソケット"
+          , "    - `peer-address` -- クライアントのアドレス (文字列表現)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(def server (socket-listen 8080))"
+          , ""
+          , ";; クライアント接続を待機 (ブロッキング)"
+          , "(def result (socket-accept server))"
+          , "(car result)   ; => <socket> (クライアントソケット)"
+          , "(cadr result)  ; => \"127.0.0.1:54321\" (ピアアドレス)"
+          , "```"
+          ]
+      , docSideEffects = "接続が確立するまでブロックします。"
+      , docAffectedBy = "クライアントからの接続要求に依存します。"
+      , docExceptionalSituations = T.unlines
+          [ "- 引数がソケットでない場合、エラーを返します。"
+          , "- ソケットがクローズされている場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["socket-listen", "socket-recv", "socket-send", "socket-close"]
+      , docNotes = "マルチクライアント対応には spawn と組み合わせて使用します。"
+      })
+
+  , ("socket-recv", DocEntry
+      { docSignature = "(Socket, Int?) -> String"
+      , docDescription = "ソケットからデータを受信します。受信データは UTF-8 としてデコードされます (失敗時は Latin-1)。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "socket-recv"
+      , docSyntax = "(socket-recv socket [max-bytes])"
+      , docArgumentsAndValues = T.unlines
+          [ "- `socket` -- 受信元のソケット"
+          , "- `max-bytes` -- 最大受信バイト数 (オプション、デフォルト: 4096)"
+          , "- 戻り値: 受信したデータ (文字列)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; 最大 1024 バイト受信"
+          , "(def data (socket-recv client-sock 1024))"
+          , ""
+          , ";; デフォルト (4096 バイト) で受信"
+          , "(def data (socket-recv client-sock))"
+          , ""
+          , ";; HTTP リクエストの受信例"
+          , "(def request (socket-recv client 8192))"
+          , "; => \"GET / HTTP/1.1\\r\\nHost: localhost\\r\\n...\""
+          , "```"
+          ]
+      , docSideEffects = "データが到着するまでブロックする可能性があります。"
+      , docAffectedBy = "ネットワーク状態とピアの送信タイミングに依存します。"
+      , docExceptionalSituations = T.unlines
+          [ "- 第1引数がソケットでない場合、エラーを返します。"
+          , "- 第2引数が整数でない場合、エラーを返します。"
+          , "- 接続がクローズされた場合、空文字列を返します。"
+          ]
+      , docSeeAlso = ["socket-send", "socket-accept", "socket-connect"]
+      , docNotes = "バイナリデータの場合は UTF-8 デコードに失敗し、Latin-1 としてデコードされます。"
+      })
+
+  , ("socket-send", DocEntry
+      { docSignature = "(Socket, String) -> Int"
+      , docDescription = "ソケットにデータを送信します。文字列は UTF-8 としてエンコードされます。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "socket-send"
+      , docSyntax = "(socket-send socket data)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `socket` -- 送信先のソケット"
+          , "- `data` -- 送信するデータ (文字列)"
+          , "- 戻り値: 送信したバイト数 (整数)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; メッセージ送信"
+          , "(socket-send client \"Hello, World!\")"
+          , "; => 13"
+          , ""
+          , ";; HTTP レスポンス送信"
+          , "(def response \"HTTP/1.1 200 OK\\r\\nContent-Type: text/plain\\r\\n\\r\\nHello\")"
+          , "(socket-send client response)"
+          , "```"
+          ]
+      , docSideEffects = "ネットワーク経由でデータを送信します。"
+      , docAffectedBy = "ネットワーク状態と送信バッファに依存します。"
+      , docExceptionalSituations = T.unlines
+          [ "- 第1引数がソケットでない場合、エラーを返します。"
+          , "- 第2引数が文字列でない場合、エラーを返します。"
+          , "- 接続が切断されている場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["socket-recv", "socket-connect", "socket-accept"]
+      , docNotes = "sendAll を使用するため、指定した全データが送信されるまでブロックします。"
+      })
+
+  , ("socket-close", DocEntry
+      { docSignature = "(Socket) -> Bool"
+      , docDescription = "ソケットをグレースフルにクローズします。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "socket-close"
+      , docSyntax = "(socket-close socket)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `socket` -- クローズするソケット"
+          , "- 戻り値: 成功時に `#t`"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; クライアントソケットをクローズ"
+          , "(socket-close client-sock)  ; => #t"
+          , ""
+          , ";; サーバーソケットをクローズ"
+          , "(socket-close server-sock)  ; => #t"
+          , ""
+          , ";; unwind-protect でのリソース解放"
+          , "(unwind-protect"
+          , "  (begin"
+          , "    (socket-send sock \"data\")"
+          , "    (socket-recv sock))"
+          , "  (socket-close sock))"
+          , "```"
+          ]
+      , docSideEffects = "ソケットをクローズし、関連リソースを解放します。"
+      , docAffectedBy = "None."
+      , docExceptionalSituations = T.unlines
+          [ "- 引数がソケットでない場合、エラーを返します。"
+          , "- すでにクローズされている場合でも通常は成功します。"
+          ]
+      , docSeeAlso = ["socket-listen", "socket-connect", "unwind-protect"]
+      , docNotes = "リソースリークを防ぐため、使用後は必ずクローズしてください。unwind-protect との組み合わせを推奨します。"
+      })
+
+  , ("socket-connect", DocEntry
+      { docSignature = "(String, Int) -> Socket"
+      , docDescription = "指定されたホストとポートに TCP 接続を確立し、クライアントソケットを返します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "socket-connect"
+      , docSyntax = "(socket-connect host port)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `host` -- 接続先ホスト名または IP アドレス (文字列)"
+          , "- `port` -- 接続先ポート番号 (整数)"
+          , "- 戻り値: 接続されたクライアントソケット (`Socket`)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; ローカルサーバーに接続"
+          , "(def sock (socket-connect \"127.0.0.1\" 8080))"
+          , ""
+          , ";; ホスト名で接続"
+          , "(def sock (socket-connect \"localhost\" 80))"
+          , ""
+          , ";; HTTP リクエストを送信"
+          , "(socket-send sock \"GET / HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n\")"
+          , "(def response (socket-recv sock))"
+          , "(socket-close sock)"
+          , "```"
+          ]
+      , docSideEffects = "TCP 接続を確立します。"
+      , docAffectedBy = "ネットワーク状態とサーバーの可用性に依存します。"
+      , docExceptionalSituations = T.unlines
+          [ "- 引数がない場合、エラーを返します。"
+          , "- 第1引数が文字列でない場合、エラーを返します。"
+          , "- 第2引数が整数でない場合、エラーを返します。"
+          , "- ホスト名の解決に失敗した場合、エラーを返します。"
+          , "- 接続がタイムアウトまたは拒否された場合、エラーを返します。"
+          ]
+      , docSeeAlso = ["socket-send", "socket-recv", "socket-close", "socket-listen"]
+      , docNotes = "DNS 解決を自動的に行います。IPv4/IPv6 両方に対応しています。"
+      })
+
+  -- ========================================
+  -- HTTP サーバー (HTTP Server)
+  -- ========================================
+  , ("http-serve", DocEntry
+      { docSignature = "(Int, (Request -> Response)) -> ()"
+      , docDescription = "HTTP サーバーを起動します。指定されたポートで待ち受け、各リクエストに対してハンドラ関数を呼び出します。並行処理 (spawn) を使用して複数のクライアントを同時に処理できます。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "http-serve"
+      , docSyntax = "(http-serve port handler-fn)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `port` -- 待ち受けポート番号 (整数)"
+          , "- `handler-fn` -- リクエストを処理する関数"
+          , "    - 引数: Request Alist `((method \"GET\") (path \"/\") (headers ...) (body \"\"))`"
+          , "    - 戻り値: Response Alist `((status 200) (headers ...) (body \"...\"))`"
+          , "- 戻り値: なし (無限ループで待ち受け)"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , ";; シンプルな Hello World サーバー"
+          , "(def hello-handler"
+          , "  (fn (request)"
+          , "    (list (list \"status\" 200)"
+          , "          (list \"headers\" (list (list \"Content-Type\" \"text/plain\")))"
+          , "          (list \"body\" \"Hello, World!\"))))"
+          , ""
+          , "(http-serve 8080 hello-handler)"
+          , ""
+          , ";; リクエストパスに基づくルーティング"
+          , "(def router"
+          , "  (fn (request)"
+          , "    (let ((path (http-assoc-val \"path\" request \"/\")))"
+          , "      (if (equal path \"/hello\")"
+          , "          (list (list \"status\" 200)"
+          , "                (list \"body\" \"Hello!\"))"
+          , "          (list (list \"status\" 404)"
+          , "                (list \"body\" \"Not Found\"))))))"
+          , "```"
+          ]
+      , docSideEffects = "指定ポートで TCP サーバーを起動し、無限ループで接続を待ち受けます。"
+      , docAffectedBy = "ポートの使用状況、ネットワーク設定に依存します。"
+      , docExceptionalSituations = T.unlines
+          [ "- ポートが使用中の場合、ソケットエラーを返します。"
+          , "- ハンドラ関数内でエラーが発生した場合、エラーログを出力して次のリクエストを処理します。"
+          ]
+      , docSeeAlso = ["http-parse-request", "http-build-response", "socket-listen", "spawn"]
+      , docNotes = "twister/http-server.spin で定義されています。(load \"twister/http-server.spin\") で利用可能です。"
+      })
+
+  -- ========================================
+  -- 追加の文字列操作 (Additional String Operations)
+  -- ========================================
+  , ("string-split", DocEntry
+      { docSignature = "(String, String) -> [String]"
+      , docDescription = "文字列を区切り文字列で分割し、リストとして返します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "string-split"
+      , docSyntax = "(string-split str delimiter)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `str` -- 分割する文字列"
+          , "- `delimiter` -- 区切り文字列"
+          , "- 戻り値: 分割された文字列のリスト"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(string-split \"a,b,c\" \",\")  ; => (\"a\" \"b\" \"c\")"
+          , "(string-split \"hello world\" \" \")  ; => (\"hello\" \"world\")"
+          , "(string-split \"no-delimiter\" \"x\")  ; => (\"no-delimiter\")"
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "引数が文字列でない場合、エラーを返します。"
+      , docSeeAlso = ["string-trim", "string-index-of", "substring"]
+      , docNotes = "空の区切り文字列の場合、各文字がリストの要素になります。"
+      })
+
+  , ("string-trim", DocEntry
+      { docSignature = "(String) -> String"
+      , docDescription = "文字列の前後から空白文字 (スペース、タブ、改行) を除去します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "string-trim"
+      , docSyntax = "(string-trim str)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `str` -- トリムする文字列"
+          , "- 戻り値: 前後の空白を除去した文字列"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(string-trim \"  hello  \")  ; => \"hello\""
+          , "(string-trim \"\\n\\ttext\\n\")  ; => \"text\""
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "引数が文字列でない場合、エラーを返します。"
+      , docSeeAlso = ["string-split", "substring"]
+      , docNotes = ""
+      })
+
+  , ("string-index-of", DocEntry
+      { docSignature = "(String, String) -> Int"
+      , docDescription = "文字列内で部分文字列が最初に出現する位置を返します (0-indexed)。見つからない場合は -1 を返します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "string-index-of"
+      , docSyntax = "(string-index-of haystack needle)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `haystack` -- 検索対象の文字列"
+          , "- `needle` -- 検索する部分文字列"
+          , "- 戻り値: 見つかった位置 (0-indexed) または -1"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(string-index-of \"hello world\" \"world\")  ; => 6"
+          , "(string-index-of \"hello\" \"x\")  ; => -1"
+          , "(string-index-of \"aaa\" \"a\")  ; => 0"
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "引数が文字列でない場合、エラーを返します。"
+      , docSeeAlso = ["substring", "string-split"]
+      , docNotes = ""
+      })
+
+  , ("string-starts-with?", DocEntry
+      { docSignature = "(String, String) -> Bool"
+      , docDescription = "文字列が指定のプレフィックスで始まるかどうかを判定します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "string-starts-with"
+      , docSyntax = "(string-starts-with? str prefix)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `str` -- 検査する文字列"
+          , "- `prefix` -- プレフィックス"
+          , "- 戻り値: プレフィックスで始まれば `#t`、そうでなければ `#f`"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(string-starts-with? \"hello\" \"he\")  ; => #t"
+          , "(string-starts-with? \"hello\" \"lo\")  ; => #f"
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "引数が文字列でない場合、エラーを返します。"
+      , docSeeAlso = ["string-index-of", "substring"]
+      , docNotes = ""
+      })
+
+  , ("string-upcase", DocEntry
+      { docSignature = "(String) -> String"
+      , docDescription = "文字列内のすべての文字を大文字に変換します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "string-upcase"
+      , docSyntax = "(string-upcase str)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `str` -- 変換する文字列"
+          , "- 戻り値: 大文字に変換された文字列"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(string-upcase \"hello\")  ; => \"HELLO\""
+          , "(string-upcase \"Hello World\")  ; => \"HELLO WORLD\""
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "引数が文字列でない場合、エラーを返します。"
+      , docSeeAlso = ["string-downcase"]
+      , docNotes = ""
+      })
+
+  , ("string-downcase", DocEntry
+      { docSignature = "(String) -> String"
+      , docDescription = "文字列内のすべての文字を小文字に変換します。"
+      , docKind = CompletionItemKind_Function
+      , docSlug = "string-downcase"
+      , docSyntax = "(string-downcase str)"
+      , docArgumentsAndValues = T.unlines
+          [ "- `str` -- 変換する文字列"
+          , "- 戻り値: 小文字に変換された文字列"
+          ]
+      , docExamples = T.unlines
+          [ "```lisp"
+          , "(string-downcase \"HELLO\")  ; => \"hello\""
+          , "(string-downcase \"Hello World\")  ; => \"hello world\""
+          , "```"
+          ]
+      , docSideEffects = "None."
+      , docAffectedBy = "None."
+      , docExceptionalSituations = "引数が文字列でない場合、エラーを返します。"
+      , docSeeAlso = ["string-upcase"]
+      , docNotes = ""
+      })
   ]
 
 lookupDoc :: Text -> Maybe DocEntry

@@ -35,6 +35,8 @@ twisterFiles =
   [ "twister/core.spin"
   , "twister/list.spin"
   , "twister/math.spin"
+  , "twister/http.spin"
+  , "twister/http-server.spin"
   ]
 
 -- | バージョン情報

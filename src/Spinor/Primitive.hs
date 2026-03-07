@@ -17,10 +17,11 @@ import Spinor.GPGPU (gpgpuBindings)
 import Spinor.GL (glBindings)
 import Spinor.Library.Json (jsonParse, jsonStringify)
 import Spinor.Core.Http (httpPrimitives)
+import Spinor.Core.Socket (socketPrimitives)
 
 -- | 初期環境: プリミティブ関数を束縛した Env
 primitiveBindings :: Env
-primitiveBindings = Map.unions [corePrimitives, gpgpuBindings, glBindings, Map.fromList httpPrimitives]
+primitiveBindings = Map.unions [corePrimitives, gpgpuBindings, glBindings, Map.fromList httpPrimitives, Map.fromList socketPrimitives]
 
 corePrimitives :: Env
 corePrimitives = Map.fromList
@@ -46,6 +47,12 @@ corePrimitives = Map.fromList
   , ("string=?",      VPrim "string=?"      primStringEq)
   , ("string->list",  VPrim "string->list"  primStringToList)
   , ("list->string",  VPrim "list->string"  primListToString)
+  , ("string-split",  VPrim "string-split"  primStringSplit)
+  , ("string-trim",   VPrim "string-trim"   primStringTrim)
+  , ("string-index-of", VPrim "string-index-of" primStringIndexOf)
+  , ("string-starts-with?", VPrim "string-starts-with?" primStringStartsWith)
+  , ("string-upcase", VPrim "string-upcase" primStringUpcase)
+  , ("string-downcase", VPrim "string-downcase" primStringDowncase)
   -- 行列操作
   , ("matrix",    VPrim "matrix"    primMatrix)
   , ("mdim",      VPrim "mdim"     primMdim)
@@ -184,6 +191,53 @@ primListToString [VList vs] = case traverse getStr vs of
     getStr _        = Nothing
 primListToString [_]   = Left "list->string: リストが必要です"
 primListToString args  = Left $ "list->string: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"
+
+-- | string-split: 区切り文字列で分割する
+--   (string-split str delim) -> リスト
+primStringSplit :: [Val] -> Either Text Val
+primStringSplit [VStr s, VStr delim]
+    | T.null delim = Right $ VList (map (VStr . T.singleton) (T.unpack s))
+    | otherwise    = Right $ VList (map VStr (T.splitOn delim s))
+primStringSplit [_, _] = Left "string-split: (String, String) が必要です"
+primStringSplit args   = Left $ "string-split: 引数の数が不正です (期待: 2, 実際: " <> tshow (length args) <> ")"
+
+-- | string-trim: 前後の空白を除去する
+--   (string-trim str) -> String
+primStringTrim :: [Val] -> Either Text Val
+primStringTrim [VStr s] = Right $ VStr (T.strip s)
+primStringTrim [_]      = Left "string-trim: 文字列が必要です"
+primStringTrim args     = Left $ "string-trim: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"
+
+-- | string-index-of: 部分文字列の位置を返す (-1 = 見つからない)
+--   (string-index-of haystack needle) -> Int
+primStringIndexOf :: [Val] -> Either Text Val
+primStringIndexOf [VStr haystack, VStr needle] =
+    case T.breakOn needle haystack of
+        (before, found) | T.null found -> Right $ VInt (-1)
+                        | otherwise    -> Right $ VInt (fromIntegral $ T.length before)
+primStringIndexOf [_, _] = Left "string-index-of: (String, String) が必要です"
+primStringIndexOf args   = Left $ "string-index-of: 引数の数が不正です (期待: 2, 実際: " <> tshow (length args) <> ")"
+
+-- | string-starts-with?: 文字列が指定のプレフィックスで始まるか
+--   (string-starts-with? str prefix) -> Bool
+primStringStartsWith :: [Val] -> Either Text Val
+primStringStartsWith [VStr s, VStr prefix] = Right $ VBool (T.isPrefixOf prefix s)
+primStringStartsWith [_, _] = Left "string-starts-with?: (String, String) が必要です"
+primStringStartsWith args   = Left $ "string-starts-with?: 引数の数が不正です (期待: 2, 実際: " <> tshow (length args) <> ")"
+
+-- | string-upcase: 文字列を大文字に変換
+--   (string-upcase str) -> String
+primStringUpcase :: [Val] -> Either Text Val
+primStringUpcase [VStr s] = Right $ VStr (T.toUpper s)
+primStringUpcase [_]      = Left "string-upcase: 文字列が必要です"
+primStringUpcase args     = Left $ "string-upcase: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"
+
+-- | string-downcase: 文字列を小文字に変換
+--   (string-downcase str) -> String
+primStringDowncase :: [Val] -> Either Text Val
+primStringDowncase [VStr s] = Right $ VStr (T.toLower s)
+primStringDowncase [_]      = Left "string-downcase: 文字列が必要です"
+primStringDowncase args     = Left $ "string-downcase: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"
 
 tshow :: Show a => a -> Text
 tshow = pack . show
