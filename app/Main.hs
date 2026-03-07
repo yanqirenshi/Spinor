@@ -9,6 +9,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Aeson (ToJSON(..), object, (.=), encode)
 import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF, hSetEncoding, utf8)
+import Control.Monad (when)
 import System.Directory (doesFileExist, getCurrentDirectory, removeFile, createDirectoryIfMissing)
 import System.Environment (getArgs)
 import System.Exit (exitFailure, exitSuccess, ExitCode(..))
@@ -28,6 +29,7 @@ import Spinor.Lsp.Server (runLspServer)
 import Spinor.DocGen    (generateDocs)
 import Spinor.Template  (mainSpin, testSpin, gitignore, claudeMd, teamsMd, sampleTaskMd)
 import Spinor.MCP       (runMcpServer)
+import Spinor.Core.Args (setScriptArgs)
 
 -- | Twister ファイル一覧 (ロード順)
 twisterFiles :: [FilePath]
@@ -64,6 +66,7 @@ helpMessage = unlines
   , "  docgen                 Generate Markdown reference documentation"
   , ""
   , "Options:"
+  , "  -q, --quiet            Suppress system logs (Loading..., etc.)"
   , "  --json                 Output results in JSON format (for AI agents)"
   , "  --help, -h             Show this help message"
   , "  --version, -v          Show version information"
@@ -82,40 +85,45 @@ main = do
   hSetEncoding stdout utf8
   hSetEncoding stdin utf8
   args <- getArgs
-  -- Parse --json flag
-  let (jsonMode, restArgs) = parseJsonFlag args
+  -- Parse global flags
+  let (jsonMode, args1) = parseJsonFlag args
+      (quietMode, restArgs) = parseQuietFlag args1
   case restArgs of
-    []                  -> replMode
+    []                  -> replMode quietMode
     ["--help"]          -> putStr helpMessage
     ["-h"]              -> putStr helpMessage
     ["--version"]       -> putStrLn $ "spinor " ++ version
     ["-v"]              -> putStrLn $ "spinor " ++ version
     ["init", name]      -> initMode name
     ["check", file]     -> checkMode jsonMode file
-    ["compile", file]   -> compileMode file
-    ["build", file]              -> buildMode file
-    ["build", file, "--wasm"]    -> buildWasmMode file
-    ["build", "--wasm", file]    -> buildWasmMode file
-    ("server" : rest)   -> serverMode rest
+    ["compile", file]   -> compileMode quietMode file
+    ["build", file]              -> buildMode quietMode file
+    ["build", file, "--wasm"]    -> buildWasmMode quietMode file
+    ["build", "--wasm", file]    -> buildWasmMode quietMode file
+    ("server" : rest)   -> serverMode quietMode rest
     ["lsp"]             -> lspMode
     ["mcp"]             -> mcpMode
     ["docgen"]          -> generateDocs
-    [file]              -> batchMode file
-    _                   -> putStr helpMessage
+    (file:scriptArgs)   -> batchMode quietMode file scriptArgs
 
 -- | Parse --json flag from arguments
 parseJsonFlag :: [String] -> (Bool, [String])
 parseJsonFlag args = (hasJson, filter (/= "--json") args)
   where hasJson = "--json" `elem` args
 
+-- | Parse -q/--quiet flag from arguments
+parseQuietFlag :: [String] -> (Bool, [String])
+parseQuietFlag args = (hasQuiet, filter (`notElem` ["-q", "--quiet"]) args)
+  where hasQuiet = "-q" `elem` args || "--quiet" `elem` args
+
 -- | サーバーモード: TCP ソケットで REPL サービスを提供
-serverMode :: [String] -> IO ()
-serverMode args = do
+serverMode :: Bool -> [String] -> IO ()
+serverMode quiet args = do
   let port = case args of
                ["--port", p] -> p
                _             -> "4005"
-  putStrLn $ "Starting Spinor server on port " ++ port ++ "..."
-  (env, _) <- loadBoot primitiveBindings baseTypeEnv
+  when (not quiet) $ putStrLn $ "Starting Spinor server on port " ++ port ++ "..."
+  (env, _) <- loadBoot quiet primitiveBindings baseTypeEnv
   runServer port env
 
 -- | LSP モード: Language Server Protocol サーバーとして起動
@@ -267,18 +275,21 @@ initMode projectName = do
   putStrLn $ "  See " ++ agentsDir ++ "/TEAMS.md for collaboration rules"
 
 -- | REPL モード (引数なし)
-replMode :: IO ()
-replMode = do
-  putStrLn "Spinor REPL (step16)"
-  (env, tyEnv) <- loadBoot primitiveBindings baseTypeEnv
+replMode :: Bool -> IO ()
+replMode quiet = do
+  when (not quiet) $ putStrLn "Spinor REPL (step16)"
+  (env, tyEnv) <- loadBoot quiet primitiveBindings baseTypeEnv
   loop env tyEnv
 
 -- | バッチ実行モード (引数でファイル指定)
 --   モジュールシステム対応: module 宣言の有無に関わらず動作
-batchMode :: FilePath -> IO ()
-batchMode file = do
+batchMode :: Bool -> FilePath -> [String] -> IO ()
+batchMode quiet file scriptArgs = do
+  -- スクリプト引数を設定 (command-line-args プリミティブ用)
+  setScriptArgs scriptArgs
+
   -- Twister 環境をロード (従来通り)
-  (env, _tyEnv) <- loadBoot primitiveBindings baseTypeEnv
+  (env, _tyEnv) <- loadBoot quiet primitiveBindings baseTypeEnv
 
   -- モジュールレジストリを作成
   registry <- newModuleRegistry
@@ -297,14 +308,14 @@ batchMode file = do
     Left err -> do
       TIO.putStrLn $ "エラー: " <> err
       exitFailure
-    Right (_, True)  -> putStrLn "\nAll tests passed."
+    Right (_, True)  -> when (not quiet) $ putStrLn "\nAll tests passed."
     Right (_, False) -> do
       putStrLn "\nSome tests FAILED."
       exitFailure
 
 -- | コンパイルモード: .spin ファイルを C 言語に変換
-compileMode :: FilePath -> IO ()
-compileMode file = do
+compileMode :: Bool -> FilePath -> IO ()
+compileMode quiet file = do
   content <- readFileUtf8 file
   case parseFile content of
     Left err -> do
@@ -313,11 +324,11 @@ compileMode file = do
     Right exprs -> do
       let cCode = compileProgram exprs
       TIO.writeFile "output.c" cCode
-      putStrLn "Compiled to output.c"
+      when (not quiet) $ putStrLn "Compiled to output.c"
 
 -- | ビルドモード: .spin ファイルからネイティブバイナリを生成
-buildMode :: FilePath -> IO ()
-buildMode file = do
+buildMode :: Bool -> FilePath -> IO ()
+buildMode quiet file = do
   -- 1. パス設定
   let baseName = takeBaseName file
       cFile = replaceExtension file ".c"
@@ -325,7 +336,7 @@ buildMode file = do
       runtimeSrc = "runtime/spinor.c"
 
   -- 2. Cコード生成
-  putStrLn $ "Compiling " <> file <> " to " <> cFile <> "..."
+  when (not quiet) $ putStrLn $ "Compiling " <> file <> " to " <> cFile <> "..."
   content <- readFileUtf8 file
   case parseFile content of
     Left err -> do
@@ -337,14 +348,14 @@ buildMode file = do
 
       -- 3. Cコンパイラ呼び出し
       gccPath <- findGcc
-      putStrLn $ "Building " <> outFile <> " with " <> gccPath <> "..."
+      when (not quiet) $ putStrLn $ "Building " <> outFile <> " with " <> gccPath <> "..."
       (exitCode, out, err) <- readProcessWithExitCode gccPath ["-Iruntime", "-o", outFile, cFile, runtimeSrc] ""
       case exitCode of
         ExitSuccess -> do
           -- 4. クリーンアップと完了メッセージ
           doesFileExist cFile >>= \exists ->
             if exists then removeFile cFile else pure ()
-          putStrLn $ "Build successful. Executable created: " <> outFile
+          when (not quiet) $ putStrLn $ "Build successful. Executable created: " <> outFile
           exitSuccess
         _ -> do
           putStrLn "Build failed. C compiler output:"
@@ -368,8 +379,8 @@ findGcc = do
       if exists then pure c else findFirst cs
 
 -- | WASM ビルドモード: .spin ファイルから Emscripten で WASM を生成
-buildWasmMode :: FilePath -> IO ()
-buildWasmMode file = do
+buildWasmMode :: Bool -> FilePath -> IO ()
+buildWasmMode quiet file = do
   -- 1. パス設定
   let baseName = takeBaseName file
       cFile = replaceExtension file ".c"
@@ -377,7 +388,7 @@ buildWasmMode file = do
       runtimeSrc = "runtime/spinor.c"
 
   -- 2. Cコード生成
-  putStrLn $ "Compiling " <> file <> " to " <> cFile <> " (WASM target)..."
+  when (not quiet) $ putStrLn $ "Compiling " <> file <> " to " <> cFile <> " (WASM target)..."
   content <- readFileUtf8 file
   case parseFile content of
     Left err -> do
@@ -389,7 +400,7 @@ buildWasmMode file = do
 
       -- 3. emcc 呼び出し
       emccPath <- findEmcc
-      putStrLn $ "Building " <> outFile <> " with " <> emccPath <> "..."
+      when (not quiet) $ putStrLn $ "Building " <> outFile <> " with " <> emccPath <> "..."
       let emccFlags = [ "-Iruntime"
                       , "-s", "USE_SDL=2"
                       , "-s", "LEGACY_GL_EMULATION=1"
@@ -403,7 +414,7 @@ buildWasmMode file = do
           -- 4. クリーンアップと完了メッセージ
           doesFileExist cFile >>= \exists ->
             if exists then removeFile cFile else pure ()
-          putStrLn $ "WASM build successful. Output: " <> outFile
+          when (not quiet) $ putStrLn $ "WASM build successful. Output: " <> outFile
           exitSuccess
         _ -> do
           putStrLn "WASM build failed. Emscripten output:"
@@ -431,17 +442,17 @@ findEmcc = do
 -- | 起動時に Twister ファイルをロードする
 --   各式を展開 → 型推論 (ベストエフォート) → 評価し、
 --   実行環境と型環境の両方を更新する
-loadBoot :: Env -> TypeEnv -> IO (Env, TypeEnv)
-loadBoot env tyEnv = do
+loadBoot :: Bool -> Env -> TypeEnv -> IO (Env, TypeEnv)
+loadBoot quiet env tyEnv = do
   allExist <- mapM doesFileExist twisterFiles
   if not (and allExist)
     then do
-      putStrLn "(Twister ファイルが見つかりません — スキップ)"
+      when (not quiet) $ putStrLn "(Twister ファイルが見つかりません — スキップ)"
       pure (env, tyEnv)
     else do
-      putStrLn "Loading Twister environment..."
+      when (not quiet) $ putStrLn "Loading Twister environment..."
       (env', tyEnv') <- foldlM' loadSpinFile (env, tyEnv) twisterFiles
-      putStrLn "Twister loaded."
+      when (not quiet) $ putStrLn "Twister loaded."
       pure (env', tyEnv')
 
 -- | 単一の .spin ファイルをロードする (UTF-8)
