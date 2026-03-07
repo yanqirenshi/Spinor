@@ -359,6 +359,140 @@ HTTP/HTTPS リクエストを送信して Web API と連携するパターンで
 
 ---
 
+## 5. HTTP サーバー (Web Server)
+
+Spinor の Socket API を使った軽量 HTTP サーバーの構築パターンです。
+
+### 基本パターン: Hello World サーバー
+
+```lisp
+;; シンプルな Hello World HTTP サーバー
+
+;; ハンドラ関数: リクエストを受け取り、レスポンスを返す
+(def hello-handler
+  (fn (request)
+    (list (list "status" 200)
+          (list "headers" (list (list "Content-Type" "text/plain")
+                                (list "Server" "Spinor/0.1")))
+          (list "body" "Hello, Spinor!"))))
+
+;; サーバーを起動 (ポート 8080)
+(http-serve 8080 hello-handler)
+
+;; テスト: curl http://localhost:8080/
+;; 出力: Hello, Spinor!
+```
+
+### 応用例: パスに基づくルーティング
+
+```lisp
+;; パスに応じて異なるレスポンスを返すルーター
+
+(def router
+  (fn (request)
+    (let ((path (http-assoc-val "path" request "/")))
+      (if (equal path "/")
+          ;; トップページ
+          (list (list "status" 200)
+                (list "headers" (list (list "Content-Type" "text/html")))
+                (list "body" "<h1>Welcome to Spinor!</h1>"))
+
+      (if (equal path "/api/hello")
+          ;; JSON API エンドポイント
+          (list (list "status" 200)
+                (list "headers" (list (list "Content-Type" "application/json")))
+                (list "body" "{\"message\": \"Hello, API!\"}"))
+
+      ;; 404 Not Found
+      (list (list "status" 404)
+            (list "headers" (list (list "Content-Type" "text/plain")))
+            (list "body" "Not Found")))))))
+
+(http-serve 8080 router)
+```
+
+### 実践例: JSON API サーバー
+
+```lisp
+;; ユーザー情報を返す REST API サーバー
+
+;; 仮のデータベース
+(def users
+  (list (list "id" 1 "name" "Alice" "email" "alice@example.com")
+        (list "id" 2 "name" "Bob"   "email" "bob@example.com")))
+
+;; ユーザーを検索
+(def find-user
+  (fn (id)
+    (let ((find-by-id
+           (fn (users id)
+             (if (nil? users)
+                 nil
+                 (if (= (http-assoc-val "id" (car users) 0) id)
+                     (car users)
+                     (find-by-id (cdr users) id))))))
+      (find-by-id users id))))
+
+;; API ハンドラ
+(def api-handler
+  (fn (request)
+    (let ((path   (http-assoc-val "path" request "/"))
+          (method (http-assoc-val "method" request "GET")))
+
+      ;; GET /api/users - 全ユーザー一覧
+      (if (equal path "/api/users")
+          (list (list "status" 200)
+                (list "headers" (list (list "Content-Type" "application/json")))
+                (list "body" (json-stringify users)))
+
+      ;; GET /api/users/1 - 特定ユーザー
+      (if (string-starts-with? path "/api/users/")
+          (let ((id-str (substring path 11 (string-length path)))
+                (id (string->number id-str)))
+            (let ((user (find-user id)))
+              (if user
+                  (list (list "status" 200)
+                        (list "headers" (list (list "Content-Type" "application/json")))
+                        (list "body" (json-stringify user)))
+                  (list (list "status" 404)
+                        (list "body" "{\"error\": \"User not found\"}")))))
+
+      ;; 404 for other paths
+      (list (list "status" 404)
+            (list "headers" (list (list "Content-Type" "application/json")))
+            (list "body" "{\"error\": \"Not Found\"}")))))))
+
+(print "Starting JSON API server on port 3000...")
+(http-serve 3000 api-handler)
+```
+
+### リクエスト/レスポンス形式
+
+```lisp
+;; Request Alist の構造:
+;; ((method "GET")
+;;  (path "/api/users")
+;;  (version "HTTP/1.1")
+;;  (headers (("host" "localhost") ("user-agent" "curl/8.0")))
+;;  (body ""))
+
+;; Response Alist の構造:
+;; ((status 200)
+;;  (headers (("Content-Type" "text/plain") ("Server" "Spinor")))
+;;  (body "Response body here"))
+
+;; リクエストからフィールドを取得
+(http-assoc-val "method" request "GET")   ; メソッド
+(http-assoc-val "path" request "/")       ; パス
+(http-assoc-val "body" request "")        ; ボディ
+
+;; ヘッダーを取得
+(let ((headers (http-assoc-val "headers" request nil)))
+  (http-assoc-val "content-type" headers ""))
+```
+
+---
+
 ## 6. 科学技術計算と GPU 演算 (Matrix & OpenCL)
 
 行列の基本演算と、OpenCL を用いた高速並列計算のパターンです。
