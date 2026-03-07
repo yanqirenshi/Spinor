@@ -34,7 +34,8 @@ import Control.Monad (void, forM, when)
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Control.Exception (try, IOException)
 import System.Directory (doesFileExist)
-import System.Environment (getArgs, lookupEnv)
+import System.Environment (lookupEnv)
+import Spinor.Core.Args (getScriptArgs)
 
 import Spinor.Syntax (Expr(..), Pattern(..), ConstructorDef(..), SourceSpan, SpinorError(..), dummySpan, exprSpan, formatError)
 import Spinor.Val    (Val(..), Param(..), Env, Package(..), Context(..), showVal, emptyPackage, initialContext)
@@ -509,9 +510,10 @@ eval (EList sp [ESym _ "file-exists?", pathExpr]) = do
     _ -> throwErrorAt sp "file-exists?: パスには文字列が必要です"
 
 -- 特殊形式: (command-line-args) — コマンドライン引数を取得
+--   スクリプトに渡された引数のみを返す（spinor コマンドやファイル名は除外済み）
 eval (EList _ [ESym _ "command-line-args"]) = do
-  args <- liftIO getArgs
-  pure $ VList (map (VStr . T.pack) args)
+  args <- liftIO getScriptArgs
+  pure $ VList (map VStr args)
 
 -- 特殊形式: (getenv name) — 環境変数を取得
 eval (EList sp [ESym _ "getenv", nameExpr]) = do

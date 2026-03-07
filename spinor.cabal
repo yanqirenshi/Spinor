@@ -29,6 +29,7 @@ library
     Spinor.MCP
     Spinor.Core.Http
     Spinor.Core.Socket
+    Spinor.Core.Args
   build-depends:
     base       >= 4.14 && < 5,
     containers >= 0.6  && < 1,

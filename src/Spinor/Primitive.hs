@@ -18,10 +18,11 @@ import Spinor.GL (glBindings)
 import Spinor.Library.Json (jsonParse, jsonStringify)
 import Spinor.Core.Http (httpPrimitives)
 import Spinor.Core.Socket (socketPrimitives)
+import Spinor.Core.Args (argsPrimitives)
 
 -- | 初期環境: プリミティブ関数を束縛した Env
 primitiveBindings :: Env
-primitiveBindings = Map.unions [corePrimitives, gpgpuBindings, glBindings, Map.fromList httpPrimitives, Map.fromList socketPrimitives]
+primitiveBindings = Map.unions [corePrimitives, gpgpuBindings, glBindings, Map.fromList httpPrimitives, Map.fromList socketPrimitives, Map.fromList argsPrimitives]
 
 corePrimitives :: Env
 corePrimitives = Map.fromList
