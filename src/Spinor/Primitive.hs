@@ -352,14 +352,14 @@ primMInverse args = Left $ "inverse: 引数の数が不正です (期待: 1, 実
 
 -- | json-parse: JSON 文字列を Spinor の値に変換
 --   (json-parse "{}") -> ()
---   (json-parse "{\"a\": 1}") -> (("a" 1))
+--   (json-parse "{\"a\": 1}") -> ((:a 1))  ; キーワードシンボル形式
 primJsonParse :: [Val] -> Either Text Val
 primJsonParse [VStr s] = jsonParse s
 primJsonParse [_]      = Left "json-parse: 文字列が必要です"
 primJsonParse args     = Left $ "json-parse: 引数の数が不正です (期待: 1, 実際: " <> tshow (length args) <> ")"
 
 -- | json-stringify: Spinor の値を JSON 文字列に変換
---   (json-stringify '((\"a\" 1))) -> "{\"a\":1}"
+--   (json-stringify '((:a 1))) -> "{\"a\":1}"  ; キーワードシンボル形式
 --   (json-stringify (list 1 2 3)) -> "[1,2,3]"
 primJsonStringify :: [Val] -> Either Text Val
 primJsonStringify [val] = case jsonStringify val of

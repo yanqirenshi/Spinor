@@ -76,24 +76,24 @@ JSON 文字列をパースし、必要なデータを抽出するパターンで
 ### 基本パターン: JSON のパースとキー抽出
 
 ```lisp
-;; JSON 文字列をパースして Alist に変換
+;; JSON 文字列をパースして Alist に変換 (キーワードシンボル形式)
 (def json-str "{\"name\": \"Alice\", \"age\": 30, \"active\": true}")
 (def data (json-parse json-str))
 
-;; 結果: (("name" . "Alice") ("age" . 30) ("active" . #t))
+;; 結果: ((:name "Alice") (:age 30) (:active #t))
 
 ;; 特定のキーを取得するヘルパー関数
 (def get-value
   (fn (alist key)
     (def pair (assoc key alist))
     (if pair
-        (cdr pair)
+        (cadr pair)
         nil)))
 
-;; 使用例
-(get-value data "name")    ; => "Alice"
-(get-value data "age")     ; => 30
-(get-value data "active")  ; => #t
+;; 使用例 (キーワードシンボルでアクセス)
+(get-value data :name)    ; => "Alice"
+(get-value data :age)     ; => 30
+(get-value data :active)  ; => #t
 ```
 
 ### 応用例: ネストした JSON の処理
@@ -102,6 +102,8 @@ JSON 文字列をパースし、必要なデータを抽出するパターンで
 ;; ネストした JSON データ
 (def api-response "{\"user\": {\"id\": 123, \"profile\": {\"name\": \"Bob\"}}}")
 (def response (json-parse api-response))
+
+;; 結果: ((:user ((:id 123) (:profile ((:name "Bob"))))))
 
 ;; ネストしたデータへのアクセス
 (def get-nested
@@ -114,7 +116,7 @@ JSON 文字列をパースし、必要なデータを抽出するパターンで
               nil)))))
 
 ;; 使用例: user.profile.name を取得
-(get-nested response "user" "profile" "name")  ; => "Bob"
+(get-nested response :user :profile :name)  ; => "Bob"
 ```
 
 ### 実践例: API レスポンスのバリデーション
@@ -127,9 +129,9 @@ JSON 文字列をパースし、必要なデータを抽出するパターンで
       (begin
         (def data (json-parse json-str))
 
-        ;; 必須フィールドのチェック
-        (def id (get-value data "id"))
-        (def name (get-value data "name"))
+        ;; 必須フィールドのチェック (キーワードシンボルでアクセス)
+        (def id (get-value data :id))
+        (def name (get-value data :name))
 
         (if (and id name)
             ;; 成功: ユーザー情報を構造化して返す

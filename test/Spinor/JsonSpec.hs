@@ -54,8 +54,8 @@ spec = describe "Spinor.Library.Json (JSON Support)" $ do
       it "単純なオブジェクトをパース" $ do
         let result = jsonParse "{\"a\": 1}"
         case result of
-          Right (VList [(VList [VStr "a", VInt 1])]) -> pure ()
-          _ -> expectationFailure $ "Expected Alist, got: " ++ show result
+          Right (VList [(VList [VSym ":a", VInt 1])]) -> pure ()
+          _ -> expectationFailure $ "Expected Alist with keyword symbol, got: " ++ show result
 
       it "複数キーのオブジェクトをパース" $ do
         let result = jsonParse "{\"name\": \"Alice\", \"age\": 30}"
@@ -66,8 +66,8 @@ spec = describe "Spinor.Library.Json (JSON Support)" $ do
       it "ネストしたオブジェクトをパース" $ do
         let result = jsonParse "{\"user\": {\"name\": \"Bob\"}}"
         case result of
-          Right (VList [(VList [VStr "user", VList [(VList [VStr "name", VStr "Bob"])]])]) -> pure ()
-          _ -> expectationFailure $ "Expected nested Alist, got: " ++ show result
+          Right (VList [(VList [VSym ":user", VList [(VList [VSym ":name", VStr "Bob"])]])]) -> pure ()
+          _ -> expectationFailure $ "Expected nested Alist with keyword symbols, got: " ++ show result
 
     describe "エラー処理" $ do
       it "不正な JSON はエラー" $
@@ -158,7 +158,8 @@ spec = describe "Spinor.Library.Json (JSON Support)" $ do
         Left err -> expectationFailure $ show err
 
     it "Alist のラウンドトリップ" $ do
-      let original = VList [VList [VStr "key", VInt 123]]
+      -- キーワードシンボル形式で Alist を定義
+      let original = VList [VList [VSym ":key", VInt 123]]
       case jsonStringify original of
         Right str -> jsonParse str `shouldBe` Right original
         Left err -> expectationFailure $ show err

@@ -1269,7 +1269,7 @@ primitiveDocs = Map.fromList
   -- ========================================
   , ("json-parse", DocEntry
       { docSignature = "(String) -> Val"
-      , docDescription = "JSON 文字列をパースして Spinor の値に変換します。オブジェクトは連想リスト (Alist) として表現されます。"
+      , docDescription = "JSON 文字列をパースして Spinor の値に変換します。オブジェクトは連想リスト (Alist) として表現され、キーはキーワードシンボル (`:key`) 形式になります。"
       , docKind = CompletionItemKind_Function
       , docSlug = "json-parse"
       , docSyntax = "(json-parse json-string)"
@@ -1282,7 +1282,7 @@ primitiveDocs = Map.fromList
           , "    - JSON Boolean → `VBool` (`true` → `#t`, `false` → `#f`)"
           , "    - JSON Null → `VNil` (`nil`)"
           , "    - JSON Array → `VList`"
-          , "    - JSON Object → `VList` (Alist: `((\"key1\" val1) (\"key2\" val2) ...)`)"
+          , "    - JSON Object → `VList` (Alist: `((:key1 val1) (:key2 val2) ...)`)"
           ]
       , docExamples = T.unlines
           [ "```lisp"
@@ -1296,13 +1296,17 @@ primitiveDocs = Map.fromList
           , ";; 配列のパース"
           , "(json-parse \"[1, 2, 3]\")    ; => (1 2 3)"
           , ""
-          , ";; オブジェクトのパース (Alist として表現)"
+          , ";; オブジェクトのパース (キーワードシンボル形式の Alist)"
           , "(json-parse \"{\\\"name\\\": \\\"Alice\\\", \\\"age\\\": 30}\")"
-          , "; => ((\"name\" \"Alice\") (\"age\" 30))"
+          , "; => ((:name \"Alice\") (:age 30))"
           , ""
           , ";; ネストしたデータ"
           , "(json-parse \"{\\\"items\\\": [1, 2, 3]}\")"
-          , "; => ((\"items\" (1 2 3)))"
+          , "; => ((:items (1 2 3)))"
+          , ""
+          , ";; assoc でのアクセス"
+          , "(let ((data (json-parse \"{\\\"name\\\": \\\"Bob\\\"}\")))"
+          , "  (assoc :name data))  ; => (:name \"Bob\")"
           , "```"
           ]
       , docSideEffects = "None."
@@ -1311,8 +1315,8 @@ primitiveDocs = Map.fromList
           [ "- 不正な JSON 文字列の場合、パースエラーを返します。"
           , "- 引数が文字列でない場合、エラーを返します。"
           ]
-      , docSeeAlso = ["json-stringify"]
-      , docNotes = "内部的に aeson パッケージを使用しています。"
+      , docSeeAlso = ["json-stringify", "assoc"]
+      , docNotes = "内部的に aeson パッケージを使用しています。キーワードシンボル形式により `assoc` での直感的なアクセスが可能です。"
       })
 
   , ("json-stringify", DocEntry
@@ -1346,9 +1350,13 @@ primitiveDocs = Map.fromList
           , ";; 配列の変換"
           , "(json-stringify (list 1 2 3))  ; => \"[1,2,3]\""
           , ""
-          , ";; オブジェクトの変換 (Alist から)"
-          , "(json-stringify '((\"name\" \"Alice\") (\"age\" 30)))"
+          , ";; オブジェクトの変換 (キーワードシンボル形式)"
+          , "(json-stringify '((:name \"Alice\") (:age 30)))"
           , "; => \"{\\\"name\\\":\\\"Alice\\\",\\\"age\\\":30}\""
+          , ""
+          , ";; 文字列キーも使用可能"
+          , "(json-stringify '((\"name\" \"Bob\")))"
+          , "; => \"{\\\"name\\\":\\\"Bob\\\"}\""
           , "```"
           ]
       , docSideEffects = "None."
@@ -1358,7 +1366,7 @@ primitiveDocs = Map.fromList
           , "- 行列 (VMatrix)、CLContext、CLBuffer、Window も変換不可です。"
           ]
       , docSeeAlso = ["json-parse"]
-      , docNotes = "Alist として認識されるには、リストの全要素が `(\"key\" value)` の形式である必要があります。"
+      , docNotes = "Alist として認識されるには、リストの全要素が `(:key value)` または `(\"key\" value)` の形式である必要があります。"
       })
 
   -- ========================================
