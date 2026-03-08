@@ -663,54 +663,101 @@ __kernel void vector_add(__global const float *a,
 ; => (("--name" "Alice") ("--verbose" nil))
 ```
 
-### 実践例: はてなブックマーク件数取得 CLI
+### 実践例: はてなブックマーク CLI (JSON API 版)
+
+この例では、はてなブックマークの jsonlite API を使用して、ブックマーク件数とユーザーコメントを取得・表示します。
+`json-parse` と `alist-get` を活用した実践的なコードです。
 
 ```lisp
-; hatena-b.spin - Hatena Bookmark Count CLI Tool
+; hatena-b.spin - Hatena Bookmark CLI Tool (Enhanced with JSON API)
 ;
 ; Usage:
 ;   spinor app/hatena-b.spin <URL>
-;
-; Example:
-;   spinor app/hatena-b.spin https://github.com/yanqirenshi/Spinor
 
-; Show usage message
-(def show-usage
-  (fn ()
-    (begin
-      (print "Usage: spinor app/hatena-b.spin <URL>")
-      (print "")
-      (print "Example:")
-      (print "  spinor app/hatena-b.spin https://github.com/yanqirenshi/Spinor")
-      (print "")
-      (print "This tool fetches the Hatena Bookmark count for a given URL."))))
+; Note: twister/list is preloaded by the Spinor runtime
 
-; Fetch bookmark count from Hatena API
-(def fetch-bookmark-count
-  (fn (url)
-    (let ((api-url (string-append "https://bookmark.hatenaapis.com/count/entry?url=" url)))
-      (http-get api-url))))
+; Integer division (recursive)
+(def int-div
+  (fn (a b)
+    (if (< a b) 0 (+ 1 (int-div (- a b) b)))))
 
-; Display result from response
+; Single digit to character
+(def digit->char
+  (fn (d)
+    (nth d (list "0" "1" "2" "3" "4" "5" "6" "7" "8" "9"))))
+
+; Integer to string conversion
+(def int->string-pos
+  (fn (n)
+    (if (< n 10)
+        (digit->char n)
+        (string-append (int->string-pos (int-div n 10))
+                       (digit->char (% n 10))))))
+
+(def int->string
+  (fn (n)
+    (if (< n 0)
+        (string-append "-" (int->string-pos (- 0 n)))
+        (int->string-pos n))))
+
+; Check if comment is non-empty
+(def has-comment?
+  (fn (comment)
+    (if (nil? comment) #f
+        (if (equal comment "") #f #t))))
+
+; Display a single bookmark entry if it has a comment
+(def display-bookmark
+  (fn (bookmark)
+    (let ((user    (alist-get :user bookmark))
+          (comment (alist-get :comment bookmark)))
+      (if (has-comment? comment)
+          (print (string-append "  [" user "] " comment))
+          nil))))
+
+; Process all bookmarks recursively
+(def process-bookmarks
+  (fn (bookmarks)
+    (if (nil? bookmarks)
+        nil
+        (begin
+          (display-bookmark (car bookmarks))
+          (process-bookmarks (cdr bookmarks))))))
+
+; Display result from API response
 (def display-result
   (fn (url response)
     (let ((status (http-status response))
           (body   (http-body response)))
       (if (= status 200)
-          (print (string-append "[Hatena] " (string-trim body) " bookmarks: " url))
-          (begin
-            (print (string-append "[Error] HTTP status: " (http-int->string status)))
-            (print (string-append "        URL: " url)))))))
+          (let ((body-trimmed (string-trim body)))
+            (if (equal body-trimmed "null")
+                ; URL has no bookmarks (API returns "null")
+                (print (string-append "[Hatena] 0 bookmarks: " url))
+                ; Parse JSON and display data
+                (let ((data (json-parse body-trimmed)))
+                  (let ((count     (alist-get :count data))
+                        (bookmarks (alist-get :bookmarks data)))
+                    (begin
+                      (print (string-append "[Hatena] " (int->string count) " bookmarks: " url))
+                      (if (nil? bookmarks)
+                          nil
+                          (begin
+                            (print "")
+                            (print "Comments:")
+                            (process-bookmarks bookmarks))))))))
+          (print (string-append "[Error] HTTP status: " (int->string status)))))))
 
 ; Main entry point
 (def main
   (fn ()
     (let ((args (command-line-args)))
       (if (empty? args)
-          (show-usage)
+          (print "Usage: spinor app/hatena-b.spin <URL>")
           (let ((url (car args)))
-            (let ((response (fetch-bookmark-count url)))
-              (display-result url response)))))))
+            (let ((api-url (string-append "https://b.hatena.ne.jp/entry/jsonlite/?url=" url)))
+              (let ((response (http-get api-url)))
+                (display-result url response))))))))
 
 ; Run
 (main)
@@ -719,20 +766,43 @@ __kernel void vector_add(__global const float *a,
 ### 実行例
 
 ```bash
-$ spinor app/hatena-b.spin https://www.google.com
+$ spinor app/hatena-b.spin https://qiita.com/
 Loading Twister environment...
 Twister loaded.
-[Hatena] 1508 bookmarks: https://www.google.com
+[Hatena] 2631 bookmarks: https://qiita.com/
 
-$ spinor app/hatena-b.spin
+Comments:
+  [user1] プログラマのための技術情報共有サービス
+  [user2] いいサイト。技術系の情報の集積。
+  [user3] 神サイト・・・プログラミング知識共有
+  ...
+
+$ spinor app/hatena-b.spin https://example-nonexistent.com/
 Loading Twister environment...
 Twister loaded.
-Usage: spinor app/hatena-b.spin <URL>
+[Hatena] 0 bookmarks: https://example-nonexistent.com/
+```
 
-Example:
-  spinor app/hatena-b.spin https://github.com/yanqirenshi/Spinor
+### JSON API とデータ操作のポイント
 
-This tool fetches the Hatena Bookmark count for a given URL.
+```lisp
+;; 1. JSON API からデータを取得してパース
+(let ((response (http-get api-url)))
+  (let ((data (json-parse (http-body response))))
+    ; data は Alist 形式: ((:count 123) (:bookmarks (...)))
+    ...))
+
+;; 2. alist-get でキーワードシンボルを使ってフィールドを取得
+(alist-get :count data)      ; => 123
+(alist-get :bookmarks data)  ; => ((:user "user1") (:comment "...") ...)
+
+;; 3. ネストしたデータには get-in を使用
+(get-in data (list :bookmarks 0 :user))  ; => "user1"
+
+;; 4. null 応答のエッジケース処理
+(if (equal (string-trim body) "null")
+    (handle-no-data)
+    (handle-data (json-parse body)))
 ```
 
 ### CLI ツール作成のポイント
