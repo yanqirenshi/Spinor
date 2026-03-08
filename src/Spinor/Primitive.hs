@@ -39,6 +39,8 @@ corePrimitives = Map.fromList
   , ("list",  VPrim "list"  primList)
   , ("nil?",   VPrim "nil?"   primNull)
   , ("empty?", VPrim "empty?" primNull)
+  , ("int?",   VPrim "int?"   primIsInt)
+  , ("list?",  VPrim "list?"  primIsList)
   , ("eq",     VPrim "eq"     primEq)
   , ("equal",  VPrim "equal"  primEqual)
   -- 文字列操作
@@ -126,6 +128,21 @@ primNull [VNil]     = Right $ VBool True
 primNull [_]        = Right $ VBool False
 primNull args       = Left $ "nil?: 引数の数が不正です (期待: 1, 実際: "
                            <> tshow (length args) <> ")"
+
+-- | int?: 整数かどうかを判定
+primIsInt :: [Val] -> Either Text Val
+primIsInt [VInt _] = Right $ VBool True
+primIsInt [_]      = Right $ VBool False
+primIsInt args     = Left $ "int?: 引数の数が不正です (期待: 1, 実際: "
+                          <> tshow (length args) <> ")"
+
+-- | list?: リストかどうかを判定
+primIsList :: [Val] -> Either Text Val
+primIsList [VList _] = Right $ VBool True
+primIsList [VNil]    = Right $ VBool True
+primIsList [_]       = Right $ VBool False
+primIsList args      = Left $ "list?: 引数の数が不正です (期待: 1, 実際: "
+                            <> tshow (length args) <> ")"
 
 -- | eq: 実装レベルでの同一性比較
 --   アトム (VInt, VBool, VStr, VSym, VNil) は値で比較

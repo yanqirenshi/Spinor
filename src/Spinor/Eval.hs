@@ -699,7 +699,10 @@ bindArgs params args bodyExpr closureEnv = do
       numRequired = length required
 
   -- 実引数を位置引数とキーワード引数に分離
-  let (positionalArgs, keywordPairs) = splitActualArgs args
+  -- キーワード引数がない関数の場合は全て位置引数として扱う
+  let (positionalArgs, keywordPairs) = if null keys
+        then (args, [])  -- &key がなければ全て位置引数
+        else splitActualArgs args
 
   -- 必須引数の検証とバインディング
   when (length positionalArgs < numRequired) $

@@ -1,5 +1,5 @@
 ; list.spin — リスト操作関数
-(module twister/list (export nil nil? map length append append2 foldl foldr reverse filter list member nth))
+(module twister/list (export nil nil? map length append append2 foldl foldr reverse filter list member nth assoc alist-get get-in))
 
 ; 多相的な空リスト
 (def nil (quote ()))
@@ -34,3 +34,34 @@
           (if (= n 0)
               (car xs)
               (nth (- n 1) (cdr xs)))))))
+
+; assoc: Alist からキーに一致するペア (key value) を返す
+; Alist は ((key1 value1) (key2 value2) ...) の形式
+(def assoc (fn (k xs)
+  (if (nil? xs)
+      nil
+      (let ((p (car xs)))
+        (if (eq k (car p))
+            p
+            (assoc k (cdr xs)))))))
+
+; alist-get: Alist からキーに対応する値を取得
+; 見つからない場合は nil を返す
+(def alist-get (fn (k xs)
+  (let ((p (assoc k xs)))
+    (if (nil? p)
+        nil
+        (car (cdr p))))))
+
+; get-in: ネストしたデータからパスを辿って値を取得
+; path は (:key1 0 :key2 ...) のようなリストでインデックス(整数)とキーを混在可能
+(def get-in (fn (obj path)
+  (if (nil? path)
+      obj
+      (if (nil? obj)
+          nil
+          (let ((p (car path))
+                (r (cdr path)))
+            (if (int? p)
+                (get-in (nth p obj) r)
+                (get-in (alist-get p obj) r)))))))
