@@ -24,6 +24,7 @@ import Spinor.Infer     (Types(..), runInfer, inferTop, baseTypeEnv)
 import Spinor.Primitive (primitiveBindings)
 import Spinor.Loader    (LoaderConfig(..), newModuleRegistry, evalFileWithModules)
 import Spinor.Compiler.Codegen (compileProgram)
+import Spinor.Compiler.LLVM   (compileToLLVM, LLVMCompileError(..))
 import Spinor.Server    (runServer)
 import Spinor.Lsp.Server (runLspServer)
 import Spinor.DocGen    (generateDocs)
@@ -59,6 +60,7 @@ helpMessage = unlines
   , "  init <name>            Create a new Spinor project"
   , "  build <file>           Compile to native binary (via C + GCC)"
   , "  build <file> --wasm    Compile to WASM (via C + Emscripten)"
+  , "  build-llvm <file>      Compile to native binary (via LLVM IR + Clang)"
   , "  compile <file>         Transpile to C source code only"
   , "  server [--port <n>]    Start Swank server for SLY/SLIME (default: 4005)"
   , "  lsp                    Start LSP server (for editor integration)"
@@ -100,6 +102,7 @@ main = do
     ["build", file]              -> buildMode quietMode file
     ["build", file, "--wasm"]    -> buildWasmMode quietMode file
     ["build", "--wasm", file]    -> buildWasmMode quietMode file
+    ["build-llvm", file]         -> buildLlvmMode quietMode file
     ("server" : rest)   -> serverMode quietMode rest
     ["lsp"]             -> lspMode
     ["mcp"]             -> mcpMode
@@ -435,6 +438,71 @@ findEmcc = do
     findFirst [] = do
       putStrLn "Warning: emcc not found in PATH. Using 'emcc' as fallback."
       pure "emcc"
+    findFirst (c:cs) = do
+      exists <- doesFileExist c
+      if exists then pure c else findFirst cs
+
+-- | LLVM AOT ビルドモード: .spin ファイルから LLVM IR 経由でネイティブバイナリを生成
+buildLlvmMode :: Bool -> FilePath -> IO ()
+buildLlvmMode quiet file = do
+  -- 1. パス設定
+  let baseName = takeBaseName file
+      llFile = baseName <> ".ll"
+      outFile = baseName
+      runtimeSrc = "runtime.c"
+
+  -- 2. ファイル読み込み & パース
+  when (not quiet) $ putStrLn $ "Parsing " <> file <> "..."
+  content <- readFileUtf8 file
+  case parseFile content of
+    Left err -> do
+      putStrLn $ "Parse error: " ++ err
+      exitFailure
+    Right exprs -> do
+      -- 3. LLVM IR 生成
+      when (not quiet) $ putStrLn "Generating LLVM IR..."
+      case compileToLLVM exprs of
+        Left (LLVMUnsupportedExpr msg) -> do
+          TIO.putStrLn $ "LLVM compile error (unsupported expression): " <> msg
+          exitFailure
+        Left (LLVMCompileError msg) -> do
+          TIO.putStrLn $ "LLVM compile error: " <> msg
+          exitFailure
+        Right irCode -> do
+          -- 4. LLVM IR ファイル出力
+          TIO.writeFile llFile irCode
+          when (not quiet) $ putStrLn $ "Generated: " <> llFile
+
+          -- 5. clang でコンパイル
+          clangPath <- findClang
+          when (not quiet) $ putStrLn $ "Building " <> outFile <> " with " <> clangPath <> "..."
+          (exitCode, out, err) <- readProcessWithExitCode clangPath ["-o", outFile, llFile, runtimeSrc] ""
+          case exitCode of
+            ExitSuccess -> do
+              -- 6. クリーンアップと完了メッセージ
+              doesFileExist llFile >>= \exists ->
+                if exists then removeFile llFile else pure ()
+              when (not quiet) $ putStrLn $ "Build successful. Executable created: " <> outFile
+              exitSuccess
+            _ -> do
+              putStrLn "LLVM build failed. Clang output:"
+              putStrLn out
+              putStrLn err
+              exitFailure
+
+-- | clang を探す
+findClang :: IO FilePath
+findClang = do
+    let candidates =
+          [ "clang"  -- PATH にあればこれを使う
+          , "C:\\msys64\\ucrt64\\bin\\clang.exe"
+          , "C:\\msys64\\mingw64\\bin\\clang.exe"
+          , "/usr/bin/clang"
+          , "/usr/local/bin/clang"
+          ]
+    findFirst candidates
+  where
+    findFirst [] = pure "clang"  -- フォールバック
     findFirst (c:cs) = do
       exists <- doesFileExist c
       if exists then pure c else findFirst cs

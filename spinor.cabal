@@ -30,6 +30,7 @@ library
     Spinor.Core.Http
     Spinor.Core.Socket
     Spinor.Core.Args
+    Spinor.Compiler.LLVM
   build-depends:
     base       >= 4.14 && < 5,
     containers >= 0.6  && < 1,
