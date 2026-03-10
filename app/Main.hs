@@ -382,6 +382,7 @@ findClang :: IO FilePath
 findClang = do
     let candidates =
           [ "clang"  -- PATH にあればこれを使う
+          , "C:\\Program Files\\LLVM\\bin\\clang.exe"  -- winget install LLVM.LLVM
           , "C:\\msys64\\ucrt64\\bin\\clang.exe"
           , "C:\\msys64\\mingw64\\bin\\clang.exe"
           , "/usr/bin/clang"
