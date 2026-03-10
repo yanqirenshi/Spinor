@@ -17,6 +17,7 @@ library
     Spinor.EscapeAnalysis
     Spinor.Loader
     Spinor.Compiler.Codegen
+    Spinor.Compiler.LLVM
     Spinor.Server
     Spinor.DocGen
     Spinor.Lsp.Docs
