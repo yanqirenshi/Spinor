@@ -71,12 +71,10 @@ $ cabal run spinor -- build main.spin
 |:---------|:-----|
 | `spinor` | REPL を起動 |
 | `spinor <file>` | スクリプトを実行 |
-| `spinor build <file>` | ネイティブバイナリにコンパイル (GCC) |
-| `spinor build-llvm <file>` | ネイティブバイナリにコンパイル (LLVM) |
+| `spinor build <file>` | ネイティブバイナリにコンパイル |
 | `spinor compile <file>` | C ソースコードに変換 |
 | `spinor server` | Swank サーバーを起動 (SLY/SLIME 連携) |
 | `spinor lsp` | LSP サーバーを起動 |
-| `spinor mcp` | MCP サーバーを起動 (AI エージェント連携) |
 | `spinor docgen` | リファレンスドキュメントを生成 |
 
 ## 開発環境
