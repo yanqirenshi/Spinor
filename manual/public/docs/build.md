@@ -1,7 +1,28 @@
 # Build Guide
 
-Spinor のビルドには Haskell ツールチェーンに加え、複数の C 言語ライブラリが必要です。
-本ガイドでは、主要な OS 環境ごとの詳細なセットアップ手順を解説します。
+Spinor は純粋な Haskell プロジェクトとしてビルドできます。
+Windows (PowerShell) でも Linux (WSL2) でも、`cabal build` を実行するだけで Spinor 本体のビルドが完了します。
+
+> **Note:** HPC 機能 (行列演算、OpenCL、OpenGL) を使用する場合のみ、追加の C ライブラリが必要です。
+> 基本機能のみを使用する場合は、Haskell ツールチェーンのインストールだけで十分です。
+
+## クイックスタート (基本機能のみ)
+
+```bash
+# リポジトリのクローン
+git clone https://github.com/yanqirenshi/Spinor.git
+cd Spinor
+
+# ビルド
+cabal build
+
+# REPL の起動
+cabal run spinor
+```
+
+これだけで Spinor の REPL が起動し、基本的な Lisp プログラミングが可能です。
+
+---
 
 ## 共通の前提条件
 
@@ -262,6 +283,55 @@ pacman -S --noconfirm mingw-w64-x86_64-pkg-config
 ```
 
 また、`C:\msys64\mingw64\bin` が PATH に含まれているか確認してください。
+
+---
+
+## AOT コンパイル (build-llvm)
+
+Spinor の `build-llvm` コマンドを使用すると、Spinor プログラムを LLVM IR 経由でネイティブ実行ファイルにコンパイルできます。
+この機能を使用するには、システムに **LLVM (Clang)** がインストールされている必要があります。
+
+### Windows (PowerShell)
+
+```powershell
+# winget を使用して LLVM をインストール
+winget install LLVM.LLVM
+
+# インストール確認
+clang --version
+```
+
+> **Note:** インストール後、PowerShell を再起動して PATH を反映させてください。
+
+### Linux / WSL2
+
+```bash
+# Ubuntu / Debian
+sudo apt install clang
+
+# インストール確認
+clang --version
+```
+
+### 使用方法
+
+```bash
+# Spinor プログラムをネイティブバイナリにコンパイル
+cabal run spinor -- build-llvm main.spin
+
+# 生成された実行ファイルを実行
+./main        # Linux / macOS
+./main.exe    # Windows
+```
+
+### GCC ベースのビルド (build)
+
+LLVM を使用せず、GCC でビルドする場合は `build` コマンドを使用します:
+
+```bash
+# GCC でビルド
+cabal run spinor -- build main.spin
+```
 
 ---
 
