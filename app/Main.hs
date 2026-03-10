@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main (main) where
@@ -24,7 +23,7 @@ import Spinor.Infer     (Types(..), runInfer, inferTop, baseTypeEnv)
 import Spinor.Primitive (primitiveBindings)
 import Spinor.Loader    (LoaderConfig(..), newModuleRegistry, evalFileWithModules)
 import Spinor.Compiler.Codegen (compileProgram)
-import qualified Spinor.Compiler.LLVM as LLVM
+import Spinor.Compiler.LLVM   (compileToLLVM, LLVMCompileError(..))
 import Spinor.Server    (runServer)
 import Spinor.Lsp.Server (runLspServer)
 import Spinor.DocGen    (generateDocs)
@@ -60,7 +59,7 @@ helpMessage = unlines
   , "  build <file>           Compile to native binary (via C + GCC)"
   , "  build <file> --wasm    Compile to WASM (via C + Emscripten)"
   , "  compile <file>         Transpile to C source code only"
-  , "  jit <file>             JIT compile and execute via LLVM (requires -f llvm)"
+  , "  build-llvm <file>      Compile to native binary (via LLVM IR + Clang)"
   , "  server [--port <n>]    Start Swank server for SLY/SLIME (default: 4005)"
   , "  lsp                    Start LSP server (for editor integration)"
   , "  mcp                    Start MCP server (for AI agent integration)"
@@ -96,7 +95,7 @@ main = do
     ["init", name]      -> initMode name
     ["check", file]     -> checkMode jsonMode file
     ["compile", file]   -> compileMode file
-    ["jit", file]       -> jitMode file
+    ["build-llvm", file]  -> buildLlvmMode file
     ["build", file]              -> buildMode file
     ["build", file, "--wasm"]    -> buildWasmMode file
     ["build", "--wasm", file]    -> buildWasmMode file
@@ -319,28 +318,68 @@ compileMode file = do
       TIO.writeFile "output.c" cCode
       putStrLn "Compiled to output.c"
 
--- | JIT モード: LLVM JIT で式を実行
-jitMode :: FilePath -> IO ()
-jitMode file = do
+-- | LLVM AOT ビルドモード: .spin ファイルから LLVM IR 経由でネイティブバイナリを生成
+buildLlvmMode :: FilePath -> IO ()
+buildLlvmMode file = do
+  -- 1. パス設定
+  let baseName = takeBaseName file
+      llFile = baseName <> ".ll"
+      outFile = baseName
+      runtimeSrc = "runtime.c"
+
+  -- 2. ファイル読み込み & パース
+  putStrLn $ "Parsing " <> file <> "..."
   content <- readFileUtf8 file
   case parseFile content of
     Left err -> do
       putStrLn $ "Parse error: " ++ err
       exitFailure
     Right exprs -> do
-      if null exprs
-        then do
-          putStrLn "No expressions found."
+      -- 3. LLVM IR 生成
+      putStrLn "Generating LLVM IR..."
+      case compileToLLVM exprs of
+        Left (LLVMUnsupportedExpr msg) -> do
+          TIO.putStrLn $ "LLVM compile error (unsupported expression): " <> msg
           exitFailure
-        else do
-          let lastExpr = last exprs
-          result <- LLVM.runJIT lastExpr
-          case result of
-            Left err -> do
-              TIO.putStrLn $ "JIT error: " <> err
+        Left (LLVMCompileError msg) -> do
+          TIO.putStrLn $ "LLVM compile error: " <> msg
+          exitFailure
+        Right irCode -> do
+          -- 4. LLVM IR ファイル出力
+          TIO.writeFile llFile irCode
+          putStrLn $ "Generated: " <> llFile
+
+          -- 5. clang でコンパイル
+          clangPath <- findClang
+          putStrLn $ "Building " <> outFile <> " with " <> clangPath <> "..."
+          (exitCode, out, err) <- readProcessWithExitCode clangPath ["-o", outFile, llFile, runtimeSrc] ""
+          case exitCode of
+            ExitSuccess -> do
+              -- 6. クリーンアップと完了メッセージ
+              doesFileExist llFile >>= \exists ->
+                if exists then removeFile llFile else pure ()
+              putStrLn $ "Build successful. Executable created: " <> outFile
+              exitSuccess
+            _ -> do
+              putStrLn "LLVM build failed. Clang output:"
+              putStrLn out
+              putStrLn err
               exitFailure
-            Right n -> do
-              print n
+
+-- | clang を探す
+findClang :: IO FilePath
+findClang = do
+    let candidates =
+          [ "clang"
+          , "/usr/bin/clang"
+          , "/usr/local/bin/clang"
+          ]
+    findFirst candidates
+  where
+    findFirst [] = pure "clang"
+    findFirst (c:cs) = do
+      exists <- doesFileExist c
+      if exists then pure c else findFirst cs
 
 -- | ビルドモード: .spin ファイルからネイティブバイナリを生成
 buildMode :: FilePath -> IO ()

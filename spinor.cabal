@@ -3,11 +3,6 @@ name:          spinor
 version:       0.1.0.0
 build-type:    Simple
 
-flag llvm
-  description: Enable LLVM JIT backend
-  default:     False
-  manual:      True
-
 library
   hs-source-dirs:   src
   exposed-modules:
@@ -56,11 +51,6 @@ library
     aeson      >= 2.0  && < 3,
     scientific >= 0.3  && < 1,
     process    >= 1.6  && < 2
-  if flag(llvm)
-    build-depends:
-      llvm-ffi >= 16.0 && < 17,
-      llvm-tf  >= 16.0 && < 17
-    cpp-options: -DUSE_LLVM
   extra-libraries:  OpenCL
   default-language: Haskell2010
   ghc-options:      -Wall
@@ -77,8 +67,6 @@ executable spinor
     process    >= 1.6  && < 2,
     aeson      >= 2.0  && < 3,
     spinor
-  if flag(llvm)
-    cpp-options: -DUSE_LLVM
   default-language: Haskell2010
   ghc-options:      -Wall
 

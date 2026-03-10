@@ -2,7 +2,3 @@
 
 package hmatrix
   flags: +openblas
-
-package llvm-ffi
-  extra-include-dirs: /usr/lib/llvm-16/include
-  extra-lib-dirs: /usr/lib/llvm-16/lib
