@@ -37,12 +37,17 @@ export default function MarkdownViewer() {
     }
 
     fetchMarkdown(primaryUrl)
-      .catch(() => fetchMarkdown(indexUrl))
+      .catch((err) => {
+        console.log(`Primary URL failed (${primaryUrl}):`, err.message, '- trying index.md')
+        return fetchMarkdown(indexUrl)
+      })
       .then((text) => {
+        console.log(`Loaded markdown for: ${path}`)
         setContent(text)
         setLoading(false)
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error(`Failed to load: ${path}`, err)
         setError(`Document not found: ${path}`)
         setLoading(false)
       })

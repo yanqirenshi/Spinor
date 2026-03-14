@@ -8,7 +8,6 @@ interface NavItem {
 }
 
 const sections: NavItem[] = [
-  { label: 'Home', to: '/' },
   { label: 'Introduction', to: '/docs/introduction' },
   { label: 'Installation', to: '/docs/installation' },
   {
@@ -154,7 +153,9 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
 export default function Sidebar() {
   return (
     <nav className="sidebar">
-      <h2 className="sidebar-title">Spinor Manual</h2>
+      <h2 className="sidebar-title">
+        <Link to="/" className="sidebar-title-link">Spinor</Link>
+      </h2>
       <ul className="sidebar-nav">
         {sections.map((item, index) => (
           <NavItemComponent key={item.to || index} item={item} />

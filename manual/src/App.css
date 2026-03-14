@@ -10,6 +10,12 @@
   min-height: 100vh;
 }
 
+.app-layout.no-sidebar .main-content {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 /* Sidebar */
 .sidebar {
   width: 240px;
@@ -22,6 +28,15 @@
 .sidebar-title {
   font-size: 1.2rem;
   margin: 0 0 1rem 0;
+}
+
+.sidebar-title-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.sidebar-title-link:hover {
+  opacity: 0.8;
 }
 
 .sidebar-nav {
