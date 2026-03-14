@@ -36,7 +36,7 @@ cabal run spinor
 ```
 
 > **Note:** Spinor は OpenBLAS, OpenCL, GLFW などの C ライブラリに依存しています。
-> 詳細な環境構築手順については [Build Guide](build) を参照してください。
+> 詳細な環境構築手順については [Build Guide](installation) を参照してください。
 
 ## クイックスタート
 
@@ -107,6 +107,6 @@ $ cabal run spinor -- lsp
 
 ## 次のステップ
 
-- [Syntax](syntax/atoms) - 言語の構文を学ぶ
-- [Build Guide](build) - 環境構築の詳細ガイド
-- [API Reference](api-index) - 組み込み関数のリファレンス
+- [Syntax](reference/syntax/atoms) - 言語の構文を学ぶ
+- [Build Guide](installation) - 環境構築の詳細ガイド
+- [API Reference](reference/) - 組み込み関数のリファレンス
