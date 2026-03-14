@@ -1,30 +1,11 @@
 # Build Guide
 
-Spinor は純粋な Haskell プロジェクトとしてビルドできます。
-Windows (PowerShell) でも Linux (WSL2) でも、`cabal build` を実行するだけで Spinor 本体のビルドが完了します。
+Spinor のビルドには Haskell ツールチェーンが必要です。
+本ガイドでは、主要な OS 環境ごとの詳細なセットアップ手順を解説します。
 
-> **Note:** HPC 機能 (行列演算、OpenCL、OpenGL) を使用する場合のみ、追加の C ライブラリが必要です。
-> 基本機能のみを使用する場合は、Haskell ツールチェーンのインストールだけで十分です。
->
-> また、AOT コンパイル機能 (`build-llvm`) を使用する場合のみ、システムに LLVM (Clang) のインストールが必要です。
-
-## クイックスタート (基本機能のみ)
-
-```bash
-# リポジトリのクローン
-git clone https://github.com/yanqirenshi/Spinor.git
-cd Spinor
-
-# ビルド
-cabal build
-
-# REPL の起動
-cabal run spinor
-```
-
-これだけで Spinor の REPL が起動し、基本的な Lisp プログラミングが可能です。
-
----
+> **Note:** Spinor v0.1.0 以降、LLVM C++ バインディング (`llvm-hs` 等) への依存が排除されました。
+> これにより、Windows 環境でも純粋な Haskell プロジェクトとしてビルド可能です。
+> AOT コンパイル機能 (`build-llvm`) を使用する場合のみ、システムに LLVM (Clang) のインストールが必要です。
 
 ## 共通の前提条件
 
