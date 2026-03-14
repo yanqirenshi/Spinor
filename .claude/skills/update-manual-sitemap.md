@@ -36,20 +36,44 @@
 
 | カテゴリ | 対象 |
 |----------|------|
-| 基本操作 | def, define, let, setq, quote, if, begin, progn, match, data |
-| リスト操作 | cons, car, cdr, list, empty-p |
+| 基本操作 | def, define, fn, mac, let, setq, quote, if, begin, progn, match, data |
+| リスト操作 | cons, car, cdr, list, empty-p, nil-p |
 | 算術演算 | add, sub, mul, mod, inverse |
 | 比較演算 | eq, eq-op, equal, lt, gt, string-eq |
-| 文字列操作 | string-* 系 |
+| 文字列操作 | string-* 系, list-to-string |
 | ファイルI/O | read-file, write-file, append-file, file-exists-p |
 | 並行処理 | spawn, sleep, *-mvar |
 | パッケージ | defpackage, in-package, current-package, export, use-package |
 | 例外処理 | handler-case, ignore-errors, unwind-protect |
 | JSON | json-* 系 |
-| 行列演算 | matrix, m-*, mdim, mref, transpose |
+| 行列演算 | matrix, m-*, mdim, mref, transpose, inverse |
 | GPU/OpenCL | cl-*, to-device, to-host |
 | OpenGL | gl-* 系 |
 | 出力 | print |
+
+`docs/docs/syntax/` 配下のファイル：
+
+| ファイル | 説明 |
+|----------|------|
+| arrays.md | 配列 |
+| atoms.md | アトム |
+| characters.md | 文字 |
+| conditions.md | コンディション |
+| conses.md | コンスセル |
+| control-flow.md | 制御フロー |
+| data-types.md | データ型 |
+| definitions.md | 定義 |
+| environment.md | 環境 |
+| evaluation.md | 評価 |
+| files.md | ファイル |
+| iteration.md | 反復 |
+| numbers.md | 数値 |
+| ownership.md | 所有権 |
+| packages.md | パッケージ |
+| regions.md | リージョン |
+| strings.md | 文字列 |
+| symbols.md | シンボル |
+| type-system.md | 型システム |
 
 新規ファイルが既存カテゴリに該当しない場合は、適切な新カテゴリを作成してください。
 

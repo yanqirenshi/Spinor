@@ -29,11 +29,13 @@ docs/
     │
     ├── syntax/                   # 構文詳細
     │   ├── arrays.md             # 配列
+    │   ├── atoms.md              # アトム
     │   ├── characters.md         # 文字
-    │   ├── conses.md             # コンスセル
     │   ├── conditions.md         # コンディション
+    │   ├── conses.md             # コンスセル
     │   ├── control-flow.md       # 制御フロー
     │   ├── data-types.md         # データ型
+    │   ├── definitions.md        # 定義
     │   ├── environment.md        # 環境
     │   ├── evaluation.md         # 評価
     │   ├── files.md              # ファイル
@@ -50,6 +52,8 @@ docs/
         │
         ├── [基本操作]
         │   ├── def.md / define.md    # 定義
+        │   ├── fn.md                 # 関数定義
+        │   ├── mac.md                # マクロ定義
         │   ├── let.md                # ローカル束縛
         │   ├── setq.md               # 代入
         │   ├── quote.md              # クォート
@@ -62,7 +66,8 @@ docs/
         │   ├── cons.md               # cons
         │   ├── car.md / cdr.md       # car/cdr
         │   ├── list.md               # list
-        │   └── empty-p.md            # empty?
+        │   ├── empty-p.md            # empty?
+        │   └── nil-p.md              # nil?
         │
         ├── [算術演算]
         │   ├── add.md                # +
@@ -142,6 +147,6 @@ docs/
 | カテゴリ | ファイル数 |
 |----------|------------|
 | 概要・ガイド | 9 |
-| syntax/ | 17 |
-| ref/ | 約60 |
-| **合計** | **約80** |
+| syntax/ | 19 |
+| ref/ | 70 |
+| **合計** | **98** |

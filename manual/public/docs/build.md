@@ -1,28 +1,11 @@
 # Build Guide
 
-Spinor は純粋な Haskell プロジェクトとしてビルドできます。
-Windows (PowerShell) でも Linux (WSL2) でも、`cabal build` を実行するだけで Spinor 本体のビルドが完了します。
+Spinor のビルドには Haskell ツールチェーンが必要です。
+本ガイドでは、主要な OS 環境ごとの詳細なセットアップ手順を解説します。
 
-> **Note:** HPC 機能 (行列演算、OpenCL、OpenGL) を使用する場合のみ、追加の C ライブラリが必要です。
-> 基本機能のみを使用する場合は、Haskell ツールチェーンのインストールだけで十分です。
-
-## クイックスタート (基本機能のみ)
-
-```bash
-# リポジトリのクローン
-git clone https://github.com/yanqirenshi/Spinor.git
-cd Spinor
-
-# ビルド
-cabal build
-
-# REPL の起動
-cabal run spinor
-```
-
-これだけで Spinor の REPL が起動し、基本的な Lisp プログラミングが可能です。
-
----
+> **Note:** Spinor v0.1.0 以降、LLVM C++ バインディング (`llvm-hs` 等) への依存が排除されました。
+> これにより、Windows 環境でも純粋な Haskell プロジェクトとしてビルド可能です。
+> AOT コンパイル機能 (`build-llvm`) を使用する場合のみ、システムに LLVM (Clang) のインストールが必要です。
 
 ## 共通の前提条件
 
@@ -98,9 +81,35 @@ cabal run spinor
 
 ---
 
+## Windows 11 (PowerShell)
+
+Windows 11 では、基本的な Spinor のビルドは PowerShell のみで可能です。
+
+### 最小構成でのビルド
+
+数値演算ライブラリ (hmatrix) や GPU 機能を使用しない最小構成の場合:
+
+```powershell
+# リポジトリのクローン
+git clone https://github.com/yanqirenshi/Spinor.git
+cd Spinor
+
+# ビルド
+cabal build
+
+# REPL の起動
+cabal run spinor
+```
+
+### フル機能を使用する場合
+
+行列演算 (hmatrix/BLAS)、OpenGL、OpenCL を使用する場合は、次のセクション「Windows 11 (MSYS2 / MinGW64)」の手順に従ってください。
+
+---
+
 ## Windows 11 (MSYS2 / MinGW64)
 
-Windows では **MSYS2 (MinGW64)** 環境を強く推奨します。
+行列演算、OpenGL、OpenCL などのフル機能を使用する場合は **MSYS2 (MinGW64)** 環境が必要です。
 
 ### Step 1: MSYS2 のインストール
 
@@ -182,6 +191,89 @@ cd Spinor
 
 # ビルド
 cabal build
+```
+
+---
+
+## ネイティブコンパイル (AOT)
+
+Spinor は `.spin` ファイルをネイティブ実行ファイルにコンパイルする AOT (Ahead-of-Time) コンパイル機能を提供しています。
+
+### build コマンド (C 経由)
+
+C 言語にトランスパイルし、GCC/Clang でネイティブバイナリを生成します。
+
+```bash
+# hello.spin をネイティブバイナリにコンパイル
+cabal run spinor -- build hello.spin
+
+# 生成された実行ファイルを実行
+./hello        # Linux/macOS
+./hello.exe    # Windows
+```
+
+**前提条件:** GCC または Clang がシステムにインストールされている必要があります。
+
+### build-llvm コマンド (LLVM IR 経由)
+
+LLVM IR を生成し、Clang でネイティブバイナリを生成します。
+より高度な最適化が適用されます。
+
+```bash
+# LLVM IR 経由でコンパイル
+cabal run spinor -- build-llvm fib.spin
+
+# 生成された実行ファイルを実行
+./fib
+```
+
+**前提条件:** システムに LLVM (Clang) がインストールされている必要があります。
+
+#### Windows での LLVM インストール
+
+```powershell
+# winget を使用してインストール (推奨)
+winget install LLVM.LLVM
+
+# インストール後、新しいターミナルを開いて確認
+clang --version
+```
+
+または [LLVM 公式サイト](https://releases.llvm.org/) から Windows インストーラをダウンロードしてください。
+
+#### Linux / WSL2 での LLVM インストール
+
+```bash
+# Ubuntu / Debian
+sudo apt update
+sudo apt install clang
+
+# インストール確認
+clang --version
+```
+
+#### macOS での LLVM インストール
+
+```bash
+# Xcode Command Line Tools (Clang を含む)
+xcode-select --install
+
+# または Homebrew で最新版をインストール
+brew install llvm
+```
+
+### WASM ビルド (Emscripten 経由)
+
+WebAssembly にコンパイルしてブラウザで実行できます。
+
+```bash
+# Emscripten SDK のセットアップが必要
+cabal run spinor -- build --wasm app.spin
+
+# 生成されたファイル
+# - app.html
+# - app.js
+# - app.wasm
 ```
 
 ---
@@ -283,55 +375,6 @@ pacman -S --noconfirm mingw-w64-x86_64-pkg-config
 ```
 
 また、`C:\msys64\mingw64\bin` が PATH に含まれているか確認してください。
-
----
-
-## AOT コンパイル (build-llvm)
-
-Spinor の `build-llvm` コマンドを使用すると、Spinor プログラムを LLVM IR 経由でネイティブ実行ファイルにコンパイルできます。
-この機能を使用するには、システムに **LLVM (Clang)** がインストールされている必要があります。
-
-### Windows (PowerShell)
-
-```powershell
-# winget を使用して LLVM をインストール
-winget install LLVM.LLVM
-
-# インストール確認
-clang --version
-```
-
-> **Note:** インストール後、PowerShell を再起動して PATH を反映させてください。
-
-### Linux / WSL2
-
-```bash
-# Ubuntu / Debian
-sudo apt install clang
-
-# インストール確認
-clang --version
-```
-
-### 使用方法
-
-```bash
-# Spinor プログラムをネイティブバイナリにコンパイル
-cabal run spinor -- build-llvm main.spin
-
-# 生成された実行ファイルを実行
-./main        # Linux / macOS
-./main.exe    # Windows
-```
-
-### GCC ベースのビルド (build)
-
-LLVM を使用せず、GCC でビルドする場合は `build` コマンドを使用します:
-
-```bash
-# GCC でビルド
-cabal run spinor -- build main.spin
-```
 
 ---
 

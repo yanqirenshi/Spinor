@@ -65,9 +65,14 @@ cabal run spinor -- build hello.spin
 |---------|------|
 | `spinor` | REPL を起動 (デフォルト) |
 | `spinor <file>` | ファイルをバッチ実行 |
-| `spinor build <file>` | ネイティブバイナリを生成 |
+| `spinor check <file>` | パースと型検査のみを実行 |
+| `spinor build <file>` | ネイティブバイナリを生成 (C + GCC) |
+| `spinor build-llvm <file>` | ネイティブバイナリを生成 (LLVM IR + Clang) |
+| `spinor build <file> --wasm` | WebAssembly を生成 (Emscripten) |
 | `spinor compile <file>` | Cソースコードのみを出力 |
 | `spinor server [--port <port>]` | SLY 接続用の Swank サーバーを起動 |
+| `spinor lsp` | LSP サーバーを起動 |
+| `spinor mcp` | MCP サーバーを起動 (AI 連携) |
 
 ## Testing
 

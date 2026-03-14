@@ -32,5 +32,7 @@
 * **安全性:** 型安全性と網羅性を重視する。
 
 ## 📚 ドキュメント管理ルール
-* **サイトマップ:** `docs/` 配下にファイルの追加・削除・移動があった場合、`MANUAL.md` のサイトマップを必ず更新すること。
-* **スキル:** `/update-manual-sitemap` コマンドで手動更新も可能。詳細は `.claude/skills/update-manual-sitemap.md` を参照。
+* **サイトマップ更新:** `docs/` 配下にファイルの追加・削除・移動があった場合、**必ず** `/update-manual-sitemap` スキルを実行して `MANUAL.md` を更新すること。
+  - 新機能の追加、既存機能の変更・削除でドキュメントが変わる場合も同様。
+  - スキルの詳細は `.claude/skills/update-manual-sitemap.md` を参照。
+* **ドキュメント同期:** `docs/docs/` と `manual/public/docs/` は同じ内容を保つこと。一方を更新したら他方も同期する。
