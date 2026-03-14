@@ -18,17 +18,32 @@ export default function MarkdownViewer() {
     setLoading(true)
     setError(null)
 
-    fetch(`${import.meta.env.BASE_URL}docs/${path}.md`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Document not found: ${path}`)
-        return res.text()
-      })
+    const baseUrl = import.meta.env.BASE_URL
+    const primaryUrl = `${baseUrl}docs/${path}.md`
+    const indexUrl = `${baseUrl}docs/${path}/index.md`
+
+    // Helper to check if response is valid markdown (not HTML fallback)
+    const isValidMarkdown = (text: string): boolean => {
+      const trimmed = text.trim()
+      return !trimmed.startsWith('<!') && !trimmed.startsWith('<html')
+    }
+
+    const fetchMarkdown = async (url: string): Promise<string> => {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error('Not found')
+      const text = await res.text()
+      if (!isValidMarkdown(text)) throw new Error('Not markdown')
+      return text
+    }
+
+    fetchMarkdown(primaryUrl)
+      .catch(() => fetchMarkdown(indexUrl))
       .then((text) => {
         setContent(text)
         setLoading(false)
       })
-      .catch((err) => {
-        setError(err.message)
+      .catch(() => {
+        setError(`Document not found: ${path}`)
         setLoading(false)
       })
   }, [path])
