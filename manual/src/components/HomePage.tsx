@@ -8,14 +8,15 @@ export default function HomePage() {
       <section className="hero">
         <img src={`${import.meta.env.BASE_URL}assets/spinor-logo.png`} alt="" className="hero-logo" />
         <h1 className="hero-name">Spinor</h1>
-        <p className="hero-tagline">Haskell × LLVM で駆動する、次世代の Lisp コンパイラ</p>
+        <p className="hero-tagline">Haskell × LLVM で駆動する<br/>次世代の Lisp コンパイラ</p>
         <p className="hero-sub">
-          洗練された Lisp の記述力で<br/>OS 直結の爆速ネイティブバイナリを錬成する。<br />
+          洗練された Lisp の記述力で<br/>
+          OS 直結の爆速ネイティブバイナリを錬成する。<br />
           インタプリタの壁を越えた、新しい Lisp 体験。
         </p>
         <div className="hero-cta">
           <Link to="/docs/installation" className="btn btn-primary">はじめる</Link>
-          <a href="https://github.com/yanqirenshi/Spinor" className="btn btn-secondary" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/yanqirenshi/Spinor" className="btn btn-secondary">GitHub</a>
         </div>
       </section>
 
