@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -11,12 +11,14 @@ export default function MarkdownViewer() {
   const [content, setContent] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isIndexFile, setIsIndexFile] = useState(false)
 
   useEffect(() => {
     if (!path) return
 
     setLoading(true)
     setError(null)
+    setIsIndexFile(false)
 
     const baseUrl = import.meta.env.BASE_URL
     const primaryUrl = `${baseUrl}docs/${path}.md`
@@ -37,17 +39,19 @@ export default function MarkdownViewer() {
     }
 
     fetchMarkdown(primaryUrl)
-      .catch((err) => {
-        console.log(`Primary URL failed (${primaryUrl}):`, err.message, '- trying index.md')
-        return fetchMarkdown(indexUrl)
-      })
       .then((text) => {
-        console.log(`Loaded markdown for: ${path}`)
         setContent(text)
         setLoading(false)
       })
-      .catch((err) => {
-        console.error(`Failed to load: ${path}`, err)
+      .catch(() => {
+        return fetchMarkdown(indexUrl)
+          .then((text) => {
+            setIsIndexFile(true)
+            setContent(text)
+            setLoading(false)
+          })
+      })
+      .catch(() => {
         setError(`Document not found: ${path}`)
         setLoading(false)
       })
@@ -82,13 +86,46 @@ export default function MarkdownViewer() {
     []
   )
 
+  // Compute current directory based on path and whether we loaded index.md
+  // Known directory paths that should use their own path as currentDir
+  const knownDirs = ['reference', 'usage', 'development']
+  const currentDir = useMemo(() => {
+    if (!path) return ''
+    // If loaded from index.md, path itself is the directory
+    if (isIndexFile) return path
+    // Check if this is a known directory path
+    if (knownDirs.includes(path)) return path
+    // Otherwise, use parent directory
+    const parts = path.split('/')
+    return parts.slice(0, -1).join('/')
+  }, [path, isIndexFile])
+
+
   // Intercept internal links and use React Router navigation
   const renderLink = useCallback(
     (props: React.AnchorHTMLAttributes<HTMLAnchorElement> & { children?: React.ReactNode }) => {
       const { href, children, ...rest } = props
       const isExternal = href && (href.startsWith('http://') || href.startsWith('https://'))
       if (href && !isExternal) {
-        const target = href.startsWith('/') ? href : `/docs/${href}`
+        let target: string
+        if (href.startsWith('/')) {
+          target = href
+        } else if (href.startsWith('../')) {
+          // Handle parent directory references
+          const hrefParts = href.split('/')
+          let dirParts = currentDir.split('/').filter(Boolean)
+          for (const part of hrefParts) {
+            if (part === '..') {
+              dirParts.pop()
+            } else if (part !== '.') {
+              dirParts.push(part)
+            }
+          }
+          target = `/docs/${dirParts.join('/')}`
+        } else {
+          // Relative path - resolve against current directory
+          target = currentDir ? `/docs/${currentDir}/${href}` : `/docs/${href}`
+        }
         return (
           <a
             href={href}
@@ -104,7 +141,7 @@ export default function MarkdownViewer() {
       }
       return <a href={href} {...rest}>{children}</a>
     },
-    [navigate]
+    [navigate, currentDir]
   )
 
   if (loading) return <p>Loading...</p>

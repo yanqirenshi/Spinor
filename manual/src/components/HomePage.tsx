@@ -1,4 +1,5 @@
 import './HomePage.css'
+import { Link } from 'react-router-dom'
 
 export default function HomePage() {
   return (
@@ -7,14 +8,14 @@ export default function HomePage() {
       <section className="hero">
         <img src={`${import.meta.env.BASE_URL}assets/spinor-logo.png`} alt="" className="hero-logo" />
         <h1 className="hero-name">Spinor</h1>
-        <p className="hero-tagline">The Statically-Typed Lisp.</p>
+        <p className="hero-tagline">Haskell × LLVM で駆動する、次世代の Lisp コンパイラ</p>
         <p className="hero-sub">
-          Lisp syntax with Haskell semantics.<br />
-          Built for safety, clarity, and performance.
+          洗練された Lisp の記述力で<br/>OS 直結の爆速ネイティブバイナリを錬成する。<br />
+          インタプリタの壁を越えた、新しい Lisp 体験。
         </p>
         <div className="hero-cta">
-          <a href="#get-started" className="btn btn-primary">Get Started</a>
-          <a href="https://github.com/yanqirenshi/Spinor" className="btn btn-secondary">View on GitHub</a>
+          <Link to="/docs/installation" className="btn btn-primary">はじめる</Link>
+          <a href="https://github.com/yanqirenshi/Spinor" className="btn btn-secondary" target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
       </section>
 
@@ -23,50 +24,50 @@ export default function HomePage() {
         <h2>Features</h2>
         <div className="features-grid">
           <div className="feature-card">
-            <div className="feature-icon">&lambda;</div>
-            <h3>Static Typing</h3>
-            <p>Catch errors at compile time, not at runtime. Powered by Hindley-Milner type inference for maximum safety with minimal annotations.</p>
+            <div className="feature-icon">⚡</div>
+            <h3>Native AOT Compilation</h3>
+            <p>Lisp スクリプトを美しい LLVM IR へと変換し、Clang と連携。Windows (.exe) や Linux で直接動作するスタンドアロンな機械語バイナリを生成します。</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">&rarr;</div>
-            <h3>Haskell Semantics</h3>
-            <p>Pure functions, algebraic data types, and pattern matching &mdash; the power of Haskell, expressed in the elegance of Lisp syntax.</p>
+            <div className="feature-icon">💎</div>
+            <h3>Pure Haskell Core</h3>
+            <p>重厚な C++ バインディング (llvm-hs) を排除。Windows の PowerShell でも `cabal build` 一発で構築できる、圧倒的なポータビリティを実現。</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">&infin;</div>
-            <h3>Self-Hosting</h3>
-            <p>A Haskell kernel implements the core; the standard library is written in Spinor itself. The language extends itself.</p>
+            <div className="feature-icon">🛠️</div>
+            <h3>Best-in-class REPL</h3>
+            <p>ネイティブビルドされた高速な `spinor.exe` をバックエンドに据え、Emacs と SLY を通じたモダンで快適な REPL 駆動開発をサポートします。</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">&#x21C6;</div>
-            <h3>Lightweight Concurrency</h3>
-            <p>Built on Haskell's green threads and MVar primitives for simple, safe concurrent programming.</p>
+            <div className="feature-icon">🌐</div>
+            <h3>WASM & GPU Ready</h3>
+            <p>Emscripten を用いた WASM ビルドによるブラウザ実行や、OpenCL/OpenGL へのバインディングを備え、ハードウェアの限界まで性能を引き出します。</p>
           </div>
         </div>
       </section>
 
       {/* Code Example */}
       <section className="code-example">
-        <h2>See It in Action</h2>
+        <h2>See It in Action: LLVM Compilation</h2>
         <div className="code-block">
           <div className="code-header">
             <span className="code-lang">spinor</span>
           </div>
-          <pre><code>{`;; Define a type-safe length function for lists
-(defun length ((xs (List a))) : Int
-  (match xs
-    ('() 0)
-    ((cons _ rest) (+ 1 (length rest)))))
+          <pre><code>{`;; 再帰関数も LLVM IR 経由で爆速の機械語に翻訳
+(def fib (fn (n)
+  (if (< n 2)
+      n
+      (+ (fib (- n 1)) (fib (- n 2))))))
 
-;; Calculate the length of a list of integers
-(length '(1 2 3 4 5))
-;; => 5`}</code></pre>
+(print (fib 30))
+;; Compile: spinor build-llvm app.spin
+;; Execute: ./app.exe => 832040`}</code></pre>
         </div>
       </section>
 
       {/* Get Started */}
       <section id="get-started" className="get-started">
-        <h2>Get Started</h2>
+        <h2>Quick Start</h2>
         <div className="steps">
           <div className="step">
             <div className="step-number">1</div>
@@ -89,9 +90,9 @@ export default function HomePage() {
           <div className="step">
             <div className="step-number">3</div>
             <div className="step-content">
-              <h3>Run the REPL</h3>
+              <h3>Compile to Native (.exe)</h3>
               <div className="code-block code-block-small">
-                <pre><code>cabal run spinor</code></pre>
+                <pre><code>cabal run spinor -- build-llvm your-file.spin</code></pre>
               </div>
             </div>
           </div>
