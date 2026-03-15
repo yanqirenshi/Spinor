@@ -19,14 +19,6 @@ const sections: NavItem[] = [
       { label: 'AI-Native Workflow', to: '/docs/usage/ai_workflow' },
     ],
   },
-  {
-    label: 'Reference',
-    to: '/docs/reference',
-    items: [
-      { label: 'Syntax Overview', to: '/docs/reference/syntax-overview' },
-      { label: 'API Reference', to: '/docs/reference' },
-    ],
-  },
   // CLHS-style Syntax Categories
   {
     label: 'Syntax and Evaluation',
@@ -89,14 +81,23 @@ const sections: NavItem[] = [
       { label: 'Region-based Memory', to: '/docs/syntax/regions' },
     ],
   },
+  {
+    label: 'Reference',
+    to: '/docs/reference',
+    items: [
+      { label: 'Syntax Overview', to: '/docs/reference/syntax-overview' },
+      { label: 'API Reference', to: '/docs/reference' },
+    ],
+  },
 ]
 
 interface NavItemProps {
   item: NavItem
   depth?: number
+  onLinkClick?: () => void
 }
 
-function NavItemComponent({ item, depth = 0 }: NavItemProps) {
+function NavItemComponent({ item, depth = 0, onLinkClick }: NavItemProps) {
   const location = useLocation()
   const [isExpanded, setIsExpanded] = useState(() => {
     // Auto-expand if current path matches any child or the item itself
@@ -128,6 +129,7 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
               to={item.to}
               className={`sidebar-category-link ${isActive ? 'active' : ''}`}
               style={{ paddingLeft: `${paddingLeft}px` }}
+              onClick={onLinkClick}
             >
               {item.label}
             </Link>
@@ -144,7 +146,7 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
         {isExpanded && (
           <ul className="sidebar-subnav">
             {item.items!.map((child, index) => (
-              <NavItemComponent key={child.to || index} item={child} depth={depth + 1} />
+              <NavItemComponent key={child.to || index} item={child} depth={depth + 1} onLinkClick={onLinkClick} />
             ))}
           </ul>
         )}
@@ -158,6 +160,7 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
         to={item.to!}
         className={`sidebar-link ${isActive ? 'active' : ''}`}
         style={{ paddingLeft: `${paddingLeft + 12}px` }}
+        onClick={onLinkClick}
       >
         {item.label}
       </Link>
@@ -165,15 +168,20 @@ function NavItemComponent({ item, depth = 0 }: NavItemProps) {
   )
 }
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean
+  onClose?: () => void
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
-    <nav className="sidebar">
+    <nav className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
       <h2 className="sidebar-title">
-        <Link to="/" className="sidebar-title-link">Spinor</Link>
+        <Link to="/" className="sidebar-title-link" onClick={onClose}>Spinor</Link>
       </h2>
       <ul className="sidebar-nav">
         {sections.map((item, index) => (
-          <NavItemComponent key={item.to || index} item={item} />
+          <NavItemComponent key={item.to || index} item={item} onLinkClick={onClose} />
         ))}
       </ul>
     </nav>
