@@ -9,7 +9,18 @@ interface NavItem {
 
 const sections: NavItem[] = [
   { label: 'Introduction', to: '/docs/introduction' },
-  { label: 'Installation', to: '/docs/installation' },
+  {
+    label: 'Installation',
+    to: '/docs/installation',
+    items: [
+      { label: '共通の前提条件', to: '/docs/installation/prerequisites' },
+      { label: 'Linux / WSL2', to: '/docs/installation/linux' },
+      { label: 'Windows (PowerShell)', to: '/docs/installation/windows-powershell' },
+      { label: 'Windows (MSYS2)', to: '/docs/installation/windows-msys2' },
+      { label: 'ネイティブコンパイル (AOT)', to: '/docs/installation/aot' },
+      { label: 'トラブルシューティング', to: '/docs/installation/troubleshooting' },
+    ],
+  },
   {
     label: 'Usage',
     to: '/docs/usage',
