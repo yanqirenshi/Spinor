@@ -1094,6 +1094,7 @@ formatValForDisassembly (VCLContext _ _) = "; OpenCL Context"
 formatValForDisassembly (VCLBuffer _ n) = "; OpenCL Buffer (size=" <> T.pack (show n) <> ")"
 formatValForDisassembly (VCLKernel _ name) = "; OpenCL Kernel: " <> name
 formatValForDisassembly (VWindow _) = "; GLFW Window"
+formatValForDisassembly (VSocket _) = "; Socket"
 
 --------------------------------------------------------------------------------
 -- Inspector Helpers
@@ -1180,6 +1181,7 @@ valContentText (VCLContext _ _) = "Type: OpenCL Context"
 valContentText (VCLBuffer _ n) = "Size: " <> T.pack (show n) <> " elements"
 valContentText (VCLKernel _ name) = "Kernel: " <> name
 valContentText (VWindow _) = "Type: GLFW Window"
+valContentText (VSocket _) = "Type: Socket"
 
 -- | Param を Text に変換
 showParamText :: Param -> Text
@@ -1227,6 +1229,7 @@ valTitle (VCLContext _ _) = "<CLContext>"
 valTitle (VCLBuffer _ n) = "<CLBuffer:size=" <> T.pack (show n) <> ">"
 valTitle (VCLKernel _ name) = "<CLKernel:" <> name <> ">"
 valTitle (VWindow _) = "<Window>"
+valTitle (VSocket _) = "<Socket>"
 
 -- | 値の型名を取得
 valTypeName :: Val -> Text
@@ -1247,6 +1250,7 @@ valTypeName (VCLContext _ _) = "CLContext"
 valTypeName (VCLBuffer _ _) = "CLBuffer"
 valTypeName (VCLKernel _ _) = "CLKernel"
 valTypeName (VWindow _) = "Window"
+valTypeName (VSocket _) = "Socket"
 
 --------------------------------------------------------------------------------
 -- Macrostep Helpers
