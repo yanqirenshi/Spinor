@@ -25,7 +25,7 @@ winget install -e --id Haskell.GHCup
 
 ### 対話プロンプトへの回答
 
-インストール中に以下の質問が表示されます。すべて `Y` を選択することを推奨します:
+インストール中に以下の質問が表示されます:
 
 ```
 Do you want to install the haskell-language-server (HLS)?
@@ -38,11 +38,14 @@ Do you want to create a desktop shortcut?
 → Y (任意)
 
 Do you want to install MSys2 toolchain?
-→ Y (フル機能ビルドに必要。hmatrix, OpenGL, OpenCL を使用する場合は必須)
+→ N (後で UCRT64 環境を個別にセットアップするため)
 ```
 
-> **Note:** MSys2 は [Windows (MSYS2)](windows-msys2) ガイドで説明しているフル機能ビルドに必要です。
-> 最小構成のみで良い場合は `N` でも構いません。
+> **重要:** MSys2 は `N` を選択してください。
+> GHCup 経由でインストールすると、Cabal のグローバル設定に古い MinGW64 のパスが強制され、
+> UCRT64 環境との競合が発生します。
+> フル機能ビルド (hmatrix, OpenGL, OpenCL) を使用する場合は、
+> [Windows (MSYS2)](windows-msys2) ガイドに従って独立した MSYS2 をインストールしてください。
 
 ### ターミナルの再起動
 
