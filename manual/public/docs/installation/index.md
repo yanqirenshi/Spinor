@@ -13,5 +13,4 @@ Spinor のビルドには Haskell ツールチェーンが必要です。
 - [Linux / WSL2](linux) - Ubuntu / Debian 環境でのビルド
 - [Windows (PowerShell)](windows-powershell) - 最小構成でのビルド
 - [Windows (MSYS2)](windows-msys2) - フル機能を使用する場合
-- [ネイティブコンパイル (AOT)](aot) - スタンドアロン実行ファイルの生成
 - [トラブルシューティング](troubleshooting) - よくある問題と解決策

@@ -17,8 +17,16 @@ const sections: NavItem[] = [
       { label: 'Linux / WSL2', to: '/docs/installation/linux' },
       { label: 'Windows (PowerShell)', to: '/docs/installation/windows-powershell' },
       { label: 'Windows (MSYS2)', to: '/docs/installation/windows-msys2' },
-      { label: 'ネイティブコンパイル (AOT)', to: '/docs/installation/aot' },
       { label: 'トラブルシューティング', to: '/docs/installation/troubleshooting' },
+    ],
+  },
+  {
+    label: 'Native Compilation (AOT)',
+    to: '/docs/aot',
+    items: [
+      { label: 'build (C 経由)', to: '/docs/aot/build-c' },
+      { label: 'build-llvm (LLVM IR)', to: '/docs/aot/build-llvm' },
+      { label: 'WASM ビルド (Emscripten)', to: '/docs/aot/build-wasm' },
     ],
   },
   {
