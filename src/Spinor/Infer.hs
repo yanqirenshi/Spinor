@@ -380,6 +380,8 @@ inferQuote (EData _ _ _)   = TCon "Unit"
 inferQuote (EMatch _ _ _)  = TVar "_match"
 inferQuote (EModule _ _ _) = TCon "Unit"
 inferQuote (EImport _ _ _) = TCon "Unit"
+inferQuote (EWithRegion _ _ body) = inferQuote body
+inferQuote (EAllocIn _ _ expr)    = inferQuote expr
 
 -- | パターンの型推論
 --   パターンの型と tTarget を unify し、パターン内変数の型環境を返す

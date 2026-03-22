@@ -594,6 +594,12 @@ eval (EList sp (ESym _ "export" : symExprs)) = do
     extractStr (VStr s) = pure s
     extractStr _ = throwErrorAt sp "export: シンボル名には文字列が必要です"
 
+-- リージョン関連: インタプリタでは未サポート (AOT専用機能)
+eval (EWithRegion sp _ _) =
+  throwErrorAt sp "with-region: この機能はAOTコンパイル時のみ使用可能です"
+eval (EAllocIn sp _ _) =
+  throwErrorAt sp "alloc-in: この機能はAOTコンパイル時のみ使用可能です"
+
 -- 関数適用: (f arg1 arg2 ...)
 --   マクロ展開は Expander.expand で処理済みの前提。
 eval (EList _ (x:xs)) = do
@@ -789,6 +795,8 @@ exprToVal (EData _ name _) = VSym ("<data:" <> name <> ">")
 exprToVal (EMatch _ _ _) = VSym "<match>"
 exprToVal (EModule _ name _) = VSym ("<module:" <> name <> ">")
 exprToVal (EImport _ name _) = VSym ("<import:" <> name <> ">")
+exprToVal (EWithRegion _ name body) = VList [VSym "with-region", VSym name, exprToVal body]
+exprToVal (EAllocIn _ name expr)    = VList [VSym "alloc-in", VSym name, exprToVal expr]
 
 -- | Val を Expr に逆変換する (マクロ展開結果の再評価用)
 valToExpr :: Val -> Expr

@@ -201,6 +201,10 @@ checkExpr (EMatch sp target branches) = do
 checkExpr (EModule _ _ _) = pure ()
 checkExpr (EImport _ _ _) = pure ()
 
+-- リージョン関連: 本体/式を再帰的にチェック
+checkExpr (EWithRegion _ _ body) = checkExpr body
+checkExpr (EAllocIn _ _ expr)    = checkExpr expr
+
 -- | let 風の式の処理
 checkLetLike :: SourceSpan -> [Expr] -> Check ()
 checkLetLike sp exprs = case exprs of

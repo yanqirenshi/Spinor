@@ -39,6 +39,14 @@ expand (EMatch sp target branches) = do
   branches' <- mapM (\(pat, body) -> do { body' <- expand body; pure (pat, body') }) branches
   pure $ EMatch sp target' branches'
 
+-- リージョン関連: 本体/式を再帰展開
+expand (EWithRegion sp name body) = do
+  body' <- expand body
+  pure $ EWithRegion sp name body'
+expand (EAllocIn sp name expr) = do
+  expr' <- expand expr
+  pure $ EAllocIn sp name expr'
+
 -- 空リスト
 expand e@(EList _ []) = pure e
 
