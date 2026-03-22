@@ -127,8 +127,8 @@ lookupInPackages ctx name = do
 -- | usedPackages リストから順にシンボルを検索 (exports のみ)
 lookupInUsedPackages :: Map.Map Text Package -> [Text] -> Text -> Eval (Maybe Val)
 lookupInUsedPackages _ [] _ = pure Nothing
-lookupInUsedPackages packages (pkgName:rest) name =
-  case Map.lookup pkgName packages of
+lookupInUsedPackages packages (pName:rest) name =
+  case Map.lookup pName packages of
     Nothing -> lookupInUsedPackages packages rest name  -- パッケージが存在しない場合はスキップ
     Just pkg ->
       if Set.member name (pkgExports pkg)
@@ -429,7 +429,7 @@ eval (EList _ (ESym _ "ignore-errors" : body)) = do
 -- 特殊形式: (handler-case expr (error (var) handler-body...))
 --   expr を評価し、エラーが発生した場合はハンドラを実行する。
 --   var にはエラーメッセージ (文字列) が束縛される。
-eval (EList sp [ESym _ "handler-case", expr, EList _ (ESym _ "error" : EList _ [ESym _ var] : handlerBody)]) = do
+eval (EList _sp [ESym _ "handler-case", expr, EList _ (ESym _ "error" : EList _ [ESym _ var] : handlerBody)]) = do
   result <- tryEval (eval expr)
   case result of
     Right val -> pure val
@@ -537,14 +537,14 @@ eval (EList sp (ESym _ "defpackage" : args)) = evalDefpackage sp args
 eval (EList sp [ESym _ "in-package", pkgExpr]) = do
   pkgVal <- eval pkgExpr
   case pkgVal of
-    VStr pkgName -> do
+    VStr targetPkgName -> do
       ctx <- getContext
       -- パッケージが存在するか確認
-      case Map.lookup pkgName (ctxPackages ctx) of
-        Nothing -> throwErrorAt sp $ "in-package: パッケージが存在しません: " <> pkgName
+      case Map.lookup targetPkgName (ctxPackages ctx) of
+        Nothing -> throwErrorAt sp $ "in-package: パッケージが存在しません: " <> targetPkgName
         Just _ -> do
-          modifyContext $ \c -> c { ctxCurrentPackage = pkgName }
-          pure $ VStr pkgName
+          modifyContext $ \c -> c { ctxCurrentPackage = targetPkgName }
+          pure $ VStr targetPkgName
     _ -> throwErrorAt sp "in-package: パッケージ名には文字列が必要です"
 
 -- 特殊形式: (use-package "PKG-NAME")
@@ -552,30 +552,30 @@ eval (EList sp [ESym _ "in-package", pkgExpr]) = do
 eval (EList sp [ESym _ "use-package", pkgExpr]) = do
   pkgVal <- eval pkgExpr
   case pkgVal of
-    VStr pkgName -> do
+    VStr targetPkgName -> do
       ctx <- getContext
       let curPkgName = ctxCurrentPackage ctx
       -- 対象パッケージが存在するか確認
-      case Map.lookup pkgName (ctxPackages ctx) of
-        Nothing -> throwErrorAt sp $ "use-package: パッケージが存在しません: " <> pkgName
+      case Map.lookup targetPkgName (ctxPackages ctx) of
+        Nothing -> throwErrorAt sp $ "use-package: パッケージが存在しません: " <> targetPkgName
         Just _ -> do
           case Map.lookup curPkgName (ctxPackages ctx) of
             Nothing -> throwErrorAt sp $ "use-package: 現在のパッケージが不正です: " <> curPkgName
             Just curPkg -> do
               -- 既に use されていなければ追加
               let usedPkgs = pkgUsedPackages curPkg
-              if pkgName `elem` usedPkgs
+              if targetPkgName `elem` usedPkgs
                 then pure $ VBool True  -- 既に use 済み
                 else do
-                  let newPkg = curPkg { pkgUsedPackages = usedPkgs ++ [pkgName] }
+                  let newPkg = curPkg { pkgUsedPackages = usedPkgs ++ [targetPkgName] }
                   modifyContext $ \c -> c { ctxPackages = Map.insert curPkgName newPkg (ctxPackages c) }
                   pure $ VBool True
     _ -> throwErrorAt sp "use-package: パッケージ名には文字列が必要です"
 
 -- 特殊形式: (current-package) — 現在のパッケージ名を取得
 eval (EList _ [ESym _ "current-package"]) = do
-  pkgName <- getCurrentPackageName
-  pure $ VStr pkgName
+  currentPkg <- getCurrentPackageName
+  pure $ VStr currentPkg
 
 -- 特殊形式: (export "SYM1" "SYM2" ...) — 現在のパッケージからシンボルをエクスポート
 eval (EList sp (ESym _ "export" : symExprs)) = do
@@ -622,20 +622,20 @@ evalDefpackage sp args = case args of
   (nameExpr : opts) -> do
     nameVal <- eval nameExpr
     case nameVal of
-      VStr pkgName -> do
+      VStr newPkgName -> do
         -- オプションを解析
         (usePkgs, exports) <- parseDefpackageOpts sp opts
         -- パッケージを作成
         let newPkg = Package
-              { pkgName = pkgName
+              { pkgName = newPkgName
               , pkgBindings = Map.empty
               , pkgExports = Set.fromList exports
               , pkgUsedPackages = usePkgs ++ ["spinor"]  -- spinor は常に use
               }
         -- コンテキストに追加
         modifyContext $ \ctx ->
-          ctx { ctxPackages = Map.insert pkgName newPkg (ctxPackages ctx) }
-        pure $ VStr pkgName
+          ctx { ctxPackages = Map.insert newPkgName newPkg (ctxPackages ctx) }
+        pure $ VStr newPkgName
       _ -> throwErrorAt sp "defpackage: パッケージ名には文字列が必要です"
 
 -- | defpackage のオプションを解析
@@ -861,12 +861,6 @@ dolistLoop var (x:xs) body = do
   defineLocal var x
   mapM_ eval body
   dolistLoop var xs body
-
--- | パラメータリストからシンボル名を抽出する (fn / mac 共通)
-extractSym :: Expr -> Eval Text
-extractSym (ESym _ s) = pure s
-extractSym other      = throwErrorAt (exprSpan other) $ "引数にはシンボルが必要です: "
-                                  <> pack (show other)
 
 -- | 引数リストを [Param] に変換する
 --   (x y)               → [PRequired "x", PRequired "y"]

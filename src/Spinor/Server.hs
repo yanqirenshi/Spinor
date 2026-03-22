@@ -25,7 +25,6 @@ module Spinor.Server
 import Network.Socket
 import Control.Concurrent (forkFinally)
 import Control.Monad (forever, void)
-import Control.Monad.State.Strict (get)
 import Control.Exception (bracket, SomeException, catch)
 import Data.List (nub)
 import Data.IORef
@@ -1183,13 +1182,6 @@ valContentText (VCLKernel _ name) = "Kernel: " <> name
 valContentText (VWindow _) = "Type: GLFW Window"
 valContentText (VSocket _) = "Type: Socket"
 
--- | Param を Text に変換
-showParamText :: Param -> Text
-showParamText (PRequired name) = name
-showParamText (PRest name) = ". " <> name
-showParamText (PKey name Nothing) = "&key " <> name
-showParamText (PKey name (Just _)) = "&key (" <> name <> " ...)"
-
 -- | [Param] を表示用文字列に変換
 showParamsText :: [Param] -> Text
 showParamsText params = formatParams params False
@@ -1200,7 +1192,7 @@ showParamsText params = formatParams params False
         if null ps then name else name <> " " <> formatParams ps False
       PRest name ->
         ". " <> name
-      PKey name _ ->
+      PKey _name _ ->
         let prefix = if inKey then "" else "&key "
             formatted = formatKeyParam p
             rest = formatParams ps True

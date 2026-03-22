@@ -22,13 +22,11 @@ module Spinor.BorrowCheck
   ) where
 
 import Data.Text (Text)
-import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 import Control.Monad (forM_, when)
 import Control.Monad.State.Strict
 
 import Spinor.Syntax (Expr(..), Pattern(..), SourceSpan, dummySpan, exprSpan)
-import Spinor.Type (Linearity(..))
 
 -- ============================================================
 -- データ型定義
@@ -207,7 +205,7 @@ checkExpr (EAllocIn _ _ expr)    = checkExpr expr
 
 -- | let 風の式の処理
 checkLetLike :: SourceSpan -> [Expr] -> Check ()
-checkLetLike sp exprs = case exprs of
+checkLetLike _sp exprs = case exprs of
   [ESym _ "let", ESym defSpan name, val, body] -> do
     checkExpr val
     registerVar name False defSpan

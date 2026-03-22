@@ -7,7 +7,7 @@ import qualified Data.Text.IO as TIO
 import qualified Data.Text.Encoding as TE
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
-import Data.Aeson (ToJSON(..), object, (.=), encode)
+import Data.Aeson (object, (.=), encode)
 import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF, hSetEncoding, utf8)
 import Control.Monad (when)
 import System.Directory (doesFileExist, getCurrentDirectory, removeFile, createDirectoryIfMissing)

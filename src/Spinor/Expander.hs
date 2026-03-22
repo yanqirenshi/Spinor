@@ -10,7 +10,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Control.Monad.IO.Class (liftIO)
 
-import Spinor.Syntax (Expr(..), parseFile, dummySpan, exprSpan)
+import Spinor.Syntax (Expr(..), parseFile, dummySpan)
 import Spinor.Val    (Val(..))
 import Spinor.Eval   (Eval, eval, applyClosureBody, exprToVal, valToExpr, throwErrorAt, lookupSymbol)
 

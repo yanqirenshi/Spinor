@@ -19,14 +19,13 @@ module Spinor.EscapeAnalysis
   ) where
 
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Control.Monad.State
 import Control.Monad (forM_, when)
-import Spinor.Syntax (Expr(..), SourceSpan, exprSpan)
+import Spinor.Syntax (Expr(..), SourceSpan)
 
 -- | 変数がどのリージョンに属するかの情報
 data VarRegion
@@ -107,7 +106,7 @@ checkVarEscape varName sp = do
 analyzeExpr :: Expr -> Analyzer ()
 
 -- with-region: 新しいリージョンを作成して本体を解析
-analyzeExpr (EWithRegion sp regionName body) = do
+analyzeExpr (EWithRegion _sp regionName body) = do
   enterRegion regionName
   analyzeExpr body
   exitRegion regionName
@@ -121,7 +120,7 @@ analyzeExpr (EAllocIn sp regionName expr) = do
     else recordError (UndefinedRegion regionName sp)
 
 -- let: 変数束縛の解析
-analyzeExpr (ELet sp bindings body) = do
+analyzeExpr (ELet _sp bindings body) = do
   -- 各束縛を解析し、値がリージョン内かどうかを記録
   forM_ bindings $ \(varName, valExpr) -> do
     analyzeExpr valExpr
@@ -131,7 +130,7 @@ analyzeExpr (ELet sp bindings body) = do
   analyzeExpr body
 
 -- defun: 関数定義の解析 (戻り値位置のマーク)
-analyzeExpr (EList sp (ESym _ "defun" : ESym _ _ : EList _ _ : body : _)) = do
+analyzeExpr (EList _sp (ESym _ "defun" : ESym _ _ : EList _ _ : body : _)) = do
   -- 関数本体は戻り値位置
   oldInReturn <- gets asInReturn
   modify $ \s -> s { asInReturn = True }
@@ -142,16 +141,16 @@ analyzeExpr (EList sp (ESym _ "defun" : ESym _ _ : EList _ _ : body : _)) = do
 analyzeExpr (ESym sp varName) = checkVarEscape varName sp
 
 -- if 式: 条件と両分岐を解析
-analyzeExpr (EList sp (ESym _ "if" : cond : thenE : elseE : _)) = do
+analyzeExpr (EList _sp (ESym _ "if" : cond : thenE : elseE : _)) = do
   analyzeExpr cond
   analyzeExpr thenE
   analyzeExpr elseE
 
 -- begin 式: 各式を順に解析
-analyzeExpr (EList sp (ESym _ "begin" : exprs)) = mapM_ analyzeExpr exprs
+analyzeExpr (EList _sp (ESym _ "begin" : exprs)) = mapM_ analyzeExpr exprs
 
 -- 一般のリスト: 各要素を解析
-analyzeExpr (EList sp exprs) = mapM_ analyzeExpr exprs
+analyzeExpr (EList _sp exprs) = mapM_ analyzeExpr exprs
 
 -- その他の式: 特に何もしない
 analyzeExpr _ = pure ()

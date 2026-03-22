@@ -89,7 +89,7 @@ generateFreeStatements dropPoints =
 --
 -- EscapeResult の検証に基づき、Arena アロケータのコードを生成する。
 compileProgramWithRegions :: [Expr] -> EscapeResult -> CCode
-compileProgramWithRegions exprs escapeResult =
+compileProgramWithRegions exprs _escapeResult =
     let (defuns, others) = partition isDefun exprs
         funDefs = T.unlines (map compileFunDef defuns)
         mainStmts = T.unlines (map compileStmtWithRegion others)

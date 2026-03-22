@@ -150,13 +150,13 @@ runInferFrom n (Infer m) = runStateT m n
 
 -- | 位置情報付きエラーを投げるヘルパー
 throwErrorAt :: SourceSpan -> Text -> Infer a
-throwErrorAt span msg = throwError (SpinorError span msg)
+throwErrorAt srcSpan msg = throwError (SpinorError srcSpan msg)
 
 -- | Text エラーを SpinorError に変換してリフトするヘルパー
 --   unify など Text を返す関数の結果をリフトする際に使用
 liftUnify :: SourceSpan -> Either Text a -> Infer a
-liftUnify span (Left msg)  = throwErrorAt span msg
-liftUnify _    (Right val) = pure val
+liftUnify srcSpan (Left msg)  = throwErrorAt srcSpan msg
+liftUnify _       (Right val) = pure val
 
 -- | 新しい型変数を生成する (t0, t1, t2, ...)
 fresh :: Infer Type
