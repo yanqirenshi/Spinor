@@ -15,8 +15,7 @@ const sections: NavItem[] = [
     items: [
       { label: '共通の前提条件', to: '/docs/installation/prerequisites' },
       { label: 'Linux / WSL2', to: '/docs/installation/linux' },
-      { label: 'Windows (PowerShell)', to: '/docs/installation/windows-powershell' },
-      { label: 'Windows (MSYS2)', to: '/docs/installation/windows-msys2' },
+      { label: 'Windows 11', to: '/docs/installation/windows-msys2' },
       { label: 'トラブルシューティング', to: '/docs/installation/troubleshooting' },
     ],
   },
