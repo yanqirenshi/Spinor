@@ -26,6 +26,22 @@ import Spinor.EscapeAnalysis (EscapeResult(..))
 -- | C コードの型エイリアス
 type CCode = Text
 
+-- | AST 中に OpenGL 関連のシンボル (gl-*) が含まれるか検査する
+usesGL :: [Expr] -> Bool
+usesGL = any exprUsesGL
+  where
+    glSymbols :: [Text]
+    glSymbols = ["gl-init", "gl-clear", "gl-draw-points",
+                 "gl-swap-buffers", "gl-window-should-close"]
+    exprUsesGL :: Expr -> Bool
+    exprUsesGL (ESym _ s) = s `elem` glSymbols
+    exprUsesGL (EList _ xs) = any exprUsesGL xs
+    exprUsesGL (ELet _ binds body) =
+      any (exprUsesGL . snd) binds || exprUsesGL body
+    exprUsesGL (EWithRegion _ _ body) = exprUsesGL body
+    exprUsesGL (EAllocIn _ _ body) = exprUsesGL body
+    exprUsesGL _ = False
+
 -- | プログラム全体を C 言語のソースコードに変換する
 --
 -- defun 式は C のトップレベル関数に変換され、
@@ -35,13 +51,15 @@ compileProgram exprs =
     let (defuns, others) = partition isDefun exprs
         funDefs = T.unlines (map compileFunDef defuns)
         mainStmts = T.unlines (map compileStmt others)
+        glCode = if usesGL exprs
+                 then T.unlines [glIncludes, glHelpers]
+                 else ""
     in T.unlines
         [ "#include <stdio.h>"
         , "#include <stdbool.h>"
         , "#include \"spinor.h\""
         , ""
-        , glIncludes
-        , glHelpers
+        , glCode
         , funDefs
         , "int main(void) {"
         , mainStmts
@@ -58,14 +76,16 @@ compileProgramWithOwnership exprs borrowResult =
         funDefs = T.unlines (map compileFunDef defuns)
         mainStmts = T.unlines (map compileStmt others)
         freeStmts = generateFreeStatements (brDropPoints borrowResult)
+        glCode = if usesGL exprs
+                 then T.unlines [glIncludes, glHelpers]
+                 else ""
     in T.unlines
         [ "#include <stdio.h>"
         , "#include <stdlib.h>  /* for free() - ownership system */"
         , "#include <stdbool.h>"
         , "#include \"spinor.h\""
         , ""
-        , glIncludes
-        , glHelpers
+        , glCode
         , funDefs
         , "int main(void) {"
         , mainStmts
@@ -102,8 +122,9 @@ compileProgramWithRegions exprs _escapeResult =
         , ""
         , arenaAllocatorCode
         , ""
-        , glIncludes
-        , glHelpers
+        , if usesGL exprs
+          then T.unlines [glIncludes, glHelpers]
+          else ""
         , funDefs
         , "int main(void) {"
         , mainStmts
@@ -205,7 +226,7 @@ arenaAllocatorCode = T.unlines
     , "        if (str) {"
     , "            memcpy(str, s, len);"
     , "            obj->type = SP_STR;"
-    , "            obj->value.str = str;"
+    , "            obj->value.string = str;"
     , "        }"
     , "    }"
     , "    return obj;"
@@ -447,14 +468,14 @@ glHelpers = T.unlines
     , "SpObject* sp_gl_init(SpObject* w, SpObject* h, SpObject* title) {"
     , "#ifdef __EMSCRIPTEN__"
     , "    SDL_Init(SDL_INIT_VIDEO);"
-    , "    _sp_gl_window = SDL_CreateWindow(title->value.str,"
+    , "    _sp_gl_window = SDL_CreateWindow(title->value.string,"
     , "        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,"
     , "        (int)w->value.integer, (int)h->value.integer, SDL_WINDOW_OPENGL);"
     , "    _sp_gl_context = SDL_GL_CreateContext(_sp_gl_window);"
     , "#else"
     , "    glfwInit();"
     , "    _sp_gl_window = glfwCreateWindow((int)w->value.integer,"
-    , "        (int)h->value.integer, title->value.str, NULL, NULL);"
+    , "        (int)h->value.integer, title->value.string, NULL, NULL);"
     , "    glfwMakeContextCurrent(_sp_gl_window);"
     , "#endif"
     , "    return sp_make_bool(true);"
@@ -491,9 +512,7 @@ glHelpers = T.unlines
     , ""
     , "SpObject* sp_gl_draw_points(SpObject* data) {"
     , "    (void)data;"
-    , "    glBegin(GL_POINTS);"
-    , "    /* TODO: extract vertex data from SpObject matrix */"
-    , "    glEnd();"
+    , "    /* TODO: implement draw_points with shaders (glBegin/glEnd not available in ES 2.0) */"
     , "    return sp_make_nil();"
     , "}"
     ]

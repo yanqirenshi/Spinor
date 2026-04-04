@@ -11,11 +11,12 @@ import Data.Aeson (object, (.=), encode)
 import System.IO (hFlush, stdout, hSetBuffering, BufferMode(..), stdin, hIsEOF, hSetEncoding, utf8)
 import Control.Monad (when)
 import System.Directory (doesFileExist, getCurrentDirectory, removeFile, createDirectoryIfMissing)
-import System.Environment (getArgs)
+import System.Environment (getArgs, getEnvironment)
 import System.Exit (exitFailure, exitSuccess, ExitCode(..))
 import System.FilePath (takeDirectory, takeBaseName, replaceExtension)
 import System.Info (os)
-import System.Process (readProcessWithExitCode)
+import System.Process (readProcessWithExitCode, readCreateProcessWithExitCode, proc)
+import qualified System.Process as Proc
 import Spinor.Syntax    (Expr(..), readExpr, parseFile, formatError, SpinorError(..), dummySpan)
 import Spinor.Type      (TypeEnv, showType)
 import Spinor.Val       (Env)
@@ -480,7 +481,7 @@ buildWasmMode quiet file = do
                       , cFile
                       , runtimeSrc
                       ]
-      (exitCode, out, err) <- readProcessWithExitCode emccPath emccFlags ""
+      (exitCode, out, err) <- runEmcc emccPath emccFlags
       case exitCode of
         ExitSuccess -> do
           -- 4. クリーンアップと完了メッセージ
@@ -498,10 +499,14 @@ buildWasmMode quiet file = do
 findEmcc :: IO FilePath
 findEmcc = do
     let candidates =
-          [ "emcc"  -- PATH にあればこれを使う
-          , "/usr/lib/emscripten/emcc"
-          , "/usr/local/bin/emcc"
-          ]
+          if os == "mingw32"
+          then [ "emcc"
+               , "C:\\emsdk\\upstream\\emscripten\\emcc.bat"
+               ]
+          else [ "emcc"
+               , "/usr/lib/emscripten/emcc"
+               , "/usr/local/bin/emcc"
+               ]
     findFirst candidates
   where
     findFirst [] = do
@@ -510,6 +515,25 @@ findEmcc = do
     findFirst (c:cs) = do
       exists <- doesFileExist c
       if exists then pure c else findFirst cs
+
+-- | emcc を実行する
+--   Windows では EMSDK_PYTHON 環境変数を設定して、emcc.bat の
+--   サブプロセスが正しい Python を使えるようにする。
+runEmcc :: FilePath -> [String] -> IO (ExitCode, String, String)
+runEmcc emccPath args
+  | os == "mingw32" = do
+      let emsdkPython = "C:\\emsdk\\python\\3.13.3_64bit\\python.exe"
+      pyExists <- doesFileExist emsdkPython
+      if pyExists
+        then do
+          baseEnv <- getEnvironment
+          let env' = ("EMSDK_PYTHON", emsdkPython)
+                   : ("EMSDK", "C:/emsdk")
+                   : filter (\(k,_) -> k /= "EMSDK_PYTHON" && k /= "EMSDK") baseEnv
+              cp = (proc emccPath args) { Proc.env = Just env' }
+          readCreateProcessWithExitCode cp ""
+        else readProcessWithExitCode emccPath args ""
+  | otherwise = readProcessWithExitCode emccPath args ""
 
 -- | 起動時に Twister ファイルをロードする
 --   各式を展開 → 型推論 (ベストエフォート) → 評価し、
