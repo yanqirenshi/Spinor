@@ -14,6 +14,7 @@ import System.Directory (doesFileExist, getCurrentDirectory, removeFile, createD
 import System.Environment (getArgs)
 import System.Exit (exitFailure, exitSuccess, ExitCode(..))
 import System.FilePath (takeDirectory, takeBaseName, replaceExtension)
+import System.Info (os)
 import System.Process (readProcessWithExitCode)
 import Spinor.Syntax    (Expr(..), readExpr, parseFile, formatError, SpinorError(..), dummySpan)
 import Spinor.Type      (TypeEnv, showType)
@@ -362,8 +363,10 @@ buildLlvmMode quiet file = do
 
           -- 5. clang でコンパイル
           clangPath <- findClang
+          let targetFlags = if os == "mingw32" then ["--target=x86_64-pc-windows-gnu"] else []
+              clangArgs = targetFlags ++ ["-o", outFile, llFile, runtimeSrc]
           when (not quiet) $ putStrLn $ "Building " <> outFile <> " with " <> clangPath <> "..."
-          (exitCode, out, err) <- readProcessWithExitCode clangPath ["-o", outFile, llFile, runtimeSrc] ""
+          (exitCode, out, err) <- readProcessWithExitCode clangPath clangArgs ""
           case exitCode of
             ExitSuccess -> do
               -- 6. クリーンアップと完了メッセージ
