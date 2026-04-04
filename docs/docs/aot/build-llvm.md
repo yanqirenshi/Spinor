@@ -7,15 +7,19 @@ LLVM IR を生成し、Clang でネイティブバイナリを生成します。
 
 ```bash
 # LLVM IR 経由でコンパイル
-cabal run spinor -- build-llvm fib.spin
+cabal run spinor -- build-llvm fib-aot.spin
 
 # 生成された実行ファイルを実行
-./fib
+./fib-aot        # Linux / macOS
+.\fib-aot.exe    # Windows
 ```
 
 ## 前提条件
 
-システムに LLVM (Clang) がインストールされている必要があります。
+- LLVM (Clang) がインストールされていること
+- Windows の場合: MSYS2 (MinGW) がインストールされていること（GHCup で自動インストールされます）
+
+> **Windows の補足:** Spinor は Windows 上で clang を呼び出す際に `--target=x86_64-pc-windows-gnu` フラグを自動的に付与します。これにより MSYS2 の MinGW ヘッダーが使用されるため、Visual Studio の Developer Command Prompt は不要です。
 
 ---
 
