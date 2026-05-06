@@ -26,30 +26,30 @@ docs/
     │   ├── cookbook.md           # クックブック・逆引きレシピ
     │   └── ai_workflow.md        # AIワークフロー
     │
+    ├── syntax/                   # 構文詳細 (CLHS 準拠)
+    │   ├── arrays.md             # 配列
+    │   ├── atoms.md              # アトム
+    │   ├── characters.md         # 文字
+    │   ├── conditions.md         # コンディション
+    │   ├── conses.md             # コンスセル
+    │   ├── control-flow.md       # 制御フロー
+    │   ├── data-types.md         # データ型
+    │   ├── definitions.md        # 定義
+    │   ├── environment.md        # 環境
+    │   ├── evaluation.md         # 評価
+    │   ├── files.md              # ファイル
+    │   ├── iteration.md          # 反復
+    │   ├── numbers.md            # 数値
+    │   ├── ownership.md          # 所有権
+    │   ├── packages.md           # パッケージ
+    │   ├── regions.md            # リージョン
+    │   ├── strings.md            # 文字列
+    │   ├── symbols.md            # シンボル
+    │   └── type-system.md        # 型システム
+    │
     ├── reference/                # リファレンス
     │   ├── index.md              # API リファレンストップ
     │   ├── syntax-overview.md    # 構文概要
-    │   │
-    │   ├── syntax/               # 構文詳細
-    │   │   ├── arrays.md         # 配列
-    │   │   ├── atoms.md          # アトム
-    │   │   ├── characters.md     # 文字
-    │   │   ├── conditions.md     # コンディション
-    │   │   ├── conses.md         # コンスセル
-    │   │   ├── control-flow.md   # 制御フロー
-    │   │   ├── data-types.md     # データ型
-    │   │   ├── definitions.md    # 定義
-    │   │   ├── environment.md    # 環境
-    │   │   ├── evaluation.md     # 評価
-    │   │   ├── files.md          # ファイル
-    │   │   ├── iteration.md      # 反復
-    │   │   ├── numbers.md        # 数値
-    │   │   ├── ownership.md      # 所有権
-    │   │   ├── packages.md       # パッケージ
-    │   │   ├── regions.md        # リージョン
-    │   │   ├── strings.md        # 文字列
-    │   │   ├── symbols.md        # シンボル
-    │   │   └── type-system.md    # 型システム
     │   │
     │   └── api/                  # APIリファレンス
     │       │
@@ -156,7 +156,7 @@ docs/
 | 概要 | 2 |
 | usage/ | 4 |
 | reference/ | 2 |
-| reference/syntax/ | 19 |
+| syntax/ | 19 |
 | reference/api/ | 70 |
 | development/ | 2 |
 | **合計** | **99** |
