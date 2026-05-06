@@ -41,48 +41,48 @@ const sections: NavItem[] = [
   {
     label: 'Syntax and Evaluation',
     items: [
-      { label: 'Atoms', to: '/docs/reference/syntax/atoms' },
-      { label: 'Evaluation', to: '/docs/reference/syntax/evaluation' },
+      { label: 'Atoms', to: '/docs/syntax/atoms' },
+      { label: 'Evaluation', to: '/docs/syntax/evaluation' },
     ],
   },
   {
     label: 'Types and Classes',
     items: [
-      { label: 'Type System', to: '/docs/reference/syntax/type-system' },
-      { label: 'Algebraic Types', to: '/docs/reference/syntax/data-types' },
+      { label: 'Type System', to: '/docs/syntax/type-system' },
+      { label: 'Algebraic Types', to: '/docs/syntax/data-types' },
     ],
   },
   {
     label: 'Data and Control Flow',
     items: [
-      { label: 'Definitions', to: '/docs/reference/syntax/definitions' },
-      { label: 'Control Flow', to: '/docs/reference/syntax/control-flow' },
-      { label: 'Iteration', to: '/docs/reference/syntax/iteration' },
+      { label: 'Definitions', to: '/docs/syntax/definitions' },
+      { label: 'Control Flow', to: '/docs/syntax/control-flow' },
+      { label: 'Iteration', to: '/docs/syntax/iteration' },
     ],
   },
   {
     label: 'Conditions',
     items: [
-      { label: 'Conditions & Errors', to: '/docs/reference/syntax/conditions' },
+      { label: 'Conditions & Errors', to: '/docs/syntax/conditions' },
     ],
   },
   {
     label: 'Built-in Data Types',
     items: [
-      { label: 'Symbols', to: '/docs/reference/syntax/symbols' },
-      { label: 'Numbers', to: '/docs/reference/syntax/numbers' },
-      { label: 'Characters', to: '/docs/reference/syntax/characters' },
-      { label: 'Strings', to: '/docs/reference/syntax/strings' },
-      { label: 'Conses', to: '/docs/reference/syntax/conses' },
-      { label: 'Arrays & Matrices', to: '/docs/reference/syntax/arrays' },
+      { label: 'Symbols', to: '/docs/syntax/symbols' },
+      { label: 'Numbers', to: '/docs/syntax/numbers' },
+      { label: 'Characters', to: '/docs/syntax/characters' },
+      { label: 'Strings', to: '/docs/syntax/strings' },
+      { label: 'Conses', to: '/docs/syntax/conses' },
+      { label: 'Arrays & Matrices', to: '/docs/syntax/arrays' },
     ],
   },
   {
     label: 'System and Environment',
     items: [
-      { label: 'Packages & Modules', to: '/docs/reference/syntax/packages' },
-      { label: 'Files', to: '/docs/reference/syntax/files' },
-      { label: 'Environment', to: '/docs/reference/syntax/environment' },
+      { label: 'Packages & Modules', to: '/docs/syntax/packages' },
+      { label: 'Files', to: '/docs/syntax/files' },
+      { label: 'Environment', to: '/docs/syntax/environment' },
     ],
   },
   {
@@ -95,8 +95,8 @@ const sections: NavItem[] = [
   {
     label: 'Experimental',
     items: [
-      { label: 'Linear Types & Ownership', to: '/docs/reference/syntax/ownership' },
-      { label: 'Region-based Memory', to: '/docs/reference/syntax/regions' },
+      { label: 'Linear Types & Ownership', to: '/docs/syntax/ownership' },
+      { label: 'Region-based Memory', to: '/docs/syntax/regions' },
     ],
   },
   {

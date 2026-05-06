@@ -881,7 +881,7 @@ Twister loaded.
 
 ## 関連ドキュメント
 
-- [Control Flow](../reference/syntax/control-flow) - 条件分岐と制御構文
-- [Conditions & Errors](../reference/syntax/conditions) - エラーハンドリング詳細
-- [Packages & Modules](../reference/syntax/packages) - パッケージシステム
+- [Control Flow](../syntax/control-flow) - 条件分岐と制御構文
+- [Conditions & Errors](../syntax/conditions) - エラーハンドリング詳細
+- [Packages & Modules](../syntax/packages) - パッケージシステム
 - [API Reference](../reference/) - 全プリミティブ一覧

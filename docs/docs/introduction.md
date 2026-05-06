@@ -107,6 +107,6 @@ $ cabal run spinor -- lsp
 
 ## 次のステップ
 
-- [Syntax](reference/syntax/atoms) - 言語の構文を学ぶ
+- [Syntax](syntax/atoms) - 言語の構文を学ぶ
 - [Build Guide](installation) - 環境構築の詳細ガイド
 - [API Reference](reference/) - 組み込み関数のリファレンス
