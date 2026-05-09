@@ -17,8 +17,20 @@ docs/
 └── docs/                         # ドキュメント本体
     │
     ├── [概要]
-    │   ├── introduction.md       # イントロダクション
-    │   └── installation.md       # インストール・ビルド方法
+    │   └── introduction.md       # イントロダクション
+    │
+    ├── installation/             # インストールガイド
+    │   ├── index.md              # Installation トップ
+    │   ├── prerequisites.md      # 共通の前提条件
+    │   ├── linux.md              # Linux / WSL2
+    │   ├── windows-msys2.md      # Windows 11 / MSYS2
+    │   └── troubleshooting.md    # トラブルシューティング
+    │
+    ├── aot/                      # Native Compilation (AOT)
+    │   ├── index.md              # AOT トップ
+    │   ├── build-c.md            # build (C 経由)
+    │   ├── build-llvm.md         # build-llvm (LLVM IR)
+    │   └── build-wasm.md         # WASM ビルド (Emscripten)
     │
     ├── usage/                    # 使い方ガイド
     │   ├── index.md              # Usage Guide トップ
@@ -156,11 +168,13 @@ docs/
 
 | カテゴリ | ファイル数 |
 |----------|------------|
-| 概要 | 2 |
+| 概要 | 1 |
+| installation/ | 5 |
+| aot/ | 4 |
 | usage/ | 4 |
 | reference/ | 2 |
 | syntax/ | 19 |
 | reference/api/ | 70 |
 | development/ | 2 |
 | vision/ | 1 |
-| **合計** | **100** |
+| **合計** | **108** |
