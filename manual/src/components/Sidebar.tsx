@@ -110,6 +110,9 @@ const sections: NavItem[] = [
   {
     label: 'The Ultimate Dream',
     to: '/docs/vision/the-ultimate-dream',
+    items: [
+      { label: 'Unikernel Architecture', to: '/docs/vision/unikernel-architecture' },
+    ],
   },
 ]
 

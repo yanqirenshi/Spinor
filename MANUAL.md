@@ -161,7 +161,8 @@ docs/
     │   └── architecture.md       # アーキテクチャ
     │
     └── vision/                   # ビジョンペーパー
-        └── the-ultimate-dream.md # AI-Native Lisp マシン構想
+        ├── the-ultimate-dream.md       # AI-Native Lisp マシン構想
+        └── unikernel-architecture.md   # Unikernel 化アーキテクチャ調査 (Issue #44)
 ```
 
 ## 統計
@@ -176,5 +177,5 @@ docs/
 | syntax/ | 19 |
 | reference/api/ | 70 |
 | development/ | 2 |
-| vision/ | 1 |
-| **合計** | **108** |
+| vision/ | 2 |
+| **合計** | **109** |
