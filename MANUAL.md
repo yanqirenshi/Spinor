@@ -144,9 +144,12 @@ docs/
     │       └── [出力]
     │           └── print.md              # 出力
     │
-    └── development/              # 開発者向け
-        ├── index.md              # Development Guide トップ
-        └── architecture.md       # アーキテクチャ
+    ├── development/              # 開発者向け
+    │   ├── index.md              # Development Guide トップ
+    │   └── architecture.md       # アーキテクチャ
+    │
+    └── vision/                   # ビジョンペーパー
+        └── the-ultimate-dream.md # AI-Native Lisp マシン構想
 ```
 
 ## 統計
@@ -159,4 +162,5 @@ docs/
 | syntax/ | 19 |
 | reference/api/ | 70 |
 | development/ | 2 |
-| **合計** | **99** |
+| vision/ | 1 |
+| **合計** | **100** |
