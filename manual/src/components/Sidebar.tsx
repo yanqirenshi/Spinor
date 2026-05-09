@@ -107,6 +107,10 @@ const sections: NavItem[] = [
       { label: 'API Reference', to: '/docs/reference' },
     ],
   },
+  {
+    label: 'The Ultimate Dream',
+    to: '/docs/vision/the-ultimate-dream',
+  },
 ]
 
 interface NavItemProps {
