@@ -61,6 +61,7 @@ helpMessage = unlines
   , "  check <file>           Parse and type-check only (no execution)"
   , "  init <name>            Create a new Spinor project"
   , "  build <file>           Compile to native binary (via C + GCC)"
+  , "  build <file> --emit-c  Emit <basename>.c only, skip GCC (for Unikernel etc.)"
   , "  build <file> --wasm    Compile to WASM (via C + Emscripten)"
   , "  compile <file>         Transpile to C source code only"
   , "  build-llvm <file>      Compile to native binary (via LLVM IR + Clang)"
@@ -91,7 +92,8 @@ main = do
   args <- getArgs
   -- Parse global flags
   let (jsonMode, args1) = parseJsonFlag args
-      (quietMode, restArgs) = parseQuietFlag args1
+      (quietMode, args2) = parseQuietFlag args1
+      (emitCMode, restArgs) = parseEmitCFlag args2
   case restArgs of
     []                  -> replMode quietMode
     ["--help"]          -> putStr helpMessage
@@ -102,7 +104,7 @@ main = do
     ["check", file]     -> checkMode jsonMode file
     ["compile", file]   -> compileMode quietMode file
     ["build-llvm", file] -> buildLlvmMode quietMode file
-    ["build", file]              -> buildMode quietMode file
+    ["build", file]              -> buildMode quietMode emitCMode file
     ["build", file, "--wasm"]    -> buildWasmMode quietMode file
     ["build", "--wasm", file]    -> buildWasmMode quietMode file
     ("server" : rest)   -> serverMode quietMode rest
@@ -120,6 +122,15 @@ parseJsonFlag args = (hasJson, filter (/= "--json") args)
 parseQuietFlag :: [String] -> (Bool, [String])
 parseQuietFlag args = (hasQuiet, filter (`notElem` ["-q", "--quiet"]) args)
   where hasQuiet = "-q" `elem` args || "--quiet" `elem` args
+
+-- | Parse --emit-c flag from arguments
+--
+-- `build` サブコマンドで使用する。指定された場合、C コードのみを生成して
+-- gcc/clang を呼び出さず、`<basename>.c` をカレントディレクトリに出力する。
+-- Unikernel ビルドなど、後段の C ツールチェインへ生成物を引き渡す用途を想定。
+parseEmitCFlag :: [String] -> (Bool, [String])
+parseEmitCFlag args = (hasEmitC, filter (/= "--emit-c") args)
+  where hasEmitC = "--emit-c" `elem` args
 
 -- | サーバーモード: TCP ソケットで REPL サービスを提供
 serverMode :: Bool -> [String] -> IO ()
@@ -400,11 +411,19 @@ findClang = do
       if exists then pure c else findFirst cs
 
 -- | ビルドモード: .spin ファイルからネイティブバイナリを生成
-buildMode :: Bool -> FilePath -> IO ()
-buildMode quiet file = do
+--
+-- `--emit-c` フラグが True の場合は C コード生成のみを行い、
+-- `<basename>.c` をカレントディレクトリに書き出してから gcc 呼び出しをスキップする。
+-- これは Unikraft などの外部 C ツールチェインに生成物を渡すユースケースを想定している。
+buildMode :: Bool -> Bool -> FilePath -> IO ()
+buildMode quiet emitCOnly file = do
   -- 1. パス設定
   let baseName = takeBaseName file
-      cFile = replaceExtension file ".c"
+      -- emit-c モードでは cwd 直下に <basename>.c を出力する。
+      -- 通常モードでは中間ファイルとして元のファイル隣に置き、ビルド成功後に削除する。
+      cFile = if emitCOnly
+              then baseName <> ".c"
+              else replaceExtension file ".c"
       outFile = baseName
       runtimeSrc = "runtime/spinor.c"
 
@@ -419,22 +438,28 @@ buildMode quiet file = do
       let cCode = compileProgram exprs
       TIO.writeFile cFile cCode
 
-      -- 3. Cコンパイラ呼び出し
-      gccPath <- findGcc
-      when (not quiet) $ putStrLn $ "Building " <> outFile <> " with " <> gccPath <> "..."
-      (exitCode, out, err) <- readProcessWithExitCode gccPath ["-Iruntime", "-o", outFile, cFile, runtimeSrc] ""
-      case exitCode of
-        ExitSuccess -> do
-          -- 4. クリーンアップと完了メッセージ
-          doesFileExist cFile >>= \exists ->
-            if exists then removeFile cFile else pure ()
-          when (not quiet) $ putStrLn $ "Build successful. Executable created: " <> outFile
+      if emitCOnly
+        then do
+          -- emit-c モード: gcc 呼び出しをスキップして終了
+          when (not quiet) $ putStrLn $ "C source emitted: " <> cFile
           exitSuccess
-        _ -> do
-          putStrLn "Build failed. C compiler output:"
-          putStrLn out
-          putStrLn err
-          exitFailure
+        else do
+          -- 3. Cコンパイラ呼び出し
+          gccPath <- findGcc
+          when (not quiet) $ putStrLn $ "Building " <> outFile <> " with " <> gccPath <> "..."
+          (exitCode, out, err) <- readProcessWithExitCode gccPath ["-Iruntime", "-o", outFile, cFile, runtimeSrc] ""
+          case exitCode of
+            ExitSuccess -> do
+              -- 4. クリーンアップと完了メッセージ
+              doesFileExist cFile >>= \exists ->
+                if exists then removeFile cFile else pure ()
+              when (not quiet) $ putStrLn $ "Build successful. Executable created: " <> outFile
+              exitSuccess
+            _ -> do
+              putStrLn "Build failed. C compiler output:"
+              putStrLn out
+              putStrLn err
+              exitFailure
 
 -- | gcc を探す (MSYS2 UCRT/MINGW64 対応)
 findGcc :: IO FilePath
