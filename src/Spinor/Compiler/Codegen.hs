@@ -332,7 +332,13 @@ mangle name = "user_" <> T.map sanitize name
 -- | トップレベル式を C のステートメントに変換
 --
 -- 式を評価し、その結果を sp_print で表示する。
+-- ただし `(print x)` のような副作用プリミティブが直接トップレベルにある場合は
+-- 二重出力を避けるため、外側ラップを省略してプリミティブ呼び出しのみ生成する。
 compileStmt :: Expr -> CCode
+-- `(print x)` を top-level に書いた場合: 外側の sp_print 自動ラップをスキップ
+-- (compileExpr が `sp_print(...)` を生成するため、二重出力を防ぐ)
+compileStmt expr@(EList _ [ESym _ "print", _]) =
+    "    " <> compileExpr expr <> ";"
 compileStmt expr =
     let valCode = compileExpr expr
     in "    sp_print(" <> valCode <> ");"
@@ -393,6 +399,13 @@ compileExpr (EList _ [ESym _ "append-file", path, content]) =
 compileExpr (EList _ [ESym _ "file-exists?", path]) =
     "sp_file_exists(" <> compileExpr path <> ")"
 
+-- 出力プリミティブ
+-- `print` は runtime/spinor.h の sp_print に直接マッピングする (mangle 経由しない)。
+-- sp_print は SpObject* を返す (Lisp 伝統: print は引数をそのまま返す) ので
+-- 式コンテキストでも安全に使える。
+compileExpr (EList _ [ESym _ "print", x]) =
+    "sp_print(" <> compileExpr x <> ")"
+
 -- OpenGL プリミティブ
 compileExpr (EList _ [ESym _ "gl-init", w, h, title]) =
     "sp_gl_init(" <> compileExpr w <> ", " <> compileExpr h <> ", " <> compileExpr title <> ")"
@@ -430,6 +443,7 @@ compileExpr (EList _ (ESym _ fname : args))
         in cFun <> "(" <> cArgs <> ")"
   where
     primitives = ["+", "-", "*", "/", "=", "<", ">", "<=", ">=", "if", "defun",
+                  "print",
                   "string-append", "string-length", "substring", "string=?",
                   "read-file", "write-file", "append-file", "file-exists?",
                   "gl-init", "gl-clear", "gl-draw-points",

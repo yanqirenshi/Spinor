@@ -224,10 +224,10 @@ SpObject* sp_file_exists(SpObject* path) {
 
 /* ========== ユーティリティ ========== */
 
-void sp_print(SpObject* obj) {
+SpObject* sp_print(SpObject* obj) {
     if (!obj) {
         printf("NULL\n");
-        return;
+        return obj;
     }
     switch (obj->type) {
         case SP_NIL:
@@ -246,4 +246,5 @@ void sp_print(SpObject* obj) {
             printf("<unknown>\n");
             break;
     }
+    return obj;  /* Lisp 伝統: print は引数をそのまま返す */
 }
