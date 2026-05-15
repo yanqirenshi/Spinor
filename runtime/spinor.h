@@ -84,7 +84,9 @@ SpObject* sp_file_exists(SpObject* path);
 
 /* ========== ユーティリティ ========== */
 
-void sp_print(SpObject* obj);
+/* sp_print: 値を表示し、引数 obj をそのまま返す (Lisp 伝統に倣う)。
+ * 戻り値を SpObject* にしたことで、(print x) を式コンテキストでも使える。 */
+SpObject* sp_print(SpObject* obj);
 const char* sp_format(SpObject* obj);
 
 /* ========== 旧 API との互換性 (エイリアス) ========== */
