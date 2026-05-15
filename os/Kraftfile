@@ -1,0 +1,29 @@
+# Kraftfile — Spinor OS (Phase 1 PoC)
+#
+# Issue #52 / The Ultimate Dream の Phase 1 として、Spinor の AOT C 出力を
+# Unikraft でビルドし、ベアメタル (QEMU/KVM) で起動する Unikernel イメージを
+#構築するための kraftkit 設定。
+#
+# 関連: docs/vision/unikernel-architecture.md
+#
+# 使い方:
+#   cd os/
+#   kraft build
+#   kraft run
+
+specification: v0.6
+name: spinor-os
+
+unikraft: stable
+
+# AOT 出力が依存する POSIX libc 関数 (printf, malloc, strcpy, ...) を満たすため
+# musl を libc として組み込む。詳細な依存関係分析は
+# docs/vision/unikernel-architecture.md を参照。
+libraries:
+  musl: stable
+
+# ターゲット: x86_64 アーキテクチャを QEMU 上で起動。
+# QEMU は --machine pc-i440fx-* で KVM アクセラレーション (利用可能なら) を使う。
+targets:
+  - architecture: x86_64
+    platform: qemu

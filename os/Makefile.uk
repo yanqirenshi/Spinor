@@ -1,0 +1,30 @@
+# Makefile.uk — Spinor OS application build rules (Phase 1 PoC)
+#
+# Issue #52 / The Ultimate Dream の Phase 1。
+# Spinor の AOT C 出力 (hello.c) と C ランタイム (spinor.c) を Unikraft の
+# アプリケーションとしてビルドする。
+#
+# 関連: ../docs/vision/unikernel-architecture.md
+#
+# 前提: ../build-os.sh を実行すると以下のファイルがこのディレクトリに揃う。
+#   - hello.c      ← Spinor AOT 出力 (cabal run spinor -- build --emit-c examples/hello.spin)
+#   - spinor.c     ← Spinor C ランタイム (runtime/spinor.c のコピー)
+#   - spinor.h     ← Spinor C ランタイムヘッダ (runtime/spinor.h のコピー)
+
+# Unikraft の addlib_s マクロでアプリケーションを登録。
+# 'spinoros' というシンボル名で内部参照される。
+$(eval $(call addlib_s,spinoros,$(CONFIG_SPINOROS)))
+
+# コンパイル対象ソース。
+# - hello.c: int main(void) を含む Spinor AOT 出力 (Unikraft の LIBUKBOOT_MAIN_FN
+#   と互換)
+# - spinor.c: sp_make_int / sp_print などのランタイム関数を提供
+SPINOROS_SRCS-y += $(SPINOROS_BASE)/hello.c
+SPINOROS_SRCS-y += $(SPINOROS_BASE)/spinor.c
+
+# spinor.h を hello.c と spinor.c から #include "spinor.h" で参照可能にする。
+SPINOROS_CINCLUDES-y += -I$(SPINOROS_BASE)
+
+# AOT 出力では (今のところ) GC が無いため stub をリンクするだけで動くが、
+# 必要に応じて警告を抑制。
+SPINOROS_CFLAGS-y += -Wno-unused-parameter -Wno-unused-variable
