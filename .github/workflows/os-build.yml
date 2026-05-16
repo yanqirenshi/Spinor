@@ -70,17 +70,24 @@ jobs:
             ${{ runner.os }}-cabal-
 
       # ---------------------------------------------------------------------
-      # 4. hmatrix が依存する BLAS / LAPACK / GSL をシステムにインストール。
-      #    (release.yml の Linux ジョブには無いが、ubuntu-latest の前提環境が
-      #    変化したときに失敗するのを避けるため明示的に入れる)
+      # 4. Spinor が依存するシステムライブラリのインストール。
+      #    - hmatrix: libgsl-dev / libblas-dev / liblapack-dev
+      #    - OpenGLRaw / OpenGL: libgl1-mesa-dev (GL), libglu1-mesa-dev (GLU)
+      #    - GLFW-b: libglfw3-dev
+      #    (CI 上の ubuntu-latest にはこれらの -dev パッケージが入っていない
+      #    ため、明示的にインストールする必要がある)
       # ---------------------------------------------------------------------
-      - name: Install system dependencies for hmatrix
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libgsl-dev \
             libblas-dev \
-            liblapack-dev
+            liblapack-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            libglfw3-dev \
+            pkg-config
 
       # ---------------------------------------------------------------------
       # 5. Spinor コンパイラのビルド
