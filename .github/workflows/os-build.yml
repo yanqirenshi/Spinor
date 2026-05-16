@@ -73,9 +73,11 @@ jobs:
       # 4. Spinor が依存するシステムライブラリのインストール。
       #    - hmatrix: libgsl-dev / libblas-dev / liblapack-dev
       #    - OpenGLRaw / OpenGL: libgl1-mesa-dev (GL), libglu1-mesa-dev (GLU)
-      #    - GLFW-b: libglfw3-dev
+      #    - GLFW-b / bindings-GLFW: libglfw3-dev + X11 系
+      #      (Xi / Xrandr / Xxf86vm / Xcursor / Xinerama を GLFW がリンク要求)
       #    (CI 上の ubuntu-latest にはこれらの -dev パッケージが入っていない
-      #    ため、明示的にインストールする必要がある)
+      #    ため、明示的にインストールする必要がある。ヘッドレス環境でも
+      #    リンク時には X11 ヘッダが必要)
       # ---------------------------------------------------------------------
       - name: Install system dependencies
         run: |
@@ -87,6 +89,11 @@ jobs:
             libgl1-mesa-dev \
             libglu1-mesa-dev \
             libglfw3-dev \
+            libxi-dev \
+            libxrandr-dev \
+            libxxf86vm-dev \
+            libxcursor-dev \
+            libxinerama-dev \
             pkg-config
 
       # ---------------------------------------------------------------------
