@@ -71,13 +71,15 @@ jobs:
 
       # ---------------------------------------------------------------------
       # 4. Spinor が依存するシステムライブラリのインストール。
-      #    - hmatrix: libgsl-dev / libblas-dev / liblapack-dev
+      #    - hmatrix: libgsl-dev / libopenblas-dev / liblapack-dev
+      #      (cabal.project.local で +openblas フラグが有効なため openblas 必須)
       #    - OpenGLRaw / OpenGL: libgl1-mesa-dev (GL), libglu1-mesa-dev (GLU)
       #    - GLFW-b / bindings-GLFW: libglfw3-dev + X11 系
       #      (Xi / Xrandr / Xxf86vm / Xcursor / Xinerama を GLFW がリンク要求)
+      #    - Spinor.GPGPU: ocl-icd-opencl-dev (OpenCL ICD loader)
       #    (CI 上の ubuntu-latest にはこれらの -dev パッケージが入っていない
       #    ため、明示的にインストールする必要がある。ヘッドレス環境でも
-      #    リンク時には X11 ヘッダが必要)
+      #    リンク時には X11 ヘッダ等が必要)
       # ---------------------------------------------------------------------
       - name: Install system dependencies
         run: |
@@ -94,6 +96,7 @@ jobs:
             libxxf86vm-dev \
             libxcursor-dev \
             libxinerama-dev \
+            ocl-icd-opencl-dev \
             pkg-config
 
       # ---------------------------------------------------------------------
