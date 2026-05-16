@@ -144,14 +144,25 @@ jobs:
         run: ls -la os/
 
       # ---------------------------------------------------------------------
-      # 8. Unikraft で Unikernel をビルド
-      #    --no-update: 対話プロンプトとリモートからのテンプレート更新を抑制
+      # 8. Unikraft パッケージマニフェストの初期化
+      #    クリーンな CI 環境では kraftkit のローカル manifest キャッシュが
+      #    空のため、`kraft pkg update` で Unikraft の公式コンポーネント
+      #    (core/unikraft、lib/musl 等) のメタデータを取得しないと `kraft
+      #    build` が "could not find: core/unikraft:stable" で失敗する。
+      # ---------------------------------------------------------------------
+      - name: Update kraftkit manifests
+        run: kraft pkg update
+
+      # ---------------------------------------------------------------------
+      # 9. Unikraft で Unikernel をビルド
       #    --log-level info: ログ出力を控えめに
+      #    (--no-update は付けない。初回ビルドでは Unikraft コアと libs を
+      #    取得する必要があるため、kraftkit に自動 fetch させる)
       # ---------------------------------------------------------------------
       - name: Build Unikernel
         working-directory: os
         run: |
-          kraft build --no-update --log-level info
+          kraft build --log-level info
 
       - name: Show build output
         if: always()
