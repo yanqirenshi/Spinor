@@ -109,13 +109,20 @@ jobs:
 
       # ---------------------------------------------------------------------
       # 6. kraftkit (Unikraft toolchain) のインストール
-      #    公式インストールスクリプトを使用。インストール先 (デフォルト:
-      #    /usr/local/bin) を PATH に確実に通す。
+      #    公式インストールスクリプト (get.kraftkit.sh) を使用するが、
+      #    Debian/Ubuntu 経路では apt 操作 (gpg key の /etc/apt/keyrings への
+      #    配置、apt-get install) が走るため root 権限が必須。
+      #    `curl | sh` だと user 権限で走り gpg 書き込みが Permission denied
+      #    になるため、`sudo sh` 経由でパイプして root 権限を最初から渡す。
+      #    また CI は非対話 (/dev/tty 不在) のため、インストーラはデフォルト
+      #    "Y" を採用して apt 経路で kraftkit パッケージを導入する。
       # ---------------------------------------------------------------------
       - name: Install KraftKit
         run: |
-          curl -sSf https://get.kraftkit.sh | sh
-          # インストール先候補を PATH に追加 (どちらに入っても OK)
+          curl -sSf https://get.kraftkit.sh | sudo sh
+          # インストール先候補を PATH に追加 (apt 経路の kraftkit は
+          # /usr/bin/kraft、tarball 経路は /usr/local/bin/kraft、フォール
+          # バック先 $HOME/.local/bin にも対応)
           echo "/usr/local/bin" >> "$GITHUB_PATH"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
