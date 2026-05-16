@@ -109,22 +109,23 @@ jobs:
 
       # ---------------------------------------------------------------------
       # 6. kraftkit (Unikraft toolchain) のインストール
-      #    公式インストールスクリプト (get.kraftkit.sh) を使用するが、
-      #    Debian/Ubuntu 経路では apt 操作 (gpg key の /etc/apt/keyrings への
-      #    配置、apt-get install) が走るため root 権限が必須。
-      #    `curl | sh` だと user 権限で走り gpg 書き込みが Permission denied
-      #    になるため、`sudo sh` 経由でパイプして root 権限を最初から渡す。
-      #    また CI は非対話 (/dev/tty 不在) のため、インストーラはデフォルト
-      #    "Y" を採用して apt 経路で kraftkit パッケージを導入する。
+      #    公式の apt リポジトリ (deb.pkg.kraftkit.sh) から直接導入する。
+      #    `curl ... | sudo sh` (get.kraftkit.sh) は CI 環境では非対話プロ
+      #    ンプト ("What shell are you using?" 等) で無限ループする既知の
+      #    挙動があるため、インストーラを経由せず apt の処理だけ手動で
+      #    実行する。これは get.kraftkit.sh が Debian/Ubuntu 経路で内部
+      #    的に実施しているのと同じ手順 (gpg key 配置 → sources.list 追加
+      #    → apt-get install)。
       # ---------------------------------------------------------------------
       - name: Install KraftKit
         run: |
-          curl -sSf https://get.kraftkit.sh | sudo sh
-          # インストール先候補を PATH に追加 (apt 経路の kraftkit は
-          # /usr/bin/kraft、tarball 経路は /usr/local/bin/kraft、フォール
-          # バック先 $HOME/.local/bin にも対応)
-          echo "/usr/local/bin" >> "$GITHUB_PATH"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          sudo mkdir -p /etc/apt/keyrings
+          curl -fsSL https://deb.pkg.kraftkit.sh/gpg.key \
+            | sudo gpg --dearmor -o /etc/apt/keyrings/unikraft.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/unikraft.gpg] https://deb.pkg.kraftkit.sh /" \
+            | sudo tee /etc/apt/sources.list.d/kraftkit.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y kraftkit
 
       - name: Verify kraft installation
         run: |
