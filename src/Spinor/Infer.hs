@@ -25,7 +25,7 @@ import Control.Monad (foldM, when)
 import Control.Monad.State.Strict
 import Control.Monad.Except
 
-import Spinor.Type   (Type(..), Scheme(..), TypeEnv, showType)
+import Spinor.Type   (Type(..), Scheme(..), TypeEnv, showType, showMult)
 import Spinor.Syntax (Expr(..), Pattern(..), TypeExpr(..), ConstructorDef(..), SourceSpan, SpinorError(..), dummySpan, exprSpan)
 
 -- ============================================================
@@ -64,6 +64,7 @@ instance Types Type where
   apply _ (TCon n)     = TCon n
   apply s (TApp t1 t2) = TApp (apply s t1) (apply s t2)
   apply s (TLinear lin t) = TLinear lin (apply s t)  -- 線形型: 内部型に置換適用
+  apply s (TArrMult m t1 t2) = TArrMult m (apply s t1) (apply s t2)  -- 多重度付き矢印
 
   ftv (TVar n)     = Set.singleton n
   ftv TInt         = Set.empty
@@ -75,6 +76,7 @@ instance Types Type where
   ftv (TCon _)     = Set.empty
   ftv (TApp t1 t2) = ftv t1 `Set.union` ftv t2
   ftv (TLinear _ t) = ftv t  -- 線形型: 内部型の自由変数
+  ftv (TArrMult _ t1 t2) = ftv t1 `Set.union` ftv t2  -- 多重度付き矢印
 
 instance Types Scheme where
   apply s (Scheme vars t) = Scheme vars (apply s' t)
@@ -119,6 +121,14 @@ unify (TApp t1 t2) (TApp t3 t4) = do
   s1 <- unify t1 t3
   s2 <- unify (apply s1 t2) (apply s1 t4)
   Right (composeSubst s2 s1)
+
+-- 多重度付き矢印: 多重度が一致するときのみ unify
+unify (TArrMult m1 t1 t2) (TArrMult m2 t3 t4)
+  | m1 == m2  = do
+      s1 <- unify t1 t3
+      s2 <- unify (apply s1 t2) (apply s1 t4)
+      Right (composeSubst s2 s1)
+  | otherwise = Left $ "多重度が一致しません: " <> showMult m1 <> " と " <> showMult m2
 
 unify t1 t2 = Left $ "型が一致しません: " <> showType t1 <> " と " <> showType t2
 
@@ -309,6 +319,12 @@ infer env (EWithRegion _ _ body) = infer env body
 -- alloc-in: 内部式の型を返す
 infer env (EAllocIn _ _ expr) = infer env expr
 
+-- Phase 3 (Linear Spinor): 所有権/借用システム — 暫定的に内部式の型を返す
+infer env (EBorrow _ e) = infer env e   -- TODO: borrow inference (Phase R0-2)
+infer env (EDeref  _ e) = infer env e   -- TODO: deref inference (Phase R0-2)
+infer env (EUnsafe _ e) = infer env e   -- TODO: unsafe scope (Phase R0-2)
+infer env (EMove   _ e) = infer env e   -- TODO: move semantics (Phase R0-2)
+
 -- 関数適用: (func arg1 arg2 ...)
 --   多引数はカリー化として扱う
 infer env (EList _ (func : args)) = inferApp env func args
@@ -382,6 +398,10 @@ inferQuote (EModule _ _ _) = TCon "Unit"
 inferQuote (EImport _ _ _) = TCon "Unit"
 inferQuote (EWithRegion _ _ body) = inferQuote body
 inferQuote (EAllocIn _ _ expr)    = inferQuote expr
+inferQuote (EBorrow _ e)          = inferQuote e
+inferQuote (EDeref  _ e)          = inferQuote e
+inferQuote (EUnsafe _ e)          = inferQuote e
+inferQuote (EMove   _ e)          = inferQuote e
 
 -- | パターンの型推論
 --   パターンの型と tTarget を unify し、パターン内変数の型環境を返す

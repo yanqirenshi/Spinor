@@ -600,6 +600,13 @@ eval (EWithRegion sp _ _) =
 eval (EAllocIn sp _ _) =
   throwErrorAt sp "alloc-in: この機能はAOTコンパイル時のみ使用可能です"
 
+-- Phase 3 (Linear Spinor): 所有権/借用システム — プロトタイプ段階では素通し評価
+--   将来的に Phase R0-2 以降で意味論を実装する
+eval (EBorrow _ e) = eval e
+eval (EDeref  _ e) = eval e
+eval (EUnsafe _ e) = eval e
+eval (EMove   _ e) = eval e
+
 -- 関数適用: (f arg1 arg2 ...)
 --   マクロ展開は Expander.expand で処理済みの前提。
 eval (EList _ (x:xs)) = do
@@ -797,6 +804,10 @@ exprToVal (EModule _ name _) = VSym ("<module:" <> name <> ">")
 exprToVal (EImport _ name _) = VSym ("<import:" <> name <> ">")
 exprToVal (EWithRegion _ name body) = VList [VSym "with-region", VSym name, exprToVal body]
 exprToVal (EAllocIn _ name expr)    = VList [VSym "alloc-in", VSym name, exprToVal expr]
+exprToVal (EBorrow _ e) = VList [VSym "borrow", exprToVal e]
+exprToVal (EDeref  _ e) = VList [VSym "deref",  exprToVal e]
+exprToVal (EUnsafe _ e) = VList [VSym "unsafe", exprToVal e]
+exprToVal (EMove   _ e) = VList [VSym "move",   exprToVal e]
 
 -- | Val を Expr に逆変換する (マクロ展開結果の再評価用)
 valToExpr :: Val -> Expr

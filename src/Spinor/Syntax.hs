@@ -7,6 +7,7 @@ module Spinor.Syntax
   , TypeExpr(..)
   , ConstructorDef(..)
   , ImportOption(..)
+  , Mult(..)
   , SourcePos(..)
   , SourceSpan(..)
   , SpinorError(..)
@@ -127,6 +128,16 @@ formatError (SpinorError span msg)
 mkError :: SourceSpan -> Text -> SpinorError
 mkError = SpinorError
 
+-- | 多重度 (Multiplicity) — Linear Spinor (Phase 3) の所有権/借用システム
+--   One:    線形 (厳密に 1 回 / Tier 1)
+--   Many:   非制限 (GC / 複数回 / Tier 4)
+--   Borrow: 借用 (一時参照 / Tier 2/3)
+data Mult
+  = One     -- ^ 線形 (厳密に 1 回 / Tier 1)
+  | Many    -- ^ 非制限 (GC / 複数回 / Tier 4)
+  | Borrow  -- ^ 借用 (一時参照 / Tier 2/3)
+  deriving (Show, Eq, Ord)
+
 -- | パターン (match 式用)
 data Pattern
   = PVar  Text             -- 変数パターン: x (任意の値にマッチし束縛)
@@ -153,6 +164,11 @@ data Expr
   -- Experimental: Region-based memory management
   | EWithRegion SourceSpan Text Expr             -- ^ (with-region r body): リージョン r を作成し body を評価
   | EAllocIn    SourceSpan Text Expr             -- ^ (alloc-in r expr): リージョン r に expr の結果を割り当て
+  -- Phase 3 (Linear Spinor): 所有権/借用システム
+  | EBorrow SourceSpan Expr   -- ^ &expr (借用)
+  | EDeref  SourceSpan Expr   -- ^ *expr (参照解決)
+  | EUnsafe SourceSpan Expr   -- ^ (unsafe ...) — 線形性検査をバイパスするスコープ
+  | EMove   SourceSpan Expr   -- ^ @expr (明示的ムーブ)
   deriving (Show, Eq)
 
 -- | 式から SourceSpan を取得
@@ -169,6 +185,10 @@ exprSpan (EModule sp _ _)   = sp
 exprSpan (EImport sp _ _)   = sp
 exprSpan (EWithRegion sp _ _) = sp
 exprSpan (EAllocIn sp _ _)  = sp
+exprSpan (EBorrow sp _)     = sp
+exprSpan (EDeref  sp _)     = sp
+exprSpan (EUnsafe sp _)     = sp
+exprSpan (EMove   sp _)     = sp
 
 type Parser = Parsec Void Text
 

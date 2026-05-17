@@ -7,10 +7,13 @@ module Spinor.Type
   , Linearity(..)
   , showType
   , showLinearity
+  , showMult
   ) where
 
 import Data.Text (Text)
 import qualified Data.Map.Strict as Map
+
+import Spinor.Syntax (Mult(..))
 
 -- | 線形性修飾子 (Experimental: 所有権システム)
 --   Linear: 値は必ず一度だけ使用される
@@ -31,7 +34,8 @@ data Type
   | TList Type       -- ^ リスト型: [t]
   | TCon  Text       -- ^ 型コンストラクタ名 (例: "Maybe")
   | TApp  Type Type  -- ^ 型適用 (例: TApp (TCon "Maybe") TInt)
-  | TLinear Linearity Type  -- ^ 線形型修飾: 所有権追跡用 (Experimental)
+  | TLinear Linearity Type  -- ^ 線形型修飾: 所有権追跡用 (Experimental — legacy)
+  | TArrMult Mult Type Type -- ^ 多重度付き矢印 (Linear Spinor): t1 -%m> t2
   deriving (Eq, Ord, Show)
 
 -- | 型スキーム (多相型)
@@ -48,6 +52,12 @@ showLinearity :: Linearity -> Text
 showLinearity Linear       = "linear"
 showLinearity Unrestricted = "unrestricted"
 
+-- | 多重度の表示
+showMult :: Mult -> Text
+showMult One    = "One"
+showMult Many   = "Many"
+showMult Borrow = "Borrow"
+
 -- | 型の人間向け表示
 showType :: Type -> Text
 showType (TVar n)     = n
@@ -60,3 +70,5 @@ showType (TList t)    = "[" <> showType t <> "]"
 showType (TCon n)     = n
 showType (TApp t1 t2) = "(" <> showType t1 <> " " <> showType t2 <> ")"
 showType (TLinear lin t) = showLinearity lin <> " " <> showType t
+showType (TArrMult m t1 t2) =
+  "(" <> showType t1 <> " -%" <> showMult m <> "> " <> showType t2 <> ")"
