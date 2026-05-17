@@ -3,6 +3,37 @@
 {-# LANGUAGE TypeSynonymInstances       #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+-- |
+-- Module:      Spinor.Infer
+-- Description: Algorithm W に「リソース消費トラッキング」を載せた型推論器
+--              (Phase 3 / Issue #66 Linear Spinor R0-2)
+--
+-- 設計サマリ:
+--
+--  * 'infer' は @(Subst, Type, TypeEnv)@ を返す。3 つ目の TypeEnv は
+--    「評価後に消費されずに残った環境」 (post-state environment) である。
+--
+--  * 線形変数の判定は本 Phase では簡易判定:
+--      * @Scheme [] (TLinear Linear _)@ — 旧 legacy 形式
+--      * @Scheme [] (TArrMult One _ _)@ — Linear Spinor 多重度付き矢印で多重度が 'One'
+--    上記を満たす環境エントリを「線形 (One)」として扱う。
+--
+--  * 'Infer' モナドには新たに @MovedSet :: Set Text@ を持たせ、
+--    「線形変数として既に消費 (move) された名前」を追跡する。
+--    これにより 'ESym' ルックアップ時に 「未定義」と「move 済み」を
+--    明確に区別したエラーを出せる。
+--
+--  * 'let' 束縛は、束縛側で導入した線形変数が body 評価後 env から
+--    全て消えている (= 全て消費された) かを検査し、残っていれば
+--    「resource leak」エラーを出す。
+--
+--  * @(if cond thn els)@ は 'envAfterCond' を起点に 2 分岐を独立に推論し、
+--    両分岐で消費された線形変数の集合が一致しなければエラーとする。
+--    パターンマッチ ('EMatch') も同様にフォーク→マージする。
+--
+--  * 既存の非線形 (Many / Unrestricted) 動作とは挙動を変えていない:
+--    線形扱いされる Scheme が登場しない限り、env は素通しされ
+--    従来の Algorithm W と等価。これによって 'twister/' 互換性も最大限保つ。
 module Spinor.Infer
   ( Subst
   , Types(..)
@@ -25,8 +56,9 @@ import Control.Monad (foldM, when)
 import Control.Monad.State.Strict
 import Control.Monad.Except
 
-import Spinor.Type   (Type(..), Scheme(..), TypeEnv, showType, showMult)
-import Spinor.Syntax (Expr(..), Pattern(..), TypeExpr(..), ConstructorDef(..), SourceSpan, SpinorError(..), dummySpan, exprSpan)
+import Spinor.Type   (Type(..), Scheme(..), TypeEnv, Linearity(..), showType, showMult)
+import Spinor.Syntax (Expr(..), Pattern(..), TypeExpr(..), ConstructorDef(..), Mult(..),
+                      SourceSpan, SpinorError(..), dummySpan, exprSpan)
 
 -- ============================================================
 -- 置換 (Substitution)
@@ -143,20 +175,35 @@ varBind a t
 -- Infer モナド
 -- ============================================================
 
+-- | 「既に move (消費) された線形変数」の集合
+type MovedSet = Set.Set Text
+
+-- | 'Infer' モナド state:
+--     * 'Int'      — フレッシュ型変数カウンタ (t0, t1, ...)
+--     * 'MovedSet' — 既に消費された線形変数名
+data InferState = InferState
+  { isCounter :: !Int
+  , isMoved   :: !MovedSet
+  } deriving (Show)
+
 -- | 型推論モナド
---   StateT Int: フレッシュ型変数のカウンタ (t0, t1, t2, ...)
+--   StateT InferState: フレッシュ型変数カウンタ + 消費済み線形変数集合
 --   ExceptT SpinorError: 型エラーの報告 (位置情報付き)
-newtype Infer a = Infer (StateT Int (Either SpinorError) a)
-  deriving (Functor, Applicative, Monad, MonadState Int, MonadError SpinorError)
+newtype Infer a = Infer (StateT InferState (Either SpinorError) a)
+  deriving (Functor, Applicative, Monad, MonadState InferState, MonadError SpinorError)
 
 -- | Infer モナドを実行する (カウンタ 0 から開始)
 runInfer :: Infer a -> Either SpinorError a
-runInfer (Infer m) = fmap fst (runStateT m 0)
+runInfer (Infer m) = fmap fst (runStateT m initialState)
+  where initialState = InferState 0 Set.empty
 
 -- | Infer モナドを指定カウンタから実行する (boot 中の連続推論用)
 --   戻り値: (結果, 次のカウンタ)
+--   注意: MovedSet は呼び出しごとに空にリセットされる
+--         (トップレベル間で線形性は跨がない仕様)
 runInferFrom :: Int -> Infer a -> Either SpinorError (a, Int)
-runInferFrom n (Infer m) = runStateT m n
+runInferFrom n (Infer m) =
+  fmap (\(a, st) -> (a, isCounter st)) (runStateT m (InferState n Set.empty))
 
 -- | 位置情報付きエラーを投げるヘルパー
 throwErrorAt :: SourceSpan -> Text -> Infer a
@@ -171,9 +218,49 @@ liftUnify _       (Right val) = pure val
 -- | 新しい型変数を生成する (t0, t1, t2, ...)
 fresh :: Infer Type
 fresh = do
-  n <- get
-  put (n + 1)
+  st <- get
+  let n = isCounter st
+  put st { isCounter = n + 1 }
   pure $ TVar ("t" <> pack (show n))
+
+-- | MovedSet に名前を追加 (move 発生時)
+markMoved :: Text -> Infer ()
+markMoved name = modify $ \st -> st { isMoved = Set.insert name (isMoved st) }
+
+-- | MovedSet から名前を取り除く (再導入時のリセット用)
+--   let で同名の線形変数を再束縛する等の場合に使う
+unmarkMoved :: Text -> Infer ()
+unmarkMoved name = modify $ \st -> st { isMoved = Set.delete name (isMoved st) }
+
+-- | 名前が move 済みかチェック
+isMovedName :: Text -> Infer Bool
+isMovedName name = gets (Set.member name . isMoved)
+
+-- | MovedSet 全体のスナップショット取得
+getMoved :: Infer MovedSet
+getMoved = gets isMoved
+
+-- | MovedSet を上書き
+putMoved :: MovedSet -> Infer ()
+putMoved ms = modify $ \st -> st { isMoved = ms }
+
+-- ============================================================
+-- 線形性判定ヘルパー
+-- ============================================================
+
+-- | Scheme が「線形 (multiplicity One)」とみなされるか判定
+--   本 Phase は簡易判定:
+--     * Scheme [] (TLinear Linear _)       — legacy
+--     * Scheme [] (TArrMult One _ _)       — Linear Spinor の多重度付き矢印
+--   将来的に Scheme 自身に多重度メタを持たせる設計に拡張予定。
+isLinearScheme :: Scheme -> Bool
+isLinearScheme (Scheme _ (TLinear Linear _))      = True
+isLinearScheme (Scheme _ (TArrMult One _ _))      = True
+isLinearScheme _                                   = False
+
+-- | 環境から線形変数名の集合を取り出す
+linearNames :: TypeEnv -> Set.Set Text
+linearNames = Map.keysSet . Map.filter isLinearScheme
 
 -- ============================================================
 -- instantiate / generalize
@@ -194,136 +281,249 @@ generalize env t = Scheme (Set.toList vars) t
   where vars = ftv t `Set.difference` ftv env
 
 -- ============================================================
--- 型推論 (Algorithm W)
+-- 型推論 (Algorithm W) — リソース消費トラッキング対応
 -- ============================================================
 
 -- | AST を走査して型を推論する
---   戻り値: (置換, 推論された型)
-infer :: TypeEnv -> Expr -> Infer (Subst, Type)
+--
+--   戻り値: @(置換, 推論された型, 評価後に残った環境)@
+--
+--   3 つ目の TypeEnv は「この式が評価された後に残る (= 消費されていない)
+--   環境」。線形変数 (multiplicity One) は ESym ルックアップで「消費」され、
+--   この返却 env から取り除かれる。
+infer :: TypeEnv -> Expr -> Infer (Subst, Type, TypeEnv)
 
--- 整数リテラル → TInt
-infer _ (EInt _ _) = pure (nullSubst, TInt)
+-- 整数リテラル → TInt (env 不変)
+infer env (EInt _ _) = pure (nullSubst, TInt, env)
 
--- 真偽値リテラル → TBool
-infer _ (EBool _ _) = pure (nullSubst, TBool)
+-- 真偽値リテラル → TBool (env 不変)
+infer env (EBool _ _) = pure (nullSubst, TBool, env)
 
--- 文字列リテラル → TStr
-infer _ (EStr _ _) = pure (nullSubst, TStr)
+-- 文字列リテラル → TStr (env 不変)
+infer env (EStr _ _) = pure (nullSubst, TStr, env)
 
 -- シンボル → 型環境から検索して instantiate
 --   キーワードシンボル (`:` で始まる) は自己評価: TKeyword を返す
+--   線形変数はルックアップ後に env から消費する (= 削除)
 infer env (ESym sp x)
-  | ":" `isPrefixOf` x = pure (nullSubst, TKeyword)
+  | ":" `isPrefixOf` x = pure (nullSubst, TKeyword, env)
   | otherwise =
       case Map.lookup x env of
         Just scheme -> do
           t <- instantiate scheme
-          pure (nullSubst, t)
-        Nothing -> throwErrorAt sp $ "未定義のシンボル: " <> x
+          if isLinearScheme scheme
+            then do
+              -- 線形変数: env から消費し、MovedSet に登録
+              markMoved x
+              pure (nullSubst, t, Map.delete x env)
+            else
+              -- 非線形: env そのまま
+              pure (nullSubst, t, env)
+        Nothing -> do
+          -- 未定義か、それとも消費済み (use-after-move) か?
+          moved <- isMovedName x
+          if moved
+            then throwErrorAt sp $ "線形変数 '" <> x
+                                <> "' は既に move されています (use-after-move)"
+            else throwErrorAt sp $ "未定義のシンボル: " <> x
 
 -- 空リスト → フレッシュな要素型の空リスト
-infer _ (EList _ []) = do
+infer env (EList _ []) = do
   a <- fresh
-  pure (nullSubst, TList a)
+  pure (nullSubst, TList a, env)
 
 -- quote → quote の中身を型推論 (リテラルとリストのみ)
-infer _ (EList _ [ESym _ "quote", expr]) = pure (nullSubst, inferQuote expr)
+infer env (EList _ [ESym _ "quote", expr]) =
+  pure (nullSubst, inferQuote expr, env)
 
 -- if: cond は Bool, then と else の型を単一化
+--     2 分岐は envAfterCond を起点に独立に推論し、消費された線形変数の
+--     集合 (差分) が一致しなければエラー。
 infer env (EList sp [ESym _ "if", cond, thn, els]) = do
-  (s1, tCond) <- infer env cond
+  -- 1. cond を推論
+  (s1, tCond, envAfterCond) <- infer env cond
   s1' <- liftUnify (exprSpan cond) $ unify (apply s1 tCond) TBool
-  let s1'' = composeSubst s1' s1
-  (s2, tThn) <- infer (apply s1'' env) thn
-  let s12 = composeSubst s2 s1''
-  (s3, tEls) <- infer (apply s12 env) els
-  let s123 = composeSubst s3 s12
+  let s1''         = composeSubst s1' s1
+      envAfterCond' = apply s1'' envAfterCond
+  -- 2. 分岐前の MovedSet を保存
+  movedBefore <- getMoved
+  let linBefore = linearNames envAfterCond'
+  -- 3. then 推論
+  (s2, tThn, envThn) <- infer envAfterCond' thn
+  movedAfterThn <- getMoved
+  -- 4. MovedSet を分岐前に戻し、envAfterCond' から else を推論
+  putMoved movedBefore
+  (s3, tEls, envEls) <- infer envAfterCond' els
+  movedAfterEls <- getMoved
+  -- 5. 両分岐で消費した線形変数の集合をチェック
+  let consumedThn = Set.intersection linBefore (Set.difference movedAfterThn movedBefore)
+      consumedEls = Set.intersection linBefore (Set.difference movedAfterEls movedBefore)
+      onlyInThn   = Set.difference consumedThn consumedEls
+      onlyInEls   = Set.difference consumedEls consumedThn
+  when (not (Set.null onlyInThn)) $
+    throwErrorAt sp $
+      "if の分岐で線形変数の消費が一致しません: '"
+        <> Set.findMin onlyInThn
+        <> "' は then で消費されているが else では未消費"
+  when (not (Set.null onlyInEls)) $
+    throwErrorAt sp $
+      "if の分岐で線形変数の消費が一致しません: '"
+        <> Set.findMin onlyInEls
+        <> "' は else で消費されているが then では未消費"
+  -- 6. 型を unify
+  let s123 = composeSubst s3 (composeSubst s2 s1'')
   s4 <- liftUnify sp $ unify (apply s123 tThn) (apply s123 tEls)
   let sFinal = composeSubst s4 s123
-  pure (sFinal, apply sFinal tThn)
+  -- 7. MovedSet の合流 (両分岐の和集合)
+  putMoved (Set.union movedAfterThn movedAfterEls)
+  -- 8. env の合流: 両分岐とも消費していれば消費扱い。
+  --    一致しているはずなので envThn を採用 (env サイズが一致する保証あり)。
+  --    厳密には envThn と envEls の intersection を取るほうが正確だが、
+  --    上記チェックを通過していれば、線形変数キー集合は両者で同じ。
+  let envMerged = Map.intersectionWith const envThn envEls
+  pure (sFinal, apply sFinal tThn, apply sFinal envMerged)
 
--- let: Let多相 (並列束縛) — 各 val を現在の環境で推論 → generalize → body を推論
-infer env (ELet _ bindings body) = do
-  -- 1. すべての束縛を現在の環境で推論
-  (sFinal, bindingResults) <- foldM inferBinding (nullSubst, []) bindings
-  let env' = apply sFinal env
+-- let: Let多相 (並列束縛) — 各 val を順に推論 → generalize → body を推論
+--      body 評価後、let が「導入した線形変数」が全て消費されているか検査。
+infer env (ELet sp bindings body) = do
+  -- 1. すべての束縛を現在の環境で順に推論
+  --    (env を引き回し、各 val 評価で env が消費される可能性に対応)
+  (sFinal, envAfterBindings, bindingResults) <-
+    foldM inferBinding (nullSubst, env, []) bindings
   -- 2. 推論結果を generalize して環境に追加
-  let extendEnv e (name, t) =
+  let extendEnv (e, introducedAcc) (name, t) =
         let scheme = generalize (apply sFinal e) (apply sFinal t)
-        in Map.insert name scheme e
-      env'' = foldl extendEnv env' bindingResults
+            e'     = Map.insert name scheme e
+            -- 同名が既に moved 済みなら、再導入につき MovedSet からクリアする
+            -- (副作用は extendEnvM で実施。ここは純粋に「導入名集合」を蓄積)
+            intro' = if isLinearScheme scheme
+                     then Set.insert name introducedAcc
+                     else introducedAcc
+        in (e', intro')
+      (envWithBindings, introducedLinears) =
+        foldl extendEnv (envAfterBindings, Set.empty) bindingResults
+  -- 同名再束縛で moved 扱いになっている可能性があるためクリア
+  mapM_ unmarkMoved (Set.toList introducedLinears)
   -- 3. body を推論
-  (s2, t2) <- infer env'' body
-  pure (composeSubst s2 sFinal, t2)
+  (s2, t2, envAfterBody) <- infer envWithBindings body
+  -- 4. body 評価後の env に、let で導入した線形変数が残っていれば leak エラー
+  let leaked = Set.intersection introducedLinears (Map.keysSet envAfterBody)
+  when (not (Set.null leaked)) $
+    throwErrorAt sp $
+      "線形変数 '" <> Set.findMin leaked
+        <> "' が消費されずにスコープを抜けました (resource leak)"
+  -- 5. 返却 env からは let が導入した名前を除去 (スコープアウト)
+  let envOut = foldr Map.delete envAfterBody (Set.toList introducedLinears)
+  pure (composeSubst s2 sFinal, t2, envOut)
   where
-    inferBinding (sAcc, results) (name, val) = do
-      let envApplied = apply sAcc env
-      (s1, t1) <- infer envApplied val
+    inferBinding (sAcc, eAcc, results) (name, val) = do
+      let envApplied = apply sAcc eAcc
+      (s1, t1, eAfter) <- infer envApplied val
       let sNew = composeSubst s1 sAcc
-      pure (sNew, results ++ [(name, t1)])
+      pure (sNew, eAfter, results ++ [(name, t1)])
 
 -- define / def: 本体を推論し、環境に追加
 infer env (EList _ [ESym _ "define", ESym _ name, body]) = inferDefine env name body
 infer env (EList _ [ESym _ "def",    ESym _ name, body]) = inferDefine env name body
 
 -- fn (固定長引数): 引数にフレッシュ型変数を割り当て、本体を推論
+--   関数本体の評価では env から線形変数が消費される可能性があるが、
+--   関数自体は値なので、推論文脈の env は不変として返す。
 infer env (EList _ [ESym _ "fn", EList _ params, body]) = do
   paramNames <- mapM extractSymName params
   freshTypes <- mapM (const fresh) paramNames
   let paramSchemes = map (\t -> Scheme [] t) freshTypes
       env' = Map.union (Map.fromList (zip paramNames paramSchemes)) env
-  (s, tBody) <- infer env' body
+  -- 関数本体の MovedSet 効果は外に漏らさないため保存・復元
+  movedBefore <- getMoved
+  (s, tBody, _envBody) <- infer env' body
+  putMoved movedBefore
   let tFunc = foldr (\t acc -> TArr (apply s t) acc) (apply s tBody) freshTypes
-  pure (s, tFunc)
+  pure (s, tFunc, env)
 
 -- fn (全引数キャプチャ): 引数リスト全体を1つのリスト型として扱う
 infer env (EList _ [ESym _ "fn", ESym _ param, body]) = do
   a <- fresh
   let paramT = TList a
       env' = Map.insert param (Scheme [] paramT) env
-  (s, tBody) <- infer env' body
-  pure (s, TArr (apply s paramT) (apply s tBody))
+  movedBefore <- getMoved
+  (s, tBody, _envBody) <- infer env' body
+  putMoved movedBefore
+  pure (s, TArr (apply s paramT) (apply s tBody), env)
 
 -- match 式: target を推論 → 各分岐のパターンと body を推論
-infer env (EMatch _ targetExpr branches) = do
-  (s0, tTarget) <- infer env targetExpr
+--           分岐間で消費した線形変数の集合が一致することを要求
+infer env (EMatch sp targetExpr branches) = do
+  (s0, tTarget, envAfterTarget) <- infer env targetExpr
   tResult <- fresh
-  (sFinal, tFinal) <- foldM (inferBranch tTarget tResult) (s0, tResult) branches
-  pure (sFinal, apply sFinal tFinal)
+  movedBeforeBranches <- getMoved
+  let linBefore = linearNames envAfterTarget
+  -- 各分岐を独立に推論し、(置換, 結果型, 分岐後 env, 分岐後 moved) を集める
+  branchResults <- mapM
+    (\br -> do
+       putMoved movedBeforeBranches
+       (sB, tB, envB) <- inferBranch envAfterTarget tTarget tResult br
+       movedAfterB <- getMoved
+       pure (sB, tB, envB, movedAfterB))
+    branches
+  -- 分岐間の線形変数消費の一致を検証
+  case branchResults of
+    [] -> do
+      -- 分岐なし: 環境はそのまま
+      pure (s0, apply s0 tResult, envAfterTarget)
+    (firstSB, firstTB, firstEnv, firstMoved) : rest -> do
+      let firstConsumed = Set.intersection linBefore (Set.difference firstMoved movedBeforeBranches)
+      mapM_ (\(_, _, _, m) -> do
+        let consumed = Set.intersection linBefore (Set.difference m movedBeforeBranches)
+            diff = Set.union
+                     (Set.difference consumed firstConsumed)
+                     (Set.difference firstConsumed consumed)
+        when (not (Set.null diff)) $
+          throwErrorAt sp $
+            "match の分岐で線形変数の消費が一致しません: '"
+              <> Set.findMin diff <> "'") rest
+      -- 全分岐の MovedSet を和集合で合流
+      let allMoved = foldr (\(_, _, _, m) acc -> Set.union m acc) firstMoved rest
+      putMoved allMoved
+      -- 結果置換は折り畳み、結果型を統一
+      let sCombined = foldr (\(sB, _, _, _) acc -> composeSubst sB acc) (composeSubst firstSB s0) rest
+      -- 結果型同士の unify (分岐ごとに inferBranch 内で tResult と unify 済み)
+      let sFinal = sCombined
+          tFinal = apply sFinal firstTB
+      -- env は分岐 env の intersection (両分岐に残った名前のみ)
+      let envMerged = foldr (\(_, _, e, _) acc -> Map.intersectionWith const e acc) firstEnv rest
+      pure (sFinal, tFinal, apply sFinal envMerged)
   where
-    inferBranch tTarget tResult (sAcc, _) (pat, body) = do
-      let env' = apply sAcc env
-          tTgt = apply sAcc tTarget
-      (s1, envExt) <- inferPattern env' tTgt pat
-      let s1Acc = composeSubst s1 sAcc
-          env'' = Map.union envExt (apply s1Acc env)
-      (s2, tBody) <- infer env'' body
-      let s2Acc = composeSubst s2 s1Acc
+    inferBranch envBranch tTarget tResult (pat, body) = do
+      (s1, envExt) <- inferPattern envBranch tTarget pat
+      let env' = Map.union envExt (apply s1 envBranch)
+      (s2, tBody, envAfterBody) <- infer env' body
+      let s2Acc = composeSubst s2 s1
       s3 <- liftUnify (exprSpan body) $ unify (apply s2Acc tResult) (apply s2Acc tBody)
       let s3Acc = composeSubst s3 s2Acc
-      pure (s3Acc, apply s3Acc tResult)
+      pure (s3Acc, apply s3Acc tResult, envAfterBody)
 
 -- data 式 (式レベル): inferTop で処理するが、infer にもケースが必要
-infer _ (EData _ _ _) = pure (nullSubst, TCon "Unit")
+infer env (EData _ _ _) = pure (nullSubst, TCon "Unit", env)
 
 -- module 宣言: Unit を返す
-infer _ (EModule _ _ _) = pure (nullSubst, TCon "Unit")
+infer env (EModule _ _ _) = pure (nullSubst, TCon "Unit", env)
 
 -- import 宣言: Unit を返す
-infer _ (EImport _ _ _) = pure (nullSubst, TCon "Unit")
+infer env (EImport _ _ _) = pure (nullSubst, TCon "Unit", env)
 
 -- Experimental: Region-based memory management
--- with-region: 本体の型を返す
+-- with-region: 本体の型を返す (本体は内部で env を消費しうる)
 infer env (EWithRegion _ _ body) = infer env body
 
 -- alloc-in: 内部式の型を返す
 infer env (EAllocIn _ _ expr) = infer env expr
 
 -- Phase 3 (Linear Spinor): 所有権/借用システム — 暫定的に内部式の型を返す
-infer env (EBorrow _ e) = infer env e   -- TODO: borrow inference (Phase R0-2)
-infer env (EDeref  _ e) = infer env e   -- TODO: deref inference (Phase R0-2)
-infer env (EUnsafe _ e) = infer env e   -- TODO: unsafe scope (Phase R0-2)
-infer env (EMove   _ e) = infer env e   -- TODO: move semantics (Phase R0-2)
+infer env (EBorrow _ e) = infer env e   -- TODO: borrow inference (Phase R0-2 後続)
+infer env (EDeref  _ e) = infer env e   -- TODO: deref inference (Phase R0-2 後続)
+infer env (EUnsafe _ e) = infer env e   -- TODO: unsafe scope (Phase R0-2 後続)
+infer env (EMove   _ e) = infer env e   -- TODO: move semantics (Phase R0-2 後続)
 
 -- 関数適用: (func arg1 arg2 ...)
 --   多引数はカリー化として扱う
@@ -362,7 +562,7 @@ inferTop env (EData _ typeName constrs) = do
       in Map.insert cname scheme envAcc
 
 inferTop env expr = do
-  (s, t) <- infer env expr
+  (s, t, _envAfter) <- infer env expr
   pure (apply s env, s, t)
 
 -- | define / def のトップレベル推論
@@ -375,7 +575,7 @@ inferTopDefine :: TypeEnv -> Text -> Expr -> Infer (TypeEnv, Subst, Type)
 inferTopDefine env name body = do
   tv <- fresh
   let env' = Map.insert name (Scheme [] tv) env
-  (s1, tBody) <- infer env' body
+  (s1, tBody, _envAfter) <- infer env' body
   s2 <- liftUnify (exprSpan body) $ unify (apply s1 tv) tBody
   let sFinal = composeSubst s2 s1
       finalType = apply sFinal tBody
@@ -405,6 +605,7 @@ inferQuote (EMove   _ e)          = inferQuote e
 
 -- | パターンの型推論
 --   パターンの型と tTarget を unify し、パターン内変数の型環境を返す
+--   (env は変更しない — リソース消費は body 側で発生する)
 inferPattern :: TypeEnv -> Type -> Pattern -> Infer (Subst, TypeEnv)
 inferPattern _ tTarget (PVar name) = do
   tv <- fresh
@@ -412,7 +613,7 @@ inferPattern _ tTarget (PVar name) = do
   pure (s, Map.singleton name (Scheme [] (apply s tv)))
 inferPattern _ _ PWild = pure (nullSubst, Map.empty)
 inferPattern env tTarget (PLit expr) = do
-  (s1, tLit) <- infer env expr
+  (s1, tLit, _envAfter) <- infer env expr
   s2 <- liftUnify (exprSpan expr) $ unify (apply s1 tTarget) tLit
   pure (composeSubst s2 s1, Map.empty)
 inferPattern env tTarget (PCon conName pats) =
@@ -438,35 +639,42 @@ splitArrType :: Type -> ([Type], Type)
 splitArrType (TArr t1 t2) = let (args, res) = splitArrType t2 in (t1 : args, res)
 splitArrType t             = ([], t)
 
--- | define / def の型推論共通実装
-inferDefine :: TypeEnv -> Text -> Expr -> Infer (Subst, Type)
+-- | define / def の型推論共通実装 (式レベル)
+--   注意: トップレベルではなく、let や式の中で define が現れた場合に使用。
+--         返却 env は body 評価後の env をそのまま (define 名は内部スコープ)
+inferDefine :: TypeEnv -> Text -> Expr -> Infer (Subst, Type, TypeEnv)
 inferDefine env name body = do
   -- 再帰対応: 本体推論前にフレッシュ型変数を環境に入れる
   tv <- fresh
   let env' = Map.insert name (Scheme [] tv) env
-  (s1, tBody) <- infer env' body
+  (s1, tBody, envAfter) <- infer env' body
   s2 <- liftUnify (exprSpan body) $ unify (apply s1 tv) tBody
   let sFinal = composeSubst s2 s1
-  pure (sFinal, apply sFinal tBody)
+  pure (sFinal, apply sFinal tBody, envAfter)
 
 -- | 関数適用の型推論 (多引数対応)
---   func を推論 → 引数を順に推論 → func の型を arg1 -> arg2 -> ... -> ret と単一化
-inferApp :: TypeEnv -> Expr -> [Expr] -> Infer (Subst, Type)
+--   func を推論 → 引数を順に推論 (env を引き回す) →
+--   func の型を arg1 -> arg2 -> ... -> ret と単一化
+--
+--   引数評価で env から線形変数が消費されるため、左から右へ env を引き回す。
+inferApp :: TypeEnv -> Expr -> [Expr] -> Infer (Subst, Type, TypeEnv)
 inferApp env func args = do
-  (s0, tFunc) <- infer env func
+  (s0, tFunc, envAfterFunc) <- infer env func
   tRet <- fresh
-  -- 引数を左から順に推論し、置換を累積する
-  (sFinal, tArgTypes) <- foldM inferArg (s0, []) args
+  -- 引数を左から順に推論し、置換 + env を累積する
+  (sFinal, envFinal, tArgTypes) <-
+    foldM inferArg (s0, envAfterFunc, []) args
   -- func の型を arg1 -> arg2 -> ... -> ret と単一化
   let expectedFuncType = foldr TArr tRet (reverse tArgTypes)
-  sUnify <- liftUnify (exprSpan func) $ unify (apply sFinal tFunc) (apply sFinal expectedFuncType)
+  sUnify <- liftUnify (exprSpan func) $
+    unify (apply sFinal tFunc) (apply sFinal expectedFuncType)
   let sResult = composeSubst sUnify sFinal
-  pure (sResult, apply sResult tRet)
+  pure (sResult, apply sResult tRet, apply sResult envFinal)
   where
-    inferArg (sAcc, ts) argExpr = do
-      (s1, tArg) <- infer (apply sAcc env) argExpr
+    inferArg (sAcc, eAcc, ts) argExpr = do
+      (s1, tArg, eAfter) <- infer (apply sAcc eAcc) argExpr
       let s' = composeSubst s1 sAcc
-      pure (s', tArg : ts)
+      pure (s', eAfter, tArg : ts)
 
 -- | TypeExpr を Type に変換する
 typeExprToType :: TypeExpr -> Type

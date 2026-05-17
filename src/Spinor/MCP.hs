@@ -284,7 +284,7 @@ callTypecheck stateRef args = do
           let typeEnv = mcpTypeEnv state
           case runInfer (infer typeEnv expr) of
             Left (SpinorError _ msg) -> pure $ Left msg
-            Right (_, typ) -> pure $ Right $ showType typ
+            Right (_, typ, _envAfter) -> pure $ Right $ showType typ
 
 -- | macroexpand: Expand macros in Spinor code
 callMacroexpand :: IORef McpState -> Maybe Value -> IO (Either Text Text)
