@@ -1,8 +1,8 @@
 # Research: Approach 3 — 「Linear Spinor」 純粋 R&D Lisp マシン構想
 
-> Issue: [#62](https://github.com/yanqirenshi/Spinor/issues/62)  (親ビジョン: [The Ultimate Dream](../manual/public/docs/vision/the-ultimate-dream.md))
+> Issue: [#62](https://github.com/yanqirenshi/Spinor/issues/62)  (親ビジョン: [The Ultimate Dream](../../manual/public/docs/vision/the-ultimate-dream.md))
 > 関連姉妹タスク: [#56 GHC RTS POSIX 依存性](https://github.com/yanqirenshi/Spinor/issues/56) / [#57 Haskell unikernel 史](https://github.com/yanqirenshi/Spinor/issues/57) / [#45 Approach 2 ベアメタル Haskell](https://github.com/yanqirenshi/Spinor/issues/45) / [#46 Approach 3 親 Issue](https://github.com/yanqirenshi/Spinor/issues/46)
-> 関連ドキュメント: [unikernel-architecture.md](../manual/public/docs/vision/unikernel-architecture.md), [the-ultimate-dream.md](../manual/public/docs/vision/the-ultimate-dream.md)
+> 関連ドキュメント: [unikernel-architecture.md](../../manual/public/docs/vision/unikernel-architecture.md), [the-ultimate-dream.md](../../manual/public/docs/vision/the-ultimate-dream.md)
 > 立ち位置: 本書は **Approach 1 (AOT C → Unikraft) と Approach 2 (Haskell RTS 移植) を「実用」「ランタイム移植」として尊重しつつ、それらと完全に独立した第三の R&D 路線**として設計する純粋探求論文である。100 年後も通用する Lisp マシン設計を志向し、現行の Spinor が即座に到達できない領域までを射程に入れる。
 
 ## 1. エグゼクティブサマリ
@@ -21,11 +21,11 @@
 
 | 既存資産 | 場所 | Linear Spinor における位置付け |
 |---|---|---|
-| `Linearity { Linear, Unrestricted }` | [Type.hs:18](src/Spinor/Type.hs:18) | 線形性修飾子の基盤。本書ではここに `Affine` `Borrowed` `Owned` `Shared` を追加する案を提示。|
-| `BorrowCheck` モジュール | [BorrowCheck.hs](src/Spinor/BorrowCheck.hs) | `DoubleUse` / `Unconsumed` / `UseAfterMove` 検出済み。本書ではこれをライフタイム解析へ拡張する道筋を示す。|
-| `EscapeAnalysis` モジュール | [EscapeAnalysis.hs](src/Spinor/EscapeAnalysis.hs) | `EWithRegion` / `EAllocIn` の逃避解析が稼働済み。本書では「サブシステム隔離リージョン」への拡張を提案する。|
-| `EWithRegion` / `EAllocIn` AST | [Syntax.hs:154-155](src/Spinor/Syntax.hs:154) | リージョン構文が既に S 式に統合済み。Linear Spinor の Tier 2 メモリ層として再活用する。|
-| Codegen (C) | [Codegen.hs](src/Spinor/Compiler/Codegen.hs) | Approach 1 の到達点。本書の Stage 0/1 ブートストラップで再利用する。|
+| `Linearity { Linear, Unrestricted }` | [Type.hs:18](../../src/Spinor/Type.hs:18) | 線形性修飾子の基盤。本書ではここに `Affine` `Borrowed` `Owned` `Shared` を追加する案を提示。|
+| `BorrowCheck` モジュール | [BorrowCheck.hs](../../src/Spinor/BorrowCheck.hs) | `DoubleUse` / `Unconsumed` / `UseAfterMove` 検出済み。本書ではこれをライフタイム解析へ拡張する道筋を示す。|
+| `EscapeAnalysis` モジュール | [EscapeAnalysis.hs](../../src/Spinor/EscapeAnalysis.hs) | `EWithRegion` / `EAllocIn` の逃避解析が稼働済み。本書では「サブシステム隔離リージョン」への拡張を提案する。|
+| `EWithRegion` / `EAllocIn` AST | [Syntax.hs:154-155](../../src/Spinor/Syntax.hs:154) | リージョン構文が既に S 式に統合済み。Linear Spinor の Tier 2 メモリ層として再活用する。|
+| Codegen (C) | [Codegen.hs](../../src/Spinor/Compiler/Codegen.hs) | Approach 1 の到達点。本書の Stage 0/1 ブートストラップで再利用する。|
 
 **判定:** **GO (R&D 推進可)**。Linear Spinor は「未着手のグリーンフィールド計画」ではなく、**既存の借用検査・リージョン・線形性修飾子を OS 記述レベルに昇華させる進化路線**として位置付けられる。先行事例 (Mezzano は GC ベース、Carp はホスト OS 前提) のいずれも到達していない「線形性 × リージョン × ベアメタル」という未踏領域に、Spinor は既に半歩踏み込んでいる。残る課題は本書で詳述する **(a) ライフタイムの導入、(b) unsafe 隔離プリミティブ、(c) ブート初期化、(d) セルフホスト** の 4 つである。
 
@@ -736,7 +736,7 @@ Phase E: ベアメタル化 (本書 §7 の Stage 0/1 構築)
 - **Rust no_std** (system 系) からは **借用検査・unsafe・no_std 開発作法**
 - **Haskell** (型システム系) からは **HM 型推論・ADT・linearity-on-arrows・実装言語**
 
-このうち **どの 1 つも、Linear Spinor が目指す「ベアメタル + 線形型 + opt-in GC + リージョン + S 式 + HM 型推論 + unsafe 隔離」の全体を満たさない**。Mezzano は GC 依存が強く、Carp はホスト OS 前提、Rust は Lisp ではない、Haskell は OS ランタイムへの移植が構造的に停止している ([Approach 2 史的調査](../labo/research-haskell-unikernel-history.md))。Linear Spinor の独自性は **「これら 4 つを統合する」**点にあり、ここに R&D の価値がある。
+このうち **どの 1 つも、Linear Spinor が目指す「ベアメタル + 線形型 + opt-in GC + リージョン + S 式 + HM 型推論 + unsafe 隔離」の全体を満たさない**。Mezzano は GC 依存が強く、Carp はホスト OS 前提、Rust は Lisp ではない、Haskell は OS ランタイムへの移植が構造的に停止している ([Approach 2 史的調査](../research-haskell-unikernel-history.md))。Linear Spinor の独自性は **「これら 4 つを統合する」**点にあり、ここに R&D の価値がある。
 
 ---
 
