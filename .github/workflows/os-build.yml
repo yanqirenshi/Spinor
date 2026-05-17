@@ -1,0 +1,190 @@
+# Build Spinor OS — Phase 1 PoC の Unikernel ビルドを CI で自動化する
+#
+# Issue #54 / The Ultimate Dream の Phase 1。
+# クリーンな Ubuntu 環境で以下を再現可能に実行し、生成された Unikernel
+# イメージを Artifact として保存する:
+#   1. Haskell (GHC + Cabal) で Spinor コンパイラをビルド
+#   2. ./build-os.sh で examples/hello.spin → C コードを抽出して os/ を準備
+#   3. cd os && kraft build で Unikraft Unikernel イメージを生成
+#
+# 関連:
+#   - Issue #47 (--emit-c フラグ)
+#   - Issue #50 (codegen の print プリミティブ修正)
+#   - Issue #52 (os/ ビルド環境テンプレート)
+#   - docs/vision/unikernel-architecture.md
+
+name: Build Spinor OS
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+# 同一 PR / branch への連続 push 時に古い run をキャンセルして時間とコストを節約。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-os:
+    name: Build Unikernel on Ubuntu
+    runs-on: ubuntu-latest
+
+    env:
+      # kraftkit の対話プロンプト・テレメトリ・自動更新確認を抑制
+      KRAFTKIT_NO_CHECK_UPDATES: "true"
+      KRAFTKIT_LOG_LEVEL: info
+      KRAFTKIT_NO_WARNINGS: "true"
+
+    steps:
+      # ---------------------------------------------------------------------
+      # 1. Checkout
+      # ---------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------------
+      # 2. Haskell (GHC + Cabal) のセットアップ
+      #    release.yml と同じバージョンに揃え、キャッシュキーの一貫性を保つ。
+      # ---------------------------------------------------------------------
+      - name: Setup Haskell
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.6.3'
+          cabal-version: 'latest'
+
+      # ---------------------------------------------------------------------
+      # 3. Cabal の依存関係キャッシュ
+      #    spinor.cabal のハッシュをキーにして、依存ビルドを跨ぎで再利用。
+      # ---------------------------------------------------------------------
+      - name: Cache Cabal dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cabal/store
+            dist-newstyle
+          key: ${{ runner.os }}-cabal-${{ hashFiles('**/*.cabal') }}
+          restore-keys: |
+            ${{ runner.os }}-cabal-
+
+      # ---------------------------------------------------------------------
+      # 4. Spinor が依存するシステムライブラリのインストール。
+      #    - hmatrix: libgsl-dev / libopenblas-dev / liblapack-dev
+      #      (cabal.project.local で +openblas フラグが有効なため openblas 必須)
+      #    - OpenGLRaw / OpenGL: libgl1-mesa-dev (GL), libglu1-mesa-dev (GLU)
+      #    - GLFW-b / bindings-GLFW: libglfw3-dev + X11 系
+      #      (Xi / Xrandr / Xxf86vm / Xcursor / Xinerama を GLFW がリンク要求)
+      #    - Spinor.GPGPU: ocl-icd-opencl-dev (OpenCL ICD loader)
+      #    (CI 上の ubuntu-latest にはこれらの -dev パッケージが入っていない
+      #    ため、明示的にインストールする必要がある。ヘッドレス環境でも
+      #    リンク時には X11 ヘッダ等が必要)
+      # ---------------------------------------------------------------------
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgsl-dev \
+            libopenblas-dev \
+            liblapack-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            libglfw3-dev \
+            libxi-dev \
+            libxrandr-dev \
+            libxxf86vm-dev \
+            libxcursor-dev \
+            libxinerama-dev \
+            ocl-icd-opencl-dev \
+            pkg-config
+
+      # ---------------------------------------------------------------------
+      # 5. Spinor コンパイラのビルド
+      # ---------------------------------------------------------------------
+      - name: Build Spinor compiler
+        run: |
+          cabal update
+          cabal build exe:spinor
+
+      # ---------------------------------------------------------------------
+      # 6. kraftkit (Unikraft toolchain) のインストール
+      #    公式の apt リポジトリ (deb.pkg.kraftkit.sh) から直接導入する。
+      #    `curl ... | sudo sh` (get.kraftkit.sh) は CI 環境では非対話プロ
+      #    ンプト ("What shell are you using?" 等) で無限ループする既知の
+      #    挙動があるため、インストーラを経由せず apt の処理だけ手動で
+      #    実行する。これは get.kraftkit.sh が Debian/Ubuntu 経路で内部
+      #    的に実施しているのと同じ手順 (gpg key 配置 → sources.list 追加
+      #    → apt-get install)。
+      # ---------------------------------------------------------------------
+      - name: Install KraftKit
+        run: |
+          sudo mkdir -p /etc/apt/keyrings
+          curl -fsSL https://deb.pkg.kraftkit.sh/gpg.key \
+            | sudo gpg --dearmor -o /etc/apt/keyrings/unikraft.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/unikraft.gpg] https://deb.pkg.kraftkit.sh /" \
+            | sudo tee /etc/apt/sources.list.d/kraftkit.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y kraftkit
+
+      - name: Verify kraft installation
+        run: |
+          which kraft || (echo "kraft not found in PATH" >&2; exit 1)
+          kraft version
+
+      # ---------------------------------------------------------------------
+      # 7. AOT で hello.c を生成し os/ を準備
+      # ---------------------------------------------------------------------
+      - name: Generate OS sources
+        run: |
+          chmod +x ./build-os.sh
+          ./build-os.sh
+
+      - name: Show prepared os/ contents
+        run: ls -la os/
+
+      # ---------------------------------------------------------------------
+      # 8. Unikraft パッケージマニフェストの初期化
+      #    クリーンな CI 環境では kraftkit のローカル manifest キャッシュが
+      #    空のため、`kraft pkg update` で Unikraft の公式コンポーネント
+      #    (core/unikraft、lib/musl 等) のメタデータを取得しないと `kraft
+      #    build` が "could not find: core/unikraft:stable" で失敗する。
+      # ---------------------------------------------------------------------
+      - name: Update kraftkit manifests
+        run: kraft pkg update
+
+      # ---------------------------------------------------------------------
+      # 9. Unikraft で Unikernel をビルド
+      #    --log-level info: ログ出力を控えめに
+      #    (--no-update は付けない。初回ビルドでは Unikraft コアと libs を
+      #    取得する必要があるため、kraftkit に自動 fetch させる)
+      # ---------------------------------------------------------------------
+      - name: Build Unikernel
+        working-directory: os
+        run: |
+          kraft build --log-level info
+
+      - name: Show build output
+        if: always()
+        working-directory: os
+        run: |
+          echo "=== .unikraft/build/ 内容 ==="
+          ls -la .unikraft/build/ 2>/dev/null || echo "(build dir not found)"
+          echo ""
+          echo "=== カーネル候補 ==="
+          find .unikraft/build/ -maxdepth 2 -type f \( -name "*qemu*" -o -name "spinor-os*" \) 2>/dev/null || true
+
+      # ---------------------------------------------------------------------
+      # 9. Artifact のアップロード
+      #    os/.unikraft/build/ 配下の x86_64/qemu 向けカーネルバイナリと
+      #    関連ファイル (デバッグシンボル等) をまとめてアップロード。
+      # ---------------------------------------------------------------------
+      - name: Upload Unikernel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: spinor-os-kernel
+          path: |
+            os/.unikraft/build/spinor-os_qemu-x86_64*
+            os/.unikraft/build/*_qemu-x86_64*
+          if-no-files-found: error
+          retention-days: 30
