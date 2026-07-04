@@ -97,6 +97,7 @@ instance Types Type where
   apply s (TApp t1 t2) = TApp (apply s t1) (apply s t2)
   apply s (TLinear lin t) = TLinear lin (apply s t)  -- 線形型: 内部型に置換適用
   apply s (TArrMult m t1 t2) = TArrMult m (apply s t1) (apply s t2)  -- 多重度付き矢印
+  apply s (TBorrow t)  = TBorrow (apply s t)  -- 借用参照型: 内部型に置換適用
 
   ftv (TVar n)     = Set.singleton n
   ftv TInt         = Set.empty
@@ -109,6 +110,7 @@ instance Types Type where
   ftv (TApp t1 t2) = ftv t1 `Set.union` ftv t2
   ftv (TLinear _ t) = ftv t  -- 線形型: 内部型の自由変数
   ftv (TArrMult _ t1 t2) = ftv t1 `Set.union` ftv t2  -- 多重度付き矢印
+  ftv (TBorrow t)  = ftv t  -- 借用参照型: 内部型の自由変数
 
 instance Types Scheme where
   apply s (Scheme vars t) = Scheme vars (apply s' t)
@@ -161,6 +163,9 @@ unify (TArrMult m1 t1 t2) (TArrMult m2 t3 t4)
       s2 <- unify (apply s1 t2) (apply s1 t4)
       Right (composeSubst s2 s1)
   | otherwise = Left $ "多重度が一致しません: " <> showMult m1 <> " と " <> showMult m2
+
+-- 借用参照型: 内部型同士を unify
+unify (TBorrow t1) (TBorrow t2) = unify t1 t2
 
 unify t1 t2 = Left $ "型が一致しません: " <> showType t1 <> " と " <> showType t2
 
@@ -519,11 +524,47 @@ infer env (EWithRegion _ _ body) = infer env body
 -- alloc-in: 内部式の型を返す
 infer env (EAllocIn _ _ expr) = infer env expr
 
--- Phase 3 (Linear Spinor): 所有権/借用システム — 暫定的に内部式の型を返す
-infer env (EBorrow _ e) = infer env e   -- TODO: borrow inference (Phase R0-2 後続)
-infer env (EDeref  _ e) = infer env e   -- TODO: deref inference (Phase R0-2 後続)
-infer env (EUnsafe _ e) = infer env e   -- TODO: unsafe scope (Phase R0-2 後続)
-infer env (EMove   _ e) = infer env e   -- TODO: move semantics (Phase R0-2 後続)
+-- Phase 3 (Linear Spinor): 所有権/借用システムの意味論 (Issue #72)
+
+-- 借用 (&expr): 対象を型付けするが線形変数を「消費しない」。
+--   内部式を推論した後、消費記録 (MovedSet) と環境をロールバックすることで
+--   借用が所有権をムーブしないことを保証する。結果型は借用参照型 &T。
+infer env (EBorrow _ e) = do
+  movedBefore <- getMoved
+  (s, t, _envAfter) <- infer env e
+  putMoved movedBefore                       -- 借用中の消費をなかったことにする
+  pure (s, TBorrow (apply s t), apply s env) -- 元の環境を返す (何も消費しない)
+
+-- 参照解決 (*expr): 借用参照型 &T を受け取り、中身の型 T を返す。
+--   対象の型を @TBorrow inner@ と単一化し、inner を取り出す。
+infer env (EDeref sp e) = do
+  (s1, t, env1) <- infer env e
+  inner <- fresh
+  s2 <- liftUnify sp (unify (apply s1 t) (TBorrow inner))
+  pure (composeSubst s2 s1, apply s2 inner, env1)
+
+-- 隔離ブロック (unsafe expr): 内部の線形消費を外部に漏らさない。
+--   MovedSet と環境を復元し、内部式の型のみを返す (線形性検査のバイパス)。
+infer env (EUnsafe _ e) = do
+  movedBefore <- getMoved
+  (s, t, _envAfter) <- infer env e
+  putMoved movedBefore                       -- 内部の消費を外に漏らさない
+  pure (s, apply s t, apply s env)           -- 環境も未消費のまま返す
+
+-- 明示的ムーブ (@expr): 対象を強制的に「消費」し、線形な型として返す。
+--   対象が変数なら、線形・非線形を問わず環境から除去して move 済みとする。
+--   これにより @x のあとに x を使うと use-after-move エラーになる。
+infer env (EMove _ e) = do
+  (s, t, env1) <- infer env e
+  env2 <- case e of
+            ESym _ x -> do markMoved x
+                           pure (Map.delete x env1)
+            _        -> pure env1
+  let baseT = apply s t
+      movedT = case baseT of
+                 TLinear _ inner -> TLinear Linear inner  -- 二重ラップを避ける
+                 other           -> TLinear Linear other
+  pure (s, movedT, env2)
 
 -- 関数適用: (func arg1 arg2 ...)
 --   多引数はカリー化として扱う

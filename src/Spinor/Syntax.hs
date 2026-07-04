@@ -250,6 +250,44 @@ pQuote = withSpan $ do
   expr <- parseExpr
   pure $ \sp -> EList sp [ESym sp "quote", expr]
 
+-- 借用 (Linear Spinor): &expr → EBorrow expr
+--   ただし &key / &rest / &optional 等の Common Lisp ラムダリストキーワードは
+--   従来どおりシンボルとして扱うため、ここでは除外する (pSym にフォールバック)。
+pBorrow :: Parser Expr
+pBorrow = withSpan $ do
+  _ <- char '&'
+  notFollowedBy pLambdaListKeyword   -- &key 等はシンボルとして残す
+  expr <- parseExpr
+  pure $ \sp -> EBorrow sp expr
+  where
+    -- ラムダリストキーワードの末尾 (区切り文字が続く完全一致のみ除外)
+    pLambdaListKeyword =
+      choice (map chunk lambdaListKeywords) <* notFollowedBy (satisfy isBareSymChar)
+    lambdaListKeywords =
+      ["key", "rest", "optional", "body", "aux", "whole", "allow-other-keys", "environment"]
+
+-- 参照解決 (Linear Spinor): *expr → EDeref expr
+--   `*` 単体 (空白/区切りが後続) は乗算演算子シンボルなので、
+--   `*` の直後に式が続く場合のみ EDeref とする。
+pDeref :: Parser Expr
+pDeref = withSpan $ do
+  _ <- char '*'
+  notFollowedBy spaceChar
+  expr <- parseExpr
+  pure $ \sp -> EDeref sp expr
+
+-- 明示的ムーブ (Linear Spinor): @expr → EMove expr
+pMove :: Parser Expr
+pMove = withSpan $ do
+  _ <- char '@'
+  notFollowedBy spaceChar
+  expr <- parseExpr
+  pure $ \sp -> EMove sp expr
+
+-- シンボル構成文字か (プレフィックス構文の境界判定に使用)
+isBareSymChar :: Char -> Bool
+isBareSymChar c = c `notElem` (" \t\n\r();#'\"" :: String)
+
 -- TypeExpr パーサー: コンストラクタ引数の型記述
 --   シンボル単体 → TEVar "a"
 --   (Name args...) → TEApp "Name" [TypeExpr...]
@@ -299,6 +337,9 @@ pList = withSpan $ do
       pure $ \sp -> EWithRegion sp regionName body
     [ESym _ "alloc-in", ESym _ regionName, expr] ->
       pure $ \sp -> EAllocIn sp regionName expr
+    -- Linear Spinor: 隔離ブロック (unsafe expr) → EUnsafe expr
+    [ESym _ "unsafe", expr] ->
+      pure $ \sp -> EUnsafe sp expr
     _ -> pure $ \sp -> EList sp xs
 
 -- | let 式の束縛リストをパースする
@@ -416,7 +457,9 @@ pPattern = sc *> (pPatWild <|> pPatCon <|> pPatBool <|> pPatStr <|> try pPatInt 
 
 -- メインパーサー
 parseExpr :: Parser Expr
-parseExpr = sc *> (try pData <|> try pMatch <|> pList <|> pQuote <|> pBool <|> pStr <|> try pInt <|> pSym)
+parseExpr = sc *> (try pData <|> try pMatch <|> pList <|> pQuote
+                   <|> try pBorrow <|> try pDeref <|> try pMove
+                   <|> pBool <|> pStr <|> try pInt <|> pSym)
 
 -- パース実行ヘルパー (単一式)
 readExpr :: Text -> Either String Expr

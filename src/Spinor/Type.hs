@@ -36,6 +36,7 @@ data Type
   | TApp  Type Type  -- ^ 型適用 (例: TApp (TCon "Maybe") TInt)
   | TLinear Linearity Type  -- ^ 線形型修飾: 所有権追跡用 (Experimental — legacy)
   | TArrMult Mult Type Type -- ^ 多重度付き矢印 (Linear Spinor): t1 -%m> t2
+  | TBorrow Type            -- ^ 借用参照型 (Linear Spinor): &T — 一時的な参照 (所有権を保持)
   deriving (Eq, Ord, Show)
 
 -- | 型スキーム (多相型)
@@ -72,3 +73,4 @@ showType (TApp t1 t2) = "(" <> showType t1 <> " " <> showType t2 <> ")"
 showType (TLinear lin t) = showLinearity lin <> " " <> showType t
 showType (TArrMult m t1 t2) =
   "(" <> showType t1 <> " -%" <> showMult m <> "> " <> showType t2 <> ")"
+showType (TBorrow t)  = "&" <> showType t

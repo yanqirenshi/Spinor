@@ -22,6 +22,11 @@ normalizeSpan (EImport _ name opts) = EImport dummySpan name opts
 -- Experimental: Region-based memory management
 normalizeSpan (EWithRegion _ name body) = EWithRegion dummySpan name (normalizeSpan body)
 normalizeSpan (EAllocIn _ name expr) = EAllocIn dummySpan name (normalizeSpan expr)
+-- Linear Spinor: 所有権・借用ノード (Issue #72)
+normalizeSpan (EBorrow _ e) = EBorrow dummySpan (normalizeSpan e)
+normalizeSpan (EDeref _ e) = EDeref dummySpan (normalizeSpan e)
+normalizeSpan (EUnsafe _ e) = EUnsafe dummySpan (normalizeSpan e)
+normalizeSpan (EMove _ e) = EMove dummySpan (normalizeSpan e)
 
 -- | パターン内の PLit の Expr も正規化
 normalizePat :: Pattern -> Pattern
@@ -193,3 +198,30 @@ spec = describe "Spinor.Syntax (Parser)" $ do
     it "(import 'twister/core) - quote 形式" $
       "(import 'twister/core)" `parseShouldBe`
         eImport "twister/core" []
+
+  describe "所有権・借用構文 (Linear Spinor / Issue #72)" $ do
+    it "&x → EBorrow" $
+      "&x" `parseShouldBe` EBorrow dummySpan (eSym "x")
+    it "*x → EDeref" $
+      "*x" `parseShouldBe` EDeref dummySpan (eSym "x")
+    it "@x → EMove" $
+      "@x" `parseShouldBe` EMove dummySpan (eSym "x")
+    it "(unsafe x) → EUnsafe" $
+      "(unsafe x)" `parseShouldBe` EUnsafe dummySpan (eSym "x")
+    it "&(f x) → EBorrow (複合式の借用)" $
+      "&(f x)" `parseShouldBe` EBorrow dummySpan (eList [eSym "f", eSym "x"])
+    it "*(& x) → EDeref (EBorrow ...) のネスト" $
+      "*&x" `parseShouldBe` EDeref dummySpan (EBorrow dummySpan (eSym "x"))
+
+  describe "回帰: 既存構文がプレフィックスと衝突しない" $ do
+    it "&key はラムダリストキーワードとしてシンボルのまま" $
+      "&key" `parseShouldBe` eSym "&key"
+    it "&rest もシンボルのまま" $
+      "&rest" `parseShouldBe` eSym "&rest"
+    it "* 単体は乗算演算子シンボル: (* 2 3)" $
+      "(* 2 3)" `parseShouldBe` eList [eSym "*", eInt 2, eInt 3]
+    it "(fn (x &key y) (+ x y)) の &key が保持される" $
+      "(fn (x &key y) (+ x y))" `parseShouldBe`
+        eList [ eSym "fn"
+              , eList [eSym "x", eSym "&key", eSym "y"]
+              , eList [eSym "+", eSym "x", eSym "y"] ]
