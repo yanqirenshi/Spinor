@@ -1,0 +1,8 @@
+# ビルド成果物
+obj/
+bin/
+iso_root/
+*.iso
+
+# make が取得する Limine バイナリブランチ (再取得可能)
+limine/

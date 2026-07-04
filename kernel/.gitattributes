@@ -1,0 +1,2 @@
+# WSL/Linux でビルドするため、常に LF を強制する (Makefile 等が CRLF だと壊れる)
+* text eol=lf
