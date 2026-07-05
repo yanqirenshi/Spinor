@@ -11,6 +11,12 @@
 void *memset(void *dst, int c, size_t n);
 void *memcpy(void *dst, const void *src, size_t n);
 
+size_t strlen(const char *s);
+char  *strcpy(char *dst, const char *src);
+char  *strcat(char *dst, const char *src);
+char  *strncpy(char *dst, const char *src, size_t n);
+int    strcmp(const char *a, const char *b);
+
 /* 数値をシリアルへ出力するヘルパー (serial_write を利用) */
 void serial_write_u64(uint64_t v);   /* 10 進 */
 void serial_write_hex(uint64_t v);   /* 16 進 (0x プレフィックス付き) */

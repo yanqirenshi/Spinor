@@ -52,6 +52,42 @@ SpObject* sp_make_str(const char* s) {
     return obj;
 }
 
+/* ========== リスト操作 (cons セル) ========== */
+
+SpObject* sp_cons(SpObject* car, SpObject* cdr) {
+    SpPair* pair = (SpPair*)malloc(sizeof(SpPair));
+    SpObject* obj = (SpObject*)malloc(sizeof(SpObject));
+    if (!pair || !obj) {
+        fprintf(stderr, "Spinor: out of memory\n");
+        exit(1);
+    }
+    pair->car = car;
+    pair->cdr = cdr;
+    obj->type = SP_PAIR;
+    obj->value.pair = pair;
+    return obj;
+}
+
+SpObject* sp_car(SpObject* pair) {
+    if (!pair || pair->type != SP_PAIR) {
+        fprintf(stderr, "Spinor: car of non-pair\n");
+        exit(1);
+    }
+    return pair->value.pair->car;
+}
+
+SpObject* sp_cdr(SpObject* pair) {
+    if (!pair || pair->type != SP_PAIR) {
+        fprintf(stderr, "Spinor: cdr of non-pair\n");
+        exit(1);
+    }
+    return pair->value.pair->cdr;
+}
+
+SpObject* sp_is_nil(SpObject* obj) {
+    return sp_make_bool(obj != NULL && obj->type == SP_NIL);
+}
+
 /* ========== プリミティブ演算 ========== */
 
 SpObject* sp_add(SpObject* a, SpObject* b) {
@@ -224,27 +260,51 @@ SpObject* sp_file_exists(SpObject* path) {
 
 /* ========== ユーティリティ ========== */
 
-SpObject* sp_print(SpObject* obj) {
+/* 値を改行なしで表示する内部ヘルパー (リストの再帰表示に使用) */
+static void sp_print_inner(SpObject* obj) {
     if (!obj) {
-        printf("NULL\n");
-        return obj;
+        printf("NULL");
+        return;
     }
     switch (obj->type) {
         case SP_NIL:
-            printf("()\n");
+            printf("()");
             break;
         case SP_BOOL:
-            printf("%s\n", obj->value.boolean ? "#t" : "#f");
+            printf("%s", obj->value.boolean ? "#t" : "#f");
             break;
         case SP_INT:
-            printf("%ld\n", obj->value.integer);
+            printf("%ld", obj->value.integer);
             break;
         case SP_STR:
-            printf("%s\n", obj->value.string);
+            printf("%s", obj->value.string);
             break;
+        case SP_PAIR: {
+            /* proper list は (a b c)、improper list は (a . b) 形式 */
+            printf("(");
+            SpObject* cur = obj;
+            while (cur && cur->type == SP_PAIR) {
+                sp_print_inner(cur->value.pair->car);
+                cur = cur->value.pair->cdr;
+                if (cur && cur->type == SP_PAIR) {
+                    printf(" ");
+                }
+            }
+            if (cur && cur->type != SP_NIL) {
+                printf(" . ");
+                sp_print_inner(cur);
+            }
+            printf(")");
+            break;
+        }
         default:
-            printf("<unknown>\n");
+            printf("<unknown>");
             break;
     }
+}
+
+SpObject* sp_print(SpObject* obj) {
+    sp_print_inner(obj);
+    printf("\n");
     return obj;  /* Lisp 伝統: print は引数をそのまま返す */
 }

@@ -26,6 +26,51 @@ void *memcpy(void *dst, const void *src, size_t n)
     return dst;
 }
 
+size_t strlen(const char *s)
+{
+    size_t n = 0;
+    while (s[n] != '\0') {
+        n++;
+    }
+    return n;
+}
+
+char *strcpy(char *dst, const char *src)
+{
+    char *d = dst;
+    while ((*d++ = *src++) != '\0') {
+        /* copy */
+    }
+    return dst;
+}
+
+char *strcat(char *dst, const char *src)
+{
+    strcpy(dst + strlen(dst), src);
+    return dst;
+}
+
+char *strncpy(char *dst, const char *src, size_t n)
+{
+    size_t i = 0;
+    for (; i < n && src[i] != '\0'; i++) {
+        dst[i] = src[i];
+    }
+    for (; i < n; i++) {
+        dst[i] = '\0';
+    }
+    return dst;
+}
+
+int strcmp(const char *a, const char *b)
+{
+    while (*a && (*a == *b)) {
+        a++;
+        b++;
+    }
+    return (unsigned char)*a - (unsigned char)*b;
+}
+
 void serial_write_u64(uint64_t v)
 {
     char buf[21];

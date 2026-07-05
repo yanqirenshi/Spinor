@@ -45,6 +45,12 @@ static void hcf(void)
     }
 }
 
+/* ---- Spinor AOT エントリーポイント ----------------------------------- */
+/* hello.spin から --emit-c で生成された C コード (hello.c) の main 関数。
+ * freestanding ビルドでは `main` に特別な意味はなく、通常の関数として
+ * kmain から呼び出す (Issue #75)。 */
+extern int main(void);
+
 /* ---- テストヘルパー -------------------------------------------------- */
 
 static int test_failures = 0;
@@ -175,7 +181,13 @@ void kmain(void)
         serial_write("MEMORY TESTS FAILED: ");
         serial_write_u64((uint64_t)test_failures);
         serial_write(" failure(s)\n");
+        hcf();   /* メモリが壊れている状態で Spinor を走らせない */
     }
+
+    /* Phase R1-3 (Issue #75): Spinor AOT コンパイル済みプログラムの実行 */
+    serial_write("--- Spinor AOT program (hello.spin) ---\n");
+    main();
+    serial_write("--- Spinor AOT program finished ---\n");
 
     /* フレームバッファが提供されていれば白い対角線を描画 (生存確認) */
     if (framebuffer_request.response != NULL

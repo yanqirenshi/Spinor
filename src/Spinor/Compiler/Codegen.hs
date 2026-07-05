@@ -406,6 +406,20 @@ compileExpr (EList _ [ESym _ "file-exists?", path]) =
 compileExpr (EList _ [ESym _ "print", x]) =
     "sp_print(" <> compileExpr x <> ")"
 
+-- リスト操作プリミティブ (Issue #75: ベアメタル AOT でのリスト実証用)
+compileExpr (EList _ [ESym _ "cons", a, b]) =
+    "sp_cons(" <> compileExpr a <> ", " <> compileExpr b <> ")"
+compileExpr (EList _ [ESym _ "car", p]) =
+    "sp_car(" <> compileExpr p <> ")"
+compileExpr (EList _ [ESym _ "cdr", p]) =
+    "sp_cdr(" <> compileExpr p <> ")"
+compileExpr (EList _ [ESym _ "null?", x]) =
+    "sp_is_nil(" <> compileExpr x <> ")"
+-- (list a b ...) はネストした sp_cons に展開する
+compileExpr (EList _ (ESym _ "list" : elems)) =
+    foldr (\e acc -> "sp_cons(" <> compileExpr e <> ", " <> acc <> ")")
+          "sp_make_nil()" elems
+
 -- OpenGL プリミティブ
 compileExpr (EList _ [ESym _ "gl-init", w, h, title]) =
     "sp_gl_init(" <> compileExpr w <> ", " <> compileExpr h <> ", " <> compileExpr title <> ")"
@@ -444,6 +458,7 @@ compileExpr (EList _ (ESym _ fname : args))
   where
     primitives = ["+", "-", "*", "/", "=", "<", ">", "<=", ">=", "if", "defun",
                   "print",
+                  "cons", "car", "cdr", "list", "null?",
                   "string-append", "string-length", "substring", "string=?",
                   "read-file", "write-file", "append-file", "file-exists?",
                   "gl-init", "gl-clear", "gl-draw-points",

@@ -1,17 +1,14 @@
-/**
- * Spinor Runtime Header
+/* shim/spinor.h — Spinor ランタイムヘッダ (ベアメタル版, Issue #75)
  *
- * C99 準拠のランタイムヘッダ。
- * Tagged Union を用いて Spinor の動的型システムを C で表現する。
+ * runtime/spinor.h と同一の API を宣言するが、stdio/stdlib には依存しない
+ * (freestanding ヘッダ stdbool.h / stddef.h のみ)。
+ * 実装はカーネル側の spinor_rt.c (kmalloc + シリアル出力ベース)。
  */
-
-#ifndef SPINOR_H
+#ifndef SPINOR_H   /* runtime/spinor.h と同じガード名 (二重取込防止) */
 #define SPINOR_H
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <stdbool.h>
-#include <string.h>
+#include <stddef.h>
 
 /* ========== 型タグ ========== */
 
@@ -19,16 +16,15 @@ typedef enum {
     SP_NIL,
     SP_BOOL,
     SP_INT,
-    SP_STR,      /* 文字列型 */
-    SP_SYM,      /* 将来の拡張用 */
-    SP_PAIR,     /* 将来の拡張用 */
-    SP_FUN,      /* 将来の拡張用 */
-    SP_CLOSURE   /* 将来の拡張用 */
+    SP_STR,
+    SP_SYM,
+    SP_PAIR,
+    SP_FUN,
+    SP_CLOSURE
 } SpType;
 
 /* ========== 値ユニオンとオブジェクト構造体 ========== */
 
-/* forward declaration for SpPair */
 struct SpObject;
 
 typedef struct SpPair {
@@ -39,7 +35,7 @@ typedef struct SpPair {
 typedef union {
     bool     boolean;
     long     integer;
-    char*    string;   /* 文字列型 (heap-allocated) */
+    char*    string;
     char*    symbol;
     SpPair*  pair;
 } SpValue;
@@ -82,7 +78,7 @@ SpObject* sp_str_length(SpObject* s);
 SpObject* sp_substring(SpObject* s, SpObject* start, SpObject* end);
 SpObject* sp_str_eq(SpObject* a, SpObject* b);
 
-/* ========== ファイル I/O ========== */
+/* ========== ファイル I/O (ベアメタルでは未サポート: パニックスタブ) ==== */
 
 SpObject* sp_read_file(SpObject* path);
 SpObject* sp_write_file(SpObject* path, SpObject* content);
@@ -91,10 +87,7 @@ SpObject* sp_file_exists(SpObject* path);
 
 /* ========== ユーティリティ ========== */
 
-/* sp_print: 値を表示し、引数 obj をそのまま返す (Lisp 伝統に倣う)。
- * 戻り値を SpObject* にしたことで、(print x) を式コンテキストでも使える。 */
 SpObject* sp_print(SpObject* obj);
-const char* sp_format(SpObject* obj);
 
 /* ========== 旧 API との互換性 (エイリアス) ========== */
 
