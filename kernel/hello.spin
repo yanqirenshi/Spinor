@@ -24,26 +24,36 @@
 ; 4. 文字列結合 (ヒープ確保を伴う)
 (print (string-append "Linear " "Spinor"))
 
-; 5. drop セマンティクス (Phase R2-1 / Issue #76)
-;    「リスト確保 → drop (sp_free → kfree)」を 10,000 回繰り返す。
-;    リスト 1 本あたり 416 バイト (ints/pairs/nil 含む) を確保するため
-;    総確保量は約 6MB となり、4MiB の kmalloc ヒープを上回る。
-;    よって drop が実際にメモリを解放し kfree が再利用していなければ
+; 5. 自動 Drop 挿入 (Phase R2-2 / Issue #77)
+;    明示的な (drop ...) を書かずに「リスト確保 → 使用」を 100,000 回
+;    繰り返す。リスト本体 (416B) と中間オブジェクト (比較 bool・
+;    デクリメント int 等) を合わせ、1 周あたり約 600B を確保するため
+;    総確保量は約 60MB — 4MiB の kmalloc ヒープの 14 倍以上。
+;    コンパイラが中間値とスコープ終端の自動 sp_free を挿入していなければ
 ;    ヒープが枯渇して完走できない。
 ;    (churn は末尾自己再帰なので TCO により while ループ化され、
-;     スタックも消費しない。中間オブジェクト (比較結果の bool 等) は
-;     まだ drop されないため、その分の蓄積は 4MiB 内に収まる回数とした。
-;     中間値の自動解放は次フェーズの自動 drop 挿入で対応する)
+;     旧パラメータ値も _owned_ フラグ機構で毎周解放される)
 (defun churn (n)
   (if (= n 0)
-      "drop churn: done"
-      (if (null? (drop (list 10 20 30 12)))
-          (churn (- n 1))
-          "drop churn: unreachable")))
+      "auto-drop churn: done"
+      (if (null? (list 10 20 30 12))
+          "auto-drop churn: unreachable"
+          (churn (- n 1)))))
 
-(print "drop test: alloc+drop x 10000 (approx 6MB through 4MiB heap)")
-(print (churn 10000))
+(print "auto-drop test: alloc x 100000 with NO explicit drop (approx 60MB through 4MiB heap)")
+(print (churn 100000))
 
-; 6. drop 後に新しい確保が正常に動くこと (解放済み領域の再利用)
+; 6. 明示的 (drop x) も引き続き動作すること (Phase R2-1 回帰確認)
+;    注: drop の対象は関数内で生成した Fresh な値に限る。引数の drop や
+;    パラメータを含む構造の drop は、現行の呼び出し規約 (引数は呼び出し側が
+;    解放) と deep free が衝突するため、関数シグネチャへの所有権伝搬
+;    (今後のフェーズ) までは未サポート。
+(defun drop-demo ()
+  (if (null? (drop (list 1 2 3)))
+      "explicit drop still works"
+      "unreachable"))
+(print (drop-demo))
+
+; 7. 大量チャーン後も新しい確保が正常に動くこと
 (print (sum-list (list 1 2 3)))
-(print "drop test: allocation after drop works")
+(print "auto-drop test: allocation after churn works")

@@ -19,6 +19,7 @@ import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 import Data.List (partition)
 import Data.Char (isAlphaNum)
+import Control.Monad.State (State, get, put, modify, evalState)
 import Spinor.Syntax (Expr(..), SourceSpan)
 import Spinor.BorrowCheck (BorrowResult(..))
 import Spinor.EscapeAnalysis (EscapeResult(..))
@@ -49,8 +50,8 @@ usesGL = any exprUsesGL
 compileProgram :: [Expr] -> CCode
 compileProgram exprs =
     let (defuns, others) = partition isDefun exprs
-        funDefs = T.unlines (map compileFunDef defuns)
-        mainStmts = T.unlines (map compileStmt others)
+        funDefs = T.unlines (map compileFunDefAuto defuns)
+        mainStmts = T.unlines (map compileStmtAuto others)
         glCode = if usesGL exprs
                  then T.unlines [glIncludes, glHelpers]
                  else ""
@@ -565,3 +566,389 @@ escapeC = T.concatMap escapeChar
     escapeChar '\t' = "\\t"
     escapeChar '\r' = "\\r"
     escapeChar c    = T.singleton c
+
+-- ===========================================================================
+-- 自動 Drop 挿入 (Phase R2-2 / Issue #77)
+-- ===========================================================================
+--
+-- 式を ANF (A-normal form) 風に平坦化し、すべての中間値を C の一時変数
+-- `SpObject* _tN` に束縛したうえで、コンパイル時の所有権クラスに基づいて
+-- スコープ終端 (文末 / return 前 / TCO continue 前 / if 分岐内) に
+-- sp_free を自動挿入する。
+--
+-- 所有権クラス:
+--   * Fresh — 新規確保されたオブジェクト。このスコープが所有し、解放責任を持つ。
+--             (sp_make_* / 算術・比較 / sp_is_nil / 文字列演算 / sp_cons の結果)
+--   * Alias — 他者の構造への参照、または出所不明。解放してはならない (保守的)。
+--             (sp_car / sp_cdr / sp_print の結果、ユーザー関数の結果、パラメータ)
+--
+-- moved フラグ: sp_cons への格納・TCO 再束縛・明示 (drop x) で所有権が移動した
+-- Fresh temp は解放対象から外す (二重解放防止)。
+--
+-- TCO のパラメータ再束縛はランタイムフラグ `bool _owned_p` で管理し、
+-- 「前イテレーションで Fresh 値に再束縛されていた場合のみ」旧値を解放する
+-- (初回の呼出元借用値は解放しない)。
+
+-- | 一時変数の所有権クラス
+data Own = Fresh | Alias
+    deriving (Eq, Show)
+
+-- | 一時変数の記録
+data Temp = Temp
+    { tName  :: Text
+    , tOwn   :: Own
+    , tMoved :: Bool
+    }
+
+-- | ANF エミッタの状態
+data GenSt = GenSt
+    { gsCounter :: Int       -- ^ 一時変数 / ラベルの連番
+    , gsStmts   :: [CCode]   -- ^ 発行済み C 文 (逆順)
+    , gsTemps   :: [Temp]    -- ^ 現在のスコープで生成した一時変数
+    }
+
+type Gen = State GenSt
+
+-- | インデント (関数本体は 4 スペース固定。ネスト if は C 的には動くが
+--   可読性のための深いインデントはしない)
+ind :: CCode
+ind = "    "
+
+-- | 文を発行する
+emit :: CCode -> Gen ()
+emit s = modify $ \st -> st { gsStmts = s : gsStmts st }
+
+-- | 新しい一時変数に式を束縛する
+bindTemp :: Own -> CCode -> Gen Text
+bindTemp own initExpr = do
+    st <- get
+    let n    = gsCounter st
+        name = "_t" <> T.pack (show n)
+    put st { gsCounter = n + 1
+           , gsStmts   = (ind <> "SpObject* " <> name <> " = " <> initExpr <> ";")
+                         : gsStmts st
+           , gsTemps   = Temp name own False : gsTemps st
+           }
+    pure name
+
+-- | int 一時変数 (cond の bool 退避用) を確保する
+bindIntTemp :: CCode -> Gen Text
+bindIntTemp initExpr = do
+    st <- get
+    let n    = gsCounter st
+        name = "_c" <> T.pack (show n)
+    put st { gsCounter = n + 1
+           , gsStmts   = (ind <> "int " <> name <> " = " <> initExpr <> ";")
+                         : gsStmts st
+           }
+    pure name
+
+-- | 名前が一時変数レジストリにあれば moved 扱いにする
+--   (パラメータ等、レジストリ外の名前は何もしない)
+markMovedT :: Text -> Gen ()
+markMovedT name = modify $ \st ->
+    st { gsTemps = map upd (gsTemps st) }
+  where
+    upd t | tName t == name = t { tMoved = True }
+          | otherwise       = t
+
+-- | サブスコープを実行し、(発行された文, 結果) を返す。
+--   counter は共有し、temps / stmts はサブスコープ独立。
+subScope :: Gen a -> Gen ([CCode], [Temp], a)
+subScope action = do
+    st <- get
+    let saved = st
+    put st { gsStmts = [], gsTemps = [] }
+    result <- action
+    st' <- get
+    put saved { gsCounter = gsCounter st' }
+    pure (reverse (gsStmts st'), gsTemps st', result)
+
+-- | スコープの解放コードを生成する: Fresh かつ未 moved の temp を解放し、
+--   Alias temp には未使用警告避けの (void) を発行する。
+--   except に挙げた名前 (返り値等) は対象外。
+scopeFrees :: [Text] -> [Temp] -> [CCode]
+scopeFrees except temps = concatMap freeOne (reverse temps)
+  where
+    freeOne t
+        | tName t `elem` except = []
+        | tMoved t              = []
+        | tOwn t == Fresh       = [ind <> "sp_free(" <> tName t <> ");"]
+        | otherwise             = [ind <> "(void)" <> tName t <> ";"]
+
+-- | 現在のスコープの temps を取得
+getTemps :: Gen [Temp]
+getTemps = fmap gsTemps get
+
+-- ---------------------------------------------------------------------------
+-- 式の ANF コンパイル
+-- ---------------------------------------------------------------------------
+
+-- | 2 引数プリミティブ (引数は借用、結果は Fresh)
+freshPrims2 :: [(Text, Text)]
+freshPrims2 =
+    [ ("+", "sp_add"), ("-", "sp_sub"), ("*", "sp_mul"), ("/", "sp_div")
+    , ("=", "sp_eq"), ("<", "sp_lt"), (">", "sp_gt")
+    , ("<=", "sp_lte"), (">=", "sp_gte")
+    , ("string-append", "sp_str_append"), ("string=?", "sp_str_eq")
+    ]
+
+-- | 1 引数プリミティブ (引数は借用、結果は Fresh)
+freshPrims1 :: [(Text, Text)]
+freshPrims1 = [ ("null?", "sp_is_nil"), ("string-length", "sp_str_length") ]
+
+-- | 1 引数プリミティブ (引数は借用、結果は Alias = 解放禁止)
+aliasPrims1 :: [(Text, Text)]
+aliasPrims1 = [ ("car", "sp_car"), ("cdr", "sp_cdr"), ("print", "sp_print") ]
+
+-- | ANF 用プリミティブ名の集合 (ユーザー関数呼出と区別する)
+anfPrimitives :: [Text]
+anfPrimitives =
+    map fst freshPrims2 ++ map fst freshPrims1 ++ map fst aliasPrims1
+    ++ ["if", "defun", "cons", "list", "substring", "quote"]
+
+-- | 式を ANF で発行し、(結果の C 名, 所有権クラス) を返す
+compileExprA :: Expr -> Gen (Text, Own)
+
+-- リテラル → Fresh temp
+compileExprA (EInt _ n)  = do
+    name <- bindTemp Fresh ("sp_make_int(" <> T.pack (show n) <> ")")
+    pure (name, Fresh)
+compileExprA (EBool _ b) = do
+    name <- bindTemp Fresh ("sp_make_bool(" <> (if b then "true" else "false") <> ")")
+    pure (name, Fresh)
+compileExprA (EStr _ s)  = do
+    name <- bindTemp Fresh ("sp_make_str(\"" <> escapeC s <> "\")")
+    pure (name, Fresh)
+
+-- 変数参照 (パラメータ等): temp を作らず名前をそのまま使う。Alias。
+compileExprA (ESym _ s) = pure (mangle s, Alias)
+
+-- 空リスト
+compileExprA (EList _ []) = do
+    name <- bindTemp Fresh "sp_make_nil()"
+    pure (name, Fresh)
+
+-- if 式 (非末尾): 文の if に展開し、結果を共有 temp に代入する。
+--   cond の bool は int に退避してから cond temp を解放できるようにする
+--   (解放自体はスコープ終端で行う)。
+compileExprA (EList _ [ESym _ "if", c, t, e]) = do
+    (cName, _) <- compileExprA c
+    condVal <- bindIntTemp (cName <> "->value.boolean")
+    -- 結果受け取り用の temp (両分岐で代入)
+    st <- get
+    let n     = gsCounter st
+        rName = "_t" <> T.pack (show n)
+    put st { gsCounter = n + 1 }
+    emit (ind <> "SpObject* " <> rName <> " = NULL;")
+    -- then 分岐 (サブスコープ: 分岐内 temp は分岐内で解放)
+    (thenStmts, thenTemps, (tn, tOwnC)) <- subScope (compileExprA t)
+    let thenFrees = scopeFrees [tn] thenTemps
+    -- else 分岐
+    (elseStmts, elseTemps, (en, eOwnC)) <- subScope (compileExprA e)
+    let elseFrees = scopeFrees [en] elseTemps
+    emit (ind <> "if (" <> condVal <> ") {")
+    mapM_ emit thenStmts
+    emit (ind <> rName <> " = " <> tn <> ";")
+    mapM_ emit thenFrees
+    emit (ind <> "} else {")
+    mapM_ emit elseStmts
+    emit (ind <> rName <> " = " <> en <> ";")
+    mapM_ emit elseFrees
+    emit (ind <> "}")
+    -- 結果の所有権: 両分岐 Fresh のときのみ Fresh (混在は保守的に Alias)
+    let rOwn = if tOwnC == Fresh && eOwnC == Fresh then Fresh else Alias
+    modify $ \s -> s { gsTemps = Temp rName rOwn False : gsTemps s }
+    pure (rName, rOwn)
+
+-- quote: 定数リスト (リテラルのみ想定) — 保守的に素通しの nil
+compileExprA (EList _ [ESym _ "quote", _]) = do
+    name <- bindTemp Fresh "sp_make_nil()"
+    pure (name, Fresh)
+
+-- cons: 引数の所有権はセルに移動する (moved)
+compileExprA (EList _ [ESym _ "cons", a, b]) = do
+    (an, _) <- compileExprA a
+    (bn, _) <- compileExprA b
+    markMovedT an
+    markMovedT bn
+    name <- bindTemp Fresh ("sp_cons(" <> an <> ", " <> bn <> ")")
+    pure (name, Fresh)
+
+-- list: ネストした cons に展開。要素と内側セルの所有権は外側セルへ移動。
+compileExprA (EList _ (ESym _ "list" : elems)) = do
+    elemNames <- mapM (fmap fst . compileExprA) elems
+    nilName <- bindTemp Fresh "sp_make_nil()"
+    let build acc en = do
+            markMovedT en
+            markMovedT acc
+            bindTemp Fresh ("sp_cons(" <> en <> ", " <> acc <> ")")
+    root <- foldM' build nilName (reverse elemNames)
+    pure (root, Fresh)
+  where
+    foldM' _ z []     = pure z
+    foldM' f z (x:xs) = f z x >>= \z' -> foldM' f z' xs
+
+-- substring (3 引数, 引数借用, 結果 Fresh)
+compileExprA (EList _ [ESym _ "substring", s, st_, en_]) = do
+    (sn, _) <- compileExprA s
+    (stn, _) <- compileExprA st_
+    (enn, _) <- compileExprA en_
+    name <- bindTemp Fresh
+        ("sp_substring(" <> sn <> ", " <> stn <> ", " <> enn <> ")")
+    pure (name, Fresh)
+
+-- 明示的 drop: 対象を解放して moved 化し、nil を返す (Phase R2-1 互換)
+compileExprA (EDrop _ e) = do
+    (n, _) <- compileExprA e
+    emit (ind <> "sp_free(" <> n <> ");")
+    markMovedT n
+    name <- bindTemp Fresh "sp_make_nil()"
+    pure (name, Fresh)
+
+-- 2 引数 Fresh プリミティブ
+compileExprA (EList _ [ESym _ op, a, b])
+    | Just cFun <- lookup op freshPrims2 = do
+        (an, _) <- compileExprA a
+        (bn, _) <- compileExprA b
+        name <- bindTemp Fresh (cFun <> "(" <> an <> ", " <> bn <> ")")
+        pure (name, Fresh)
+
+-- 1 引数プリミティブ (Fresh / Alias)
+compileExprA (EList _ [ESym _ op, x])
+    | Just cFun <- lookup op freshPrims1 = do
+        (xn, _) <- compileExprA x
+        name <- bindTemp Fresh (cFun <> "(" <> xn <> ")")
+        pure (name, Fresh)
+    | Just cFun <- lookup op aliasPrims1 = do
+        (xn, _) <- compileExprA x
+        name <- bindTemp Alias (cFun <> "(" <> xn <> ")")
+        pure (name, Alias)
+
+-- ユーザー関数呼出: 引数は借用 (呼出元が解放)、結果は保守的に Alias。
+compileExprA (EList _ (ESym _ f : args))
+    | f `notElem` anfPrimitives = do
+        argNames <- mapM (fmap fst . compileExprA) args
+        name <- bindTemp Alias
+            (mangle f <> "(" <> T.intercalate ", " argNames <> ")")
+        pure (name, Alias)
+
+-- 未対応パターン: 従来コンパイラにフォールバック (解放なし = Alias)
+compileExprA other = do
+    name <- bindTemp Alias (compileExpr other)
+    pure (name, Alias)
+
+-- ---------------------------------------------------------------------------
+-- トップレベル文 / 関数定義
+-- ---------------------------------------------------------------------------
+
+-- | トップレベル式を main 内の C ブロックに変換する (自動解放付き)。
+--   従来仕様と同じく、print / drop 以外の式は結果を sp_print で表示する。
+compileStmtAuto :: Expr -> CCode
+compileStmtAuto expr = evalState go (GenSt 0 [] [])
+  where
+    isPrint (EList _ [ESym _ "print", _]) = True
+    isPrint _                             = False
+    isDrop (EDrop _ _) = True
+    isDrop _           = False
+    go = do
+        (rName, _) <- compileExprA expr
+        if isPrint expr || isDrop expr
+            then emit (ind <> "(void)" <> rName <> ";")
+            else emit (ind <> "sp_print(" <> rName <> ");")
+        temps <- getTemps
+        st <- get
+        let body  = reverse (gsStmts st)
+            frees = scopeFrees [] temps
+        pure $ T.unlines (["    {"] ++ map ("    " <>) (body ++ frees) ++ ["    }"])
+
+-- | defun を C 関数に変換する (自動解放付き)。
+--   末尾自己再帰があれば TCO (while ループ + パラメータ再束縛) を適用する。
+compileFunDefAuto :: Expr -> CCode
+compileFunDefAuto (EList _ [ESym _ "defun", ESym _ name, EList _ argExprs, body]) =
+    let cName      = mangle name
+        paramNames = [n | ESym _ n <- argExprs]
+        cArgs      = if null paramNames
+                     then "void"
+                     else T.intercalate ", "
+                            (map (\p -> "SpObject* " <> mangle p) paramNames)
+        header     = "SpObject* " <> cName <> "(" <> cArgs <> ") {"
+    in if hasTailSelfCall name body
+       then
+         let ownedDecls =
+               [ ind <> "bool _owned_" <> mangle p <> " = false;"
+               | p <- paramNames ]
+             loopBody = evalState (compileTailA name paramNames body)
+                                  (GenSt 0 [] [])
+         in T.unlines
+              ( [header]
+                ++ ownedDecls
+                ++ [ind <> "while (1) {"]
+                ++ loopBody
+                ++ [ind <> "}", "}"] )
+       else
+         let stmts = evalState goPlain (GenSt 0 [] [])
+         in T.unlines ([header] ++ stmts ++ ["}"])
+  where
+    goPlain = do
+        (rName, _) <- compileExprA body
+        temps <- getTemps
+        st <- get
+        pure $ reverse (gsStmts st)
+               ++ scopeFrees [rName] temps
+               ++ [ind <> "return " <> rName <> ";"]
+compileFunDefAuto _ = "/* invalid defun */"
+
+-- | TCO 対象の末尾位置式を C 文列に変換する (自動解放付き)。
+--   * if: cond を ANF 評価 → bool を int に退避 → cond の temp を解放 →
+--         分岐それぞれを再帰処理 (分岐は独立スコープ)
+--   * 自己再帰呼出: 引数を ANF 評価 → 旧パラメータ値を _owned_ フラグ付きで
+--         解放 → 再束縛 → 残り temp を解放 → continue
+--   * その他: ANF 評価 → 返り値以外を解放 → パラメータ旧値も解放 → return
+compileTailA :: Text -> [Text] -> Expr -> Gen [CCode]
+compileTailA fname params (EList _ [ESym _ "if", c, t, e]) = do
+    (condStmts, condTemps, (cName, _)) <- subScope $ do
+        (cn, _) <- compileExprA c
+        cv <- bindIntTemp (cn <> "->value.boolean")
+        pure (cv, ())
+    -- cond で生成した temp は分岐前にすべて解放できる (bool は退避済み)
+    let condFrees = scopeFrees [] condTemps
+    thenStmts <- compileTailA fname params t
+    elseStmts <- compileTailA fname params e
+    pure $ condStmts ++ condFrees
+           ++ [ind <> "if (" <> cName <> ") {"]
+           ++ thenStmts
+           ++ [ind <> "} else {"]
+           ++ elseStmts
+           ++ [ind <> "}"]
+compileTailA fname params (EList _ (ESym _ f : args))
+    | f == fname = do
+        (stmts, temps, argResults) <- subScope (mapM compileExprA args)
+        let argNames = map fst argResults
+            argOwns  = map snd argResults
+            -- 再束縛に渡す temp は moved (このスコープでは解放しない)
+            temps'   = map (\tp -> if tName tp `elem` argNames
+                                   then tp { tMoved = True } else tp) temps
+            rebinds  = concat
+                [ [ ind <> "if (_owned_" <> mangle p <> ") sp_free("
+                        <> mangle p <> ");"
+                  , ind <> mangle p <> " = " <> an <> ";"
+                  , ind <> "_owned_" <> mangle p <> " = "
+                        <> (if ow == Fresh then "true" else "false") <> ";"
+                  ]
+                | (p, (an, ow)) <- zip params (zip argNames argOwns) ]
+            frees    = scopeFrees [] temps'
+        pure $ stmts ++ rebinds ++ frees ++ [ind <> "continue;"]
+compileTailA _ params expr = do
+    (stmts, temps, (rName, rOwn)) <- subScope (compileExprA expr)
+    let frees      = scopeFrees [rName] temps
+        -- return 前: ループ内で再束縛された旧パラメータ値も解放する。
+        -- ただし返り値がパラメータ由来の Alias の可能性があるため、
+        -- 返り値が Fresh (パラメータと無関係) のときに限る。
+        paramFrees
+          | rOwn == Fresh =
+              [ ind <> "if (_owned_" <> mangle p <> ") sp_free("
+                    <> mangle p <> ");"
+              | p <- params ]
+          | otherwise = []
+    pure $ stmts ++ frees ++ paramFrees ++ [ind <> "return " <> rName <> ";"]
