@@ -566,6 +566,18 @@ infer env (EMove _ e) = do
                  other           -> TLinear Linear other
   pure (s, movedT, env2)
 
+-- 所有権の明示的破棄 (drop expr): 対象を完全に消費し Unit を返す (Phase R2-1)。
+--   対象が変数なら EMove 同様に env から除去 + markMoved する。
+--   これにより (drop x) のあとに x を使うと use-after-move エラーになる。
+--   AOT では sp_free にコンパイルされる (Codegen.hs)。
+infer env (EDrop _ e) = do
+  (s, _t, env1) <- infer env e
+  env2 <- case e of
+            ESym _ x -> do markMoved x
+                           pure (Map.delete x env1)
+            _        -> pure env1
+  pure (s, TCon "Unit", env2)
+
 -- 関数適用: (func arg1 arg2 ...)
 --   多引数はカリー化として扱う
 infer env (EList _ (func : args)) = inferApp env func args
@@ -643,6 +655,7 @@ inferQuote (EBorrow _ e)          = inferQuote e
 inferQuote (EDeref  _ e)          = inferQuote e
 inferQuote (EUnsafe _ e)          = inferQuote e
 inferQuote (EMove   _ e)          = inferQuote e
+inferQuote (EDrop   _ e)          = inferQuote e
 
 -- | パターンの型推論
 --   パターンの型と tTarget を unify し、パターン内変数の型環境を返す

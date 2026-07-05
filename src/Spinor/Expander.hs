@@ -77,11 +77,12 @@ expand (ELet sp bindings body) = do
   body' <- expand body
   pure $ ELet sp bindings' body'
 
--- Linear Spinor: 所有権/借用ノードは内部式のみ再帰展開 (Issue #72)
+-- Linear Spinor: 所有権/借用ノードは内部式のみ再帰展開 (Issue #72, #76)
 expand (EBorrow sp e) = EBorrow sp <$> expand e
 expand (EDeref  sp e) = EDeref  sp <$> expand e
 expand (EUnsafe sp e) = EUnsafe sp <$> expand e
 expand (EMove   sp e) = EMove   sp <$> expand e
+expand (EDrop   sp e) = EDrop   sp <$> expand e
 
 -- load: ファイルを読み込み、各式を展開+評価 (副作用あり)
 --   Eval.hs から移動。expand フェーズで処理する必要がある

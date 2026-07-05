@@ -258,6 +258,27 @@ SpObject* sp_file_exists(SpObject* path) {
     return sp_make_bool(false);
 }
 
+/* ========== メモリ解放 (Phase R2-1: drop セマンティクス) ========== */
+
+void sp_free(SpObject* obj) {
+    if (!obj) {
+        return;
+    }
+    switch (obj->type) {
+        case SP_STR:
+            free(obj->value.string);
+            break;
+        case SP_PAIR:
+            sp_free(obj->value.pair->car);
+            sp_free(obj->value.pair->cdr);
+            free(obj->value.pair);
+            break;
+        default:
+            break;   /* NIL / BOOL / INT はオブジェクト本体のみ */
+    }
+    free(obj);
+}
+
 /* ========== ユーティリティ ========== */
 
 /* 値を改行なしで表示する内部ヘルパー (リストの再帰表示に使用) */

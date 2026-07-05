@@ -169,6 +169,7 @@ data Expr
   | EDeref  SourceSpan Expr   -- ^ *expr (参照解決)
   | EUnsafe SourceSpan Expr   -- ^ (unsafe ...) — 線形性検査をバイパスするスコープ
   | EMove   SourceSpan Expr   -- ^ @expr (明示的ムーブ)
+  | EDrop   SourceSpan Expr   -- ^ (drop expr) — 所有権の明示的破棄 (Phase R2-1)
   deriving (Show, Eq)
 
 -- | 式から SourceSpan を取得
@@ -189,6 +190,7 @@ exprSpan (EBorrow sp _)     = sp
 exprSpan (EDeref  sp _)     = sp
 exprSpan (EUnsafe sp _)     = sp
 exprSpan (EMove   sp _)     = sp
+exprSpan (EDrop   sp _)     = sp
 
 type Parser = Parsec Void Text
 
@@ -340,6 +342,9 @@ pList = withSpan $ do
     -- Linear Spinor: 隔離ブロック (unsafe expr) → EUnsafe expr
     [ESym _ "unsafe", expr] ->
       pure $ \sp -> EUnsafe sp expr
+    -- Linear Spinor: 所有権の明示的破棄 (drop expr) → EDrop expr (Phase R2-1)
+    [ESym _ "drop", expr] ->
+      pure $ \sp -> EDrop sp expr
     _ -> pure $ \sp -> EList sp xs
 
 -- | let 式の束縛リストをパースする

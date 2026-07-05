@@ -339,6 +339,9 @@ compileStmt :: Expr -> CCode
 -- (compileExpr が `sp_print(...)` を生成するため、二重出力を防ぐ)
 compileStmt expr@(EList _ [ESym _ "print", _]) =
     "    " <> compileExpr expr <> ";"
+-- `(drop x)` を top-level に書いた場合: 解放のみ行い、結果 (Unit) は表示しない
+compileStmt (EDrop _ e) =
+    "    sp_free(" <> compileExpr e <> ");"
 compileStmt expr =
     let valCode = compileExpr expr
     in "    sp_print(" <> valCode <> ");"
@@ -405,6 +408,12 @@ compileExpr (EList _ [ESym _ "file-exists?", path]) =
 -- 式コンテキストでも安全に使える。
 compileExpr (EList _ [ESym _ "print", x]) =
     "sp_print(" <> compileExpr x <> ")"
+
+-- 所有権の明示的破棄 (Phase R2-1 / Issue #76): (drop x) → sp_free
+-- 式コンテキストでは GNU C の statement expression で nil を返す
+-- (with-region と同じ手法。gcc/clang 前提)
+compileExpr (EDrop _ e) =
+    "({ sp_free(" <> compileExpr e <> "); sp_make_nil(); })"
 
 -- リスト操作プリミティブ (Issue #75: ベアメタル AOT でのリスト実証用)
 compileExpr (EList _ [ESym _ "cons", a, b]) =

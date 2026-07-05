@@ -22,11 +22,12 @@ normalizeSpan (EImport _ name opts) = EImport dummySpan name opts
 -- Experimental: Region-based memory management
 normalizeSpan (EWithRegion _ name body) = EWithRegion dummySpan name (normalizeSpan body)
 normalizeSpan (EAllocIn _ name expr) = EAllocIn dummySpan name (normalizeSpan expr)
--- Linear Spinor: 所有権・借用ノード (Issue #72)
+-- Linear Spinor: 所有権・借用ノード (Issue #72, #76)
 normalizeSpan (EBorrow _ e) = EBorrow dummySpan (normalizeSpan e)
 normalizeSpan (EDeref _ e) = EDeref dummySpan (normalizeSpan e)
 normalizeSpan (EUnsafe _ e) = EUnsafe dummySpan (normalizeSpan e)
 normalizeSpan (EMove _ e) = EMove dummySpan (normalizeSpan e)
+normalizeSpan (EDrop _ e) = EDrop dummySpan (normalizeSpan e)
 
 -- | パターン内の PLit の Expr も正規化
 normalizePat :: Pattern -> Pattern
@@ -208,6 +209,11 @@ spec = describe "Spinor.Syntax (Parser)" $ do
       "@x" `parseShouldBe` EMove dummySpan (eSym "x")
     it "(unsafe x) → EUnsafe" $
       "(unsafe x)" `parseShouldBe` EUnsafe dummySpan (eSym "x")
+    it "(drop x) → EDrop (Phase R2-1)" $
+      "(drop x)" `parseShouldBe` EDrop dummySpan (eSym "x")
+    it "(drop (list 1 2)) → EDrop (複合式の drop)" $
+      "(drop (list 1 2))" `parseShouldBe`
+        EDrop dummySpan (eList [eSym "list", eInt 1, eInt 2])
     it "&(f x) → EBorrow (複合式の借用)" $
       "&(f x)" `parseShouldBe` EBorrow dummySpan (eList [eSym "f", eSym "x"])
     it "*(& x) → EDeref (EBorrow ...) のネスト" $

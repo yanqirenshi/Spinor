@@ -85,6 +85,11 @@ SpObject* sp_write_file(SpObject* path, SpObject* content);
 SpObject* sp_append_file(SpObject* path, SpObject* content);
 SpObject* sp_file_exists(SpObject* path);
 
+/* ========== メモリ解放 (Phase R2-1: drop セマンティクス) ========== */
+
+/* 所有構造全体を再帰的に解放する (deep free)。ベアメタル版は kfree を使う。 */
+void sp_free(SpObject* obj);
+
 /* ========== ユーティリティ ========== */
 
 SpObject* sp_print(SpObject* obj);

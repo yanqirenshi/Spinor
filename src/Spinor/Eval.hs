@@ -606,6 +606,8 @@ eval (EBorrow _ e) = eval e
 eval (EDeref  _ e) = eval e
 eval (EUnsafe _ e) = eval e
 eval (EMove   _ e) = eval e
+-- drop: インタプリタでは内部式を評価して VNil を返す (メモリ解放は GC の管轄)
+eval (EDrop   _ e) = eval e >> pure VNil
 
 -- 関数適用: (f arg1 arg2 ...)
 --   マクロ展開は Expander.expand で処理済みの前提。
@@ -808,6 +810,7 @@ exprToVal (EBorrow _ e) = VList [VSym "borrow", exprToVal e]
 exprToVal (EDeref  _ e) = VList [VSym "deref",  exprToVal e]
 exprToVal (EUnsafe _ e) = VList [VSym "unsafe", exprToVal e]
 exprToVal (EMove   _ e) = VList [VSym "move",   exprToVal e]
+exprToVal (EDrop   _ e) = VList [VSym "drop",   exprToVal e]
 
 -- | Val を Expr に逆変換する (マクロ展開結果の再評価用)
 valToExpr :: Val -> Expr

@@ -243,6 +243,31 @@ SpObject* sp_file_exists(SpObject* path)
     return NULL;
 }
 
+/* ---- メモリ解放 (Phase R2-1: drop セマンティクス, Issue #76) ----------- */
+
+/* 所有構造全体を再帰的に解放する (deep free)。
+ * 線形型の世界では構造の共有が無いため、drop = 所有権ごと木を破棄する。
+ * 解放先は Phase R1-2 の kfree (K&R フリーリストへ返却され再利用される)。 */
+void sp_free(SpObject* obj)
+{
+    if (!obj) {
+        return;
+    }
+    switch (obj->type) {
+        case SP_STR:
+            kfree(obj->value.string);
+            break;
+        case SP_PAIR:
+            sp_free(obj->value.pair->car);
+            sp_free(obj->value.pair->cdr);
+            kfree(obj->value.pair);
+            break;
+        default:
+            break;   /* NIL / BOOL / INT はオブジェクト本体のみ */
+    }
+    kfree(obj);
+}
+
 /* ---- 表示 (printf → シリアル出力) -------------------------------------- */
 
 /* 値を改行なしでシリアルへ表示する内部ヘルパー */

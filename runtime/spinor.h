@@ -89,6 +89,15 @@ SpObject* sp_write_file(SpObject* path, SpObject* content);
 SpObject* sp_append_file(SpObject* path, SpObject* content);
 SpObject* sp_file_exists(SpObject* path);
 
+/* ========== メモリ解放 (Phase R2-1: drop セマンティクス) ========== */
+
+/* sp_free: オブジェクトが所有する構造全体を再帰的に解放する (deep free)。
+ * 線形型の世界では構造の共有が無いため、所有権ごと破棄する drop の
+ * 意味論として深い解放が正しい。NULL は無視する。
+ *   - SP_STR:  文字列バッファも解放
+ *   - SP_PAIR: car / cdr を再帰的に解放した後、SpPair 本体を解放 */
+void sp_free(SpObject* obj);
+
 /* ========== ユーティリティ ========== */
 
 /* sp_print: 値を表示し、引数 obj をそのまま返す (Lisp 伝統に倣う)。
